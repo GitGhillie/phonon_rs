@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/fmod_plugin",
+    "crates/steam_audio",
+]
+
+resolver = "2"

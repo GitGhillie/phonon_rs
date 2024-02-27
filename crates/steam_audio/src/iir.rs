@@ -1,0 +1,94 @@
+use crate::delay::Delay;
+use biquad::*;
+
+/// Represents a biquad IIR filter, that can be used to carry out various filtering operations on RealSignals. Such a
+/// filter is essentially a recurrence relation: sample N of the filtered output signal depends on samples N, N-1, and
+/// N-2 of the input, as well as samples N-1 and N-2 of the _output_.
+#[derive(Copy, Clone, Debug)]
+pub struct IIR(DirectForm1<f32>);
+
+impl IIR {
+    /// Creates a low-shelf filter (controls the amplitude of all frequencies below the cutoff).
+    pub fn new_low_shelf(high_cutoff: f32, gain: f32, sample_rate: i32) -> Self {
+        // Port note: The IIR crate used assumes gain is in dB.
+        // This does create some extra work that will hopefully be optimized away...
+        let gain_adjusted = (gain.sqrt().log(10.0)) * 40.0;
+
+        let coefficients = Coefficients::<f32>::from_params(
+            Type::LowShelf(gain_adjusted),
+            sample_rate.hz(),
+            high_cutoff.hz(),
+            Q_BUTTERWORTH_F32,
+        );
+
+        IIR(DirectForm1::<f32>::new(coefficients.unwrap()))
+    }
+
+    /// Creates a high-shelf filter (controls the amplitude of all frequencies above the cutoff).
+    pub fn new_high_shelf(low_cutoff: f32, gain: f32, sample_rate: i32) -> Self {
+        // Port note: The IIR crate used assumes gain is in dB.
+        // This does create some extra work that will hopefully be optimized away...
+        let gain_adjusted = (gain.sqrt().log(10.0)) * 40.0;
+
+        let coefficients = Coefficients::<f32>::from_params(
+            Type::HighShelf(gain_adjusted),
+            sample_rate.hz(),
+            low_cutoff.hz(),
+            Q_BUTTERWORTH_F32,
+        );
+
+        IIR(DirectForm1::<f32>::new(coefficients.unwrap()))
+    }
+
+    /// Creates a peaking filter (controls the amplitude of all frequencies between the cutoffs).
+    pub fn new_peaking(low_cutoff: f32, high_cutoff: f32, gain: f32, sample_rate: i32) -> Self {
+        // Port note: The IIR crate used assumes gain is in dB.
+        // This does create some extra work that will hopefully be optimized away...
+        let gain_adjusted = (gain.sqrt().log(10.0)) * 40.0;
+        let cutoff_frequency = (high_cutoff * low_cutoff).sqrt();
+        let q_value = cutoff_frequency / (high_cutoff - low_cutoff);
+
+        let coefficients = Coefficients::<f32>::from_params(
+            Type::PeakingEQ(gain_adjusted),
+            sample_rate.hz(),
+            cutoff_frequency.hz(),
+            q_value,
+        );
+
+        IIR(DirectForm1::<f32>::new(coefficients.unwrap()))
+    }
+}
+
+/// State required for filtering a signal with an IIR filter over multiple frames. Ensures continuity between frames
+/// when the filter doesn't change between frames. If the filter _does_ change, the caller must implement
+/// crossfading or some other approach to ensure smoothness.
+pub struct IIRFilterer {
+    /// The IIR filter to apply.
+    filter: IIR,
+    /// Input value from 1 sample ago.
+    xm1: f32,
+    /// Input value from 2 samples ago.
+    xm2: f32,
+    /// Output value from 1 sample ago.
+    ym1: f32,
+    /// Output value from 2 samples ago.
+    ym2: f32,
+}
+
+impl IIRFilterer {
+    // todo: With Phonon you can change the filterer at runtime. Let's see if we can get away with not doing that
+    pub fn new(filter: IIR) -> Self {
+        Self {
+            filter,
+            xm1: 0.0,
+            xm2: 0.0,
+            ym1: 0.0,
+            ym2: 0.0,
+        }
+    }
+
+    /// Applies the filter to an entire buffer of input, using SIMD operations.
+    pub fn apply(&self, size: usize, input: &[f32], output: &mut [f32]) {
+        //self.filter
+    }
+}
