@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use steam_audio::audio_buffer::AudioBuffer;
+use phonon::audio_buffer::AudioBuffer;
 
 #[test]
 fn mixing_audio_buffers() {

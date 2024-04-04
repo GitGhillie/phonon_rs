@@ -1,5 +1,5 @@
 [package]
-name = "steam_audio"
+name = "phonon"
 version = "0.1.0"
 edition = "2021"
 
