@@ -21,7 +21,11 @@ fn mix_buffers(in1: AudioBuffer<1>) -> AudioBuffer<1> {
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("mix buffers", |b| {
-        b.iter(|| mix_buffers(black_box(AudioBuffer::new(200))))
+        b.iter(|| {
+            let mut buf = AudioBuffer::new(200);
+            buf[0][5] = black_box(0.0);
+            mix_buffers(black_box(buf))
+        })
     });
 }
 
