@@ -38,9 +38,7 @@ impl AudioSettings {
 }
 
 #[derive(Deref, DerefMut)]
-pub struct AudioBuffer<const N_CHANNELS: usize, const N_SAMPLES: usize>(
-    pub [[f32; N_SAMPLES]; N_CHANNELS],
-);
+pub struct AudioBuffer<const N_CHANNELS: usize, const N_SAMPLES: usize>(pub [Vec<f32>; N_CHANNELS]);
 
 impl<const N_CHANNELS: usize, const N_SAMPLES: usize> Default
     for AudioBuffer<N_CHANNELS, N_SAMPLES>
@@ -52,20 +50,37 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> Default
 
 impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_SAMPLES> {
     pub fn new() -> Self {
-        AudioBuffer([[0.0; N_SAMPLES]; N_CHANNELS])
+        AudioBuffer(core::array::from_fn(|_| {
+            std::iter::repeat(0.0).take(N_SAMPLES).collect::<Vec<_>>()
+        }))
     }
 
     pub fn make_silent(&mut self) {
-        self.fill([0.0; N_SAMPLES]);
+        for mut buffer in &mut self.0 {
+            buffer.clear();
+            for _ in (0..N_SAMPLES).into_iter() {
+                buffer.push(0.0);
+            }
+        }
     }
 
     // todo perf?
     pub fn mix(&mut self, other: &AudioBuffer<N_CHANNELS, N_SAMPLES>) {
-        for i in 0..other.len() {
-            for j in 0..other[0].len() {
-                self[i][j] += other[i][j];
-            }
-        }
+        // for i in 0..other.len() {
+        //     for j in 0..other[0].len() {
+        //         self[i][j] += other[i][j];
+        //     }
+        // }
+        self.iter_mut()
+            .zip(other.iter())
+            .for_each(|(row_self, row_other)| {
+                row_self
+                    .iter_mut()
+                    .zip(row_other.iter())
+                    .for_each(|(elem_self, &elem_other)| {
+                        *elem_self += elem_other;
+                    });
+            });
     }
 
     // todo perf?
