@@ -40,14 +40,6 @@ impl AudioSettings {
 #[derive(Deref, DerefMut)]
 pub struct AudioBuffer<const N_CHANNELS: usize>(pub [Vec<f32>; N_CHANNELS]);
 
-// impl<const N_CHANNELS: usize> Default
-//     for AudioBuffer<N_CHANNELS>
-// {
-//     fn default() -> Self {
-//         Self::new()
-//     }
-// }
-
 impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
     pub fn new(num_samples: usize) -> Self {
         AudioBuffer(core::array::from_fn(|_| {
