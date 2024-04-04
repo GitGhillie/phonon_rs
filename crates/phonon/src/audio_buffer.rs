@@ -66,20 +66,14 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
 
     // todo perf?
     pub fn mix(&mut self, other: &AudioBuffer<N_CHANNELS, N_SAMPLES>) {
-        // for i in 0..other.len() {
-        //     for j in 0..other[0].len() {
-        //         self[i][j] += other[i][j];
-        //     }
-        // }
         self.iter_mut()
             .zip(other.iter())
-            .for_each(|(row_self, row_other)| {
-                row_self
-                    .iter_mut()
-                    .zip(row_other.iter())
-                    .for_each(|(elem_self, &elem_other)| {
-                        *elem_self += elem_other;
-                    });
+            .for_each(|(channel_self, channel_other)| {
+                channel_self.iter_mut().zip(channel_other.iter()).for_each(
+                    |(sample_self, &sample_other)| {
+                        *sample_self += sample_other;
+                    },
+                );
             });
     }
 
