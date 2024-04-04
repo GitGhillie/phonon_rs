@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use steam_audio::audio_buffer::AudioBuffer;
+use phonon::audio_buffer::AudioBuffer;
 
 // Todo: fill input with arrays of random numbers
 fn mix_buffers(input: f32) -> f32 {
