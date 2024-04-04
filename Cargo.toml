@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "crates/fmod_plugin",
-    "crates/steam_audio",
+    "crates/phonon",
 ]
 
 resolver = "2"
