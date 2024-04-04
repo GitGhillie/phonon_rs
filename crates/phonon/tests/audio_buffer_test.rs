@@ -32,14 +32,16 @@ fn mixing_audio_buffers() {
 
     let mut out: AudioBuffer<1, 2> = AudioBuffer::new();
 
-    //todo make silent function
-
     out.mix(&in1);
     out.mix(&in2);
     out.mix(&in3);
 
     assert_eq!(11.0, out[0][0]);
     assert_eq!(15.0, out[0][1]);
+
+    out.make_silent();
+
+    assert_eq!(0.0, out[0][0]);
 }
 
 #[test]
