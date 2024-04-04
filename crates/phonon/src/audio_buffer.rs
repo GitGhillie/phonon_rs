@@ -38,34 +38,33 @@ impl AudioSettings {
 }
 
 #[derive(Deref, DerefMut)]
-pub struct AudioBuffer<const N_CHANNELS: usize, const N_SAMPLES: usize>(pub [Vec<f32>; N_CHANNELS]);
+pub struct AudioBuffer<const N_CHANNELS: usize>(pub [Vec<f32>; N_CHANNELS]);
 
-impl<const N_CHANNELS: usize, const N_SAMPLES: usize> Default
-    for AudioBuffer<N_CHANNELS, N_SAMPLES>
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// impl<const N_CHANNELS: usize> Default
+//     for AudioBuffer<N_CHANNELS>
+// {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
 
-impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_SAMPLES> {
-    pub fn new() -> Self {
+impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
+    pub fn new(num_samples: usize) -> Self {
         AudioBuffer(core::array::from_fn(|_| {
-            std::iter::repeat(0.0).take(N_SAMPLES).collect::<Vec<_>>()
+            std::iter::repeat(0.0).take(num_samples).collect::<Vec<_>>()
         }))
     }
 
     pub fn make_silent(&mut self) {
         for mut buffer in &mut self.0 {
-            buffer.clear();
-            for _ in (0..N_SAMPLES).into_iter() {
-                buffer.push(0.0);
+            for i in 0..buffer.len() {
+                buffer[i] = 0.0;
             }
         }
     }
 
     // todo perf?
-    pub fn mix(&mut self, other: &AudioBuffer<N_CHANNELS, N_SAMPLES>) {
+    pub fn mix(&mut self, other: &AudioBuffer<N_CHANNELS>) {
         self.iter_mut()
             .zip(other.iter())
             .for_each(|(channel_self, channel_other)| {
@@ -79,7 +78,7 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
 
     // todo perf?
     /// Combine and average samples from all channels into a single one.
-    pub fn downmix(&self, other: &mut AudioBuffer<1, N_SAMPLES>) {
+    pub fn downmix(&self, other: &mut AudioBuffer<1>) {
         let num_channels = self.len();
         let factor = 1.0 / (num_channels as f32);
 
@@ -96,10 +95,10 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
 
     /// Writes interleaved slice to `AudioBuffer`.
     /// todo: Check perf?
-    pub fn write(&mut self, other: &[f32; N_CHANNELS * N_SAMPLES]) {
+    pub fn write(&mut self, other: &[f32]) {
         let mut index = 0;
 
-        for i in 0..N_SAMPLES {
+        for i in 0..self[0].len() {
             for j in 0..N_CHANNELS {
                 self[j][i] = other[index];
                 index += 1;
@@ -109,10 +108,10 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
 
     /// Converts `AudioBuffer` to interleaved slice.
     /// todo: Check perf?
-    pub fn read(&self, other: &mut [f32; N_CHANNELS * N_SAMPLES]) {
+    pub fn read(&self, other: &mut [f32]) {
         let mut index = 0;
 
-        for i in 0..N_SAMPLES {
+        for i in 0..self[0].len() {
             for j in 0..N_CHANNELS {
                 other[index] = self[j][i];
                 index += 1;

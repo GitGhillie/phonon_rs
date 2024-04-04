@@ -19,9 +19,9 @@ use phonon::audio_buffer::AudioBuffer;
 
 #[test]
 fn mixing_audio_buffers() {
-    let mut in1: AudioBuffer<1, 2> = AudioBuffer::new();
-    let mut in2: AudioBuffer<1, 2> = AudioBuffer::new();
-    let mut in3: AudioBuffer<1, 2> = AudioBuffer::new();
+    let mut in1: AudioBuffer<1> = AudioBuffer::new(2);
+    let mut in2: AudioBuffer<1> = AudioBuffer::new(2);
+    let mut in3: AudioBuffer<1> = AudioBuffer::new(2);
 
     in1[0][0] = 1.0;
     in1[0][1] = 2.0;
@@ -30,7 +30,7 @@ fn mixing_audio_buffers() {
     in3[0][0] = 7.0;
     in3[0][1] = 9.0;
 
-    let mut out: AudioBuffer<1, 2> = AudioBuffer::new();
+    let mut out: AudioBuffer<1> = AudioBuffer::new(2);
 
     out.mix(&in1);
     out.mix(&in2);
@@ -48,7 +48,7 @@ fn mixing_audio_buffers() {
 fn deinterleave() {
     let interleaved: [f32; 6] = [1.0, 2.0, 1.0, 2.0, 1.0, 2.0];
 
-    let mut deinterleaved: AudioBuffer<2, 3> = AudioBuffer::new();
+    let mut deinterleaved: AudioBuffer<2> = AudioBuffer::new(3);
 
     deinterleaved.write(&interleaved);
 
@@ -62,7 +62,7 @@ fn deinterleave() {
 
 #[test]
 fn interleave() {
-    let mut deinterleaved: AudioBuffer<2, 2> = AudioBuffer::new();
+    let mut deinterleaved: AudioBuffer<2> = AudioBuffer::new(2);
 
     deinterleaved[0][0] = 1.0;
     deinterleaved[0][1] = 1.0;
@@ -81,14 +81,14 @@ fn interleave() {
 
 #[test]
 fn downmix_to_mono() {
-    let mut stereo: AudioBuffer<2, 2> = AudioBuffer::new();
+    let mut stereo: AudioBuffer<2> = AudioBuffer::new(2);
 
     stereo[0][0] = 1.0;
     stereo[0][1] = 1.0;
     stereo[1][0] = 2.0;
     stereo[1][1] = 2.0;
 
-    let mut mono: AudioBuffer<1, 2> = AudioBuffer::new();
+    let mut mono: AudioBuffer<1> = AudioBuffer::new(2);
 
     stereo.downmix(&mut mono);
 
