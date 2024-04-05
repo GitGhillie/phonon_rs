@@ -2,6 +2,8 @@
 #![allow(incomplete_features)]
 #![feature(generic_const_exprs)]
 
+//! A community effort to rewrite Valve's Steam Audio into a Rust library.
+
 pub mod audio_buffer;
 pub mod bands;
 pub mod coordinate_space;

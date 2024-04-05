@@ -37,6 +37,26 @@ impl AudioSettings {
     }
 }
 
+/// Phonon processes audio in audio buffers, which contain uncompressed Pulse
+/// Code Modulated (PCM) data (just like a .wav file).
+///
+/// Audio buffers contain one or more channels; for example, a stereo audio
+/// buffer contains 2 channels. Each channel typically contains several samples,
+/// which are values of the audio signal’s level at discrete points of time.
+/// Each channel has the same number of samples.
+///
+/// A sample is a 32-bit floating-point. The time interval between two
+/// successive samples is specified using the sampling rate. Typical sampling
+/// rates are 44100 Hz (CD quality) or 48000 Hz.
+///
+/// # Interleaving
+/// Phonon stores audio buffers in a deinterleaved layout. This means that all
+/// the samples for the first channel are store contiguously, followed by all
+/// the samples for the second channel, and so on.
+///
+/// Most audio formats instead use an interlveaved layout, where data for each
+/// frame is stored together in memory. Interleaved data can be read to and
+/// written from using [`AudioBuffer::read`] and [`AudioBuffer::write`].
 #[derive(Deref, DerefMut)]
 pub struct AudioBuffer<const N_CHANNELS: usize, const N_SAMPLES: usize>(
     pub [[f32; N_SAMPLES]; N_CHANNELS],
@@ -51,15 +71,20 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> Default
 }
 
 impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_SAMPLES> {
+    /// Creates a new `AudioBuffer` with a fixed number of channels and samples.
+    ///
+    /// Initalized to all zeros, representing silence.
     pub fn new() -> Self {
         AudioBuffer([[0.0; N_SAMPLES]; N_CHANNELS])
     }
 
+    /// Fills the `AudioBuffer` with all zero samples, representing silence.
     pub fn make_silent(&mut self) {
         self.fill([0.0; N_SAMPLES]);
     }
 
-    // todo perf?
+    /// Mixes the `AudioBuffer` into another by adding samples together.
+    // todo: Check perf?
     pub fn mix(&mut self, other: &AudioBuffer<N_CHANNELS, N_SAMPLES>) {
         for i in 0..other.len() {
             for j in 0..other[0].len() {
@@ -68,9 +93,11 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
         }
     }
 
-    // todo perf?
-    /// Combine and average samples from all channels into a single one.
-    pub fn downmix(&self, other: &mut AudioBuffer<1, N_SAMPLES>) {
+    /// Mixes all channels on an `AudioBuffer` into a single output channel.
+    /// Downmixing is performed by summing up the source channels and dividing
+    /// the result by the number of source channels.
+    // todo: Check perf?
+    pub fn downmix(&self, output: &mut AudioBuffer<1, N_SAMPLES>) {
         let num_channels = self.len();
         let factor = 1.0 / (num_channels as f32);
 
@@ -81,26 +108,26 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
                 sum += self[j][i];
             }
 
-            other[0][i] = sum * factor;
+            output[0][i] = sum * factor;
         }
     }
 
-    /// Writes interleaved slice to `AudioBuffer`.
-    /// todo: Check perf?
-    pub fn write(&mut self, other: &[f32; N_CHANNELS * N_SAMPLES]) {
+    /// Reads a slice of interleaved samples into an `AudioBuffer`.
+    // todo: Check perf?
+    pub fn read_interleaved(&mut self, output: &[f32; N_CHANNELS * N_SAMPLES]) {
         let mut index = 0;
 
         for i in 0..N_SAMPLES {
             for j in 0..N_CHANNELS {
-                self[j][i] = other[index];
+                self[j][i] = output[index];
                 index += 1;
             }
         }
     }
 
-    /// Converts `AudioBuffer` to interleaved slice.
-    /// todo: Check perf?
-    pub fn read(&self, other: &mut [f32; N_CHANNELS * N_SAMPLES]) {
+    /// Writes the `AudioBuffer` to an interleaved slice.
+    // todo: Check perf?
+    pub fn write_interleaved(&self, other: &mut [f32; N_CHANNELS * N_SAMPLES]) {
         let mut index = 0;
 
         for i in 0..N_SAMPLES {
@@ -111,7 +138,8 @@ impl<const N_CHANNELS: usize, const N_SAMPLES: usize> AudioBuffer<N_CHANNELS, N_
         }
     }
 
-    // todo perf?
+    /// Scales all the samples in the `AudioBuffer` by the given volume.
+    // todo: Check perf?
     pub fn scale(&mut self, volume: f32) {
         for i in 0..self.len() {
             for j in 0..self[0].len() {
