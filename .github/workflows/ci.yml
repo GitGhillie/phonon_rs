@@ -5,30 +5,30 @@ on:
   push:
 
 jobs:
-#  test:
-#    strategy:
-#      matrix:
-#        os: [windows-latest, ubuntu-latest, macos-latest]
-#    runs-on: ${{ matrix.os }}
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: actions/cache@v3
-#        with:
-#          path: |
-#            ~/.cargo/bin/
-#            ~/.cargo/registry/index/
-#            ~/.cargo/registry/cache/
-#            ~/.cargo/git/db/
-#            target/
-#          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
-#      - uses: dtolnay/rust-toolchain@master
-#        with:
-#          toolchain: stable
-#      - name: Install alsa and udev
-#        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
-#        if: runner.os == 'linux'
-#      - name: Build & run tests
-#        run: cargo test
+  test:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Install alsa and udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        if: runner.os == 'linux'
+      - name: Build & run tests
+        run: cargo test
   lint:
     runs-on: ubuntu-latest
     steps:
