@@ -15,7 +15,4 @@
 // limitations under the License.
 //
 
-use std::rc::Rc;
-
-// todo: Evaluate Arc here instead
-pub type Handle<T> = Rc<T>;
+// Replaced with ndarray for now.

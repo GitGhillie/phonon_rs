@@ -15,7 +15,6 @@
 // limitations under the License.
 //
 
-use std::rc::Rc;
+use crate::{hrtf_database::HrtfDatabase, util::Handle};
 
-// todo: Evaluate Arc here instead
-pub type Handle<T> = Rc<T>;
+pub struct Hrtf(Handle<HrtfDatabase>);
