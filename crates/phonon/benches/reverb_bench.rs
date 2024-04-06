@@ -43,8 +43,8 @@ fn bench_reverb(input: f32) -> f32 {
     // todo start timer
     // todo x runs
 
-    let reverb_params = ReverbEffectParams(reverb);
-    reverb_effect.apply(reverb_params, in_buffer, out_buffer);
+    // let reverb_params = ReverbEffectParams(reverb);
+    // reverb_effect.apply(reverb_params, in_buffer, out_buffer);
 
     // todo get time
 

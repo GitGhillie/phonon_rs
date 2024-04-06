@@ -9,4 +9,7 @@ pub mod delay;
 pub mod iir;
 pub mod reverb_effect;
 pub mod reverb_estimator;
-mod context;
+pub mod context;
+pub mod simulation_data;
+pub mod direct_simulator;
+pub mod sampling;
