@@ -74,63 +74,78 @@ mod tests {
     use super::*;
     use plotters::prelude::*;
 
-    const OUT_FILE_NAME: &str = "figures/sampling-plot.svg";
+    const OUT_FILE_NAME: &str = "figures/sphere_volume_samples.gif";
 
+    #[ignore = "visual check only."]
     #[test]
     fn direct_simulator_samples() {
-        let drawing_area = SVGBackend::new(OUT_FILE_NAME, (1024, 760)).into_drawing_area();
-        drawing_area.fill(&WHITE)?;
+        let num_frames_gif = 30;
+        let max_occlusion_samples = 100;
+        let num_samples_source = 10; // must be less than `max_occlusion_samples`
 
-        let x_axis = (-3.0..3.0).step(0.1);
-        let z_axis = (-3.0..3.0).step(0.1);
+        let simulator = DirectSimulator::new(max_occlusion_samples);
+        // Pretend the source is taking `num_samples_source` samples.
+        // The source samples will be drawn in red, the remaining samples in blue.
+        let mut points_source = simulator.sphere_volume_samples;
+        let points_remaining = points_source.split_off(num_samples_source);
 
-        let mut chart = ChartBuilder::on(&drawing_area)
-            .caption("3D Plot Test".to_string(), ("sans", 20))
-            .build_cartesian_3d(x_axis.clone(), -3.0..3.0, z_axis.clone())?;
+        let drawing_area = BitMapBackend::gif(OUT_FILE_NAME, (1024, 760), 100)
+            .unwrap()
+            .into_drawing_area();
+        let x_axis = (-1.5..1.5).step(0.1);
+        let z_axis = (-1.5..1.5).step(0.1);
 
-        chart.with_projection(|mut pb| {
-            pb.yaw = 0.5;
-            pb.scale = 0.9;
-            pb.into_matrix()
-        });
+        for yaw in 0..num_frames_gif {
+            drawing_area.fill(&WHITE).unwrap();
 
-        chart
-            .configure_axes()
-            .light_grid_style(BLACK.mix(0.15))
-            .max_light_lines(3)
-            .draw()?;
-
-        chart
-            .draw_series(
-                SurfaceSeries::xoz(
-                    (-30..30).map(|f| f as f64 / 10.0),
-                    (-30..30).map(|f| f as f64 / 10.0),
-                    |x, z| (x * x + z * z).cos(),
+            let mut chart = ChartBuilder::on(&drawing_area)
+                .caption(
+                    "Volumetric Occlusion Sampling Sphere".to_string(),
+                    ("sans", 20),
                 )
-                .style(BLUE.mix(0.2).filled()),
-            )?
-            .label("Surface")
-            .legend(|(x, y)| {
-                Rectangle::new([(x + 5, y - 5), (x + 15, y + 5)], BLUE.mix(0.5).filled())
+                .build_cartesian_3d(x_axis.clone(), -1.5..1.5, z_axis.clone())
+                .unwrap();
+
+            chart.with_projection(|mut pb| {
+                pb.yaw = 1.00 - ((num_frames_gif as f64 / 100.0) - yaw as f64 / 50.0).abs();
+                pb.scale = 0.9;
+                pb.into_matrix()
             });
 
-        chart
-            .draw_series(LineSeries::new(
-                (-100..100)
-                    .map(|y| y as f64 / 40.0)
-                    .map(|y| ((y * 10.0).sin(), y, (y * 10.0).cos())),
-                &BLACK,
-            ))?
-            .label("Line")
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLACK));
+            chart
+                .configure_axes()
+                .light_grid_style(BLACK.mix(0.15))
+                .max_light_lines(3)
+                .draw()
+                .unwrap();
 
-        chart.configure_series_labels().border_style(BLACK).draw()?;
+            chart
+                .draw_series(points_source.iter().map(|point| {
+                    Circle::new(
+                        (point.x as f64, point.y as f64, point.z as f64),
+                        2,
+                        RED.filled(),
+                    )
+                }))
+                .unwrap();
 
-        // To avoid the IO failure being ignored silently, we manually call the present function
-        drawing_area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+            chart
+                .draw_series(points_remaining.iter().map(|point| {
+                    Circle::new(
+                        (point.x as f64, point.y as f64, point.z as f64),
+                        2,
+                        BLUE.filled(),
+                    )
+                }))
+                .unwrap();
+
+            drawing_area.present().unwrap();
+        }
+
+        // To avoid the IO failure being ignored silently, manually call the present function
+        drawing_area.present().expect(
+            "Unable to write result to file, please make sure 'figures' dir exists in crate dir",
+        );
         println!("Result has been saved to {}", OUT_FILE_NAME);
-
-        let simulator = DirectSimulator::new(0);
-        assert_eq!(simulator.sphere_volume_samples.len(), 0);
     }
 }

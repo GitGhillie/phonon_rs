@@ -18,6 +18,7 @@
 use glam::Vec3;
 use std::f32::consts::PI;
 
+// todo: Check if using rand_distr::UnitBall is an option
 // https://stackoverflow.com/questions/5408276/sampling-uniformly-distributed-random-points-inside-a-spherical-volume
 /// Generate a point inside a spherical volume
 pub(crate) fn generate_sphere_volume_sample(i: usize) -> Vec3 {
@@ -30,7 +31,7 @@ pub(crate) fn generate_sphere_volume_sample(i: usize) -> Vec3 {
     let r = u_r.cbrt();
 
     let x = r * theta.sin() * phi.cos();
-    let y = r * theta.sin() * phi.cos();
+    let y = r * theta.sin() * phi.sin();
     let z = r * theta.cos();
 
     Vec3::new(x, y, z)
