@@ -84,7 +84,7 @@ mod tests {
         let num_samples_source = 10; // must be less than `max_occlusion_samples`
 
         let simulator = DirectSimulator::new(max_occlusion_samples);
-        // Pretend the source is taking `num_samples_source` samples.
+        // Pretend the source is using `num_samples_source` samples.
         // The source samples will be drawn in red, the remaining samples in blue.
         let mut points_source = simulator.sphere_volume_samples;
         let points_remaining = points_source.split_off(num_samples_source);
