@@ -4,6 +4,7 @@
 
 pub mod audio_buffer;
 pub mod bands;
+pub mod context;
 pub mod coordinate_space;
 pub mod delay;
 pub mod iir;
