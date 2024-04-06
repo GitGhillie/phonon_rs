@@ -28,8 +28,8 @@ fn bench_reverb(input: f32) -> f32 {
     // let in_array = [0.0f32; FRAME_SIZE];
     // let out_array = [0.0f32; FRAME_SIZE];
 
-    let mut in_buffer: AudioBuffer<1, FRAME_SIZE> = AudioBuffer::new();
-    let mut out_buffer: AudioBuffer<1, FRAME_SIZE> = AudioBuffer::new();
+    let mut in_buffer: AudioBuffer<1> = AudioBuffer::new(FRAME_SIZE);
+    let mut out_buffer: AudioBuffer<1> = AudioBuffer::new(FRAME_SIZE);
     //todo fill in_array/in_buffer with random data
 
     let audio_settings = AudioSettings::new(SAMPLING_RATE, FRAME_SIZE);
