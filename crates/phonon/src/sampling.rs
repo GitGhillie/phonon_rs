@@ -15,8 +15,8 @@
 // limitations under the License.
 //
 
-use std::f32::consts::PI;
 use glam::Vec3;
+use std::f32::consts::PI;
 
 // https://stackoverflow.com/questions/5408276/sampling-uniformly-distributed-random-points-inside-a-spherical-volume
 /// Generate a point inside a spherical volume
