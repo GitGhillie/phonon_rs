@@ -15,6 +15,9 @@
 // limitations under the License.
 //
 
+use ndarray::Array1;
+use crate::audio_buffer::AudioSettings;
+
 use crate::bands::NUM_BANDS;
 use crate::iir::IIRFilterer;
 
@@ -24,7 +27,28 @@ struct EqEffectParameters {
 
 struct EqEffect {
     sampling_rate: i32,
-    frame_size: i32,
+    frame_size: usize,
     filters: [[IIRFilterer; NUM_BANDS]; 2],
+    //todo: document:
+    temp: Array1<f32>,
+    previous_gains: [f32; NUM_BANDS],
+    //todo: document:
+    current: i32,
+}
 
+impl EqEffect {
+    fn new(audio_settings: AudioSettings) -> Self {
+        Self {
+            sampling_rate: audio_settings.sampling_rate,
+            frame_size: audio_settings.frame_size,
+            filters: [],
+            temp: Default::default(), //todo
+            previous_gains: [1.0, 1.0, 1.0],
+            current: 0,
+        }
+    }
+
+    fn set_filter_gains(self, index: i32, gains: &[f32]) {
+        let filter = self.filters[0][index];
+    }
 }

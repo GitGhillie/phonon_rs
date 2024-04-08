@@ -8,6 +8,7 @@ derive_deref = "1"
 glam = "0.25"
 biquad = "0.4"
 rand = "0.8"
+ndarray = "0.15"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
