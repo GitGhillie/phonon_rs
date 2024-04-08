@@ -74,11 +74,22 @@ impl IIR {
 
         IIR(DirectForm1::<f32>::new(coefficients.unwrap()))
     }
+
+    pub fn new_empty() -> Self {
+        IIR(DirectForm1::<f32>::new(Coefficients {
+            a1: 0.0,
+            a2: 0.0,
+            b0: 0.0,
+            b1: 0.0,
+            b2: 0.0,
+        }))
+    }
 }
 
 /// State required for filtering a signal with an IIR filter over multiple frames. Ensures continuity between frames
 /// when the filter doesn't change between frames. If the filter _does_ change, the caller must implement
 /// crossfading or some other approach to ensure smoothness.
+#[derive(Copy, Clone)]
 pub struct IIRFilterer {
     /// The IIR filter to apply.
     filter: IIR,
@@ -102,6 +113,17 @@ impl IIRFilterer {
             ym1: 0.0,
             ym2: 0.0,
         }
+    }
+
+    pub fn set_filter(&mut self, filter: IIR) {
+        self.filter = filter;
+    }
+
+    pub fn copy_state_from(&mut self, source: IIRFilterer) {
+        self.xm1 = source.xm1;
+        self.xm2 = source.xm2;
+        self.ym1 = source.ym1;
+        self.ym2 = source.ym2;
     }
 
     /// Applies the filter to an entire buffer of input, using SIMD operations.
