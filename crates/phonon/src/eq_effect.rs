@@ -83,9 +83,9 @@ impl EqEffect {
             self.filters[1][self.current].copy_state_from(self.filters[1][previous]);
             self.filters[2][self.current].copy_state_from(self.filters[2][previous]);
 
-            //todo: unwrap excessive?
-            self.apply_filter_cascade(previous, &input[0], self.temp.as_slice_mut().unwrap());
-            //self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
+            //todo: unwrap and clone excessive?
+            self.apply_filter_cascade_to_temp(previous, &input[0]);
+            self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
         }
 
         return AudioEffectState::TailComplete;
@@ -114,5 +114,13 @@ impl EqEffect {
 
     fn apply_filter_cascade(&mut self, index: usize, input: &[f32], output: &mut [f32]) {
         self.filters[0][index].apply(self.frame_size, input, output);
+        self.filters[1][index].apply(self.frame_size, input, output);
+        self.filters[2][index].apply(self.frame_size, input, output);
+    }
+
+    fn apply_filter_cascade_to_temp(&mut self, index: usize, input: &[f32]) {
+        self.filters[0][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
+        self.filters[1][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
+        self.filters[2][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
     }
 }
