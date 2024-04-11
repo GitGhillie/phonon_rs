@@ -128,6 +128,6 @@ impl IIRFilterer {
 
     /// Applies the filter to an entire buffer of input, using SIMD operations.
     pub fn apply(&self, size: usize, input: &[f32], output: &mut [f32]) {
-        //self.filter
+        todo!()
     }
 }

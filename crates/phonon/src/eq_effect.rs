@@ -22,17 +22,21 @@ use crate::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
 use crate::iir::{IIRFilterer, IIR};
 
 struct EqEffectParameters {
-    gains: Vec<f32>,
+    gains: [f32; NUM_BANDS],
 }
 
 struct EqEffect {
     sampling_rate: i32,
     frame_size: usize,
+    /// Two rows of filterers, one for the current `EqEffectParameters` and one for the previous
+    /// `EqEffectParameters`. Which row is which depends on the `current` field.
     filters: [[IIRFilterer; NUM_BANDS]; 2],
-    //todo: document:
+    /// If the `EqEffectParameters` change this array is filled with samples processed by the
+    /// previous filters, in order to be able to transition smoothly.
     temp: Array1<f32>,
+    /// Gains from the previous filters in case the `EqEffectParameters` change.
     previous_gains: [f32; NUM_BANDS],
-    /// Current row of `filters` being worked on. Alternates between 0 and 1.
+    /// Current row of `filters` that is applicable.
     current: usize,
 }
 
@@ -69,11 +73,15 @@ impl EqEffect {
         input: &AudioBuffer<1>,
         output: &mut AudioBuffer<1>,
     ) -> AudioEffectState {
+        //todo: Function can panic if `output` is too short
+
+        // If any of the gains change, the filters also need to change.
+        // If the filters change, we need to use the previous filters to
+        // create a smooth transition.
         if self.previous_gains[0] != parameters.gains[0]
             || self.previous_gains[1] != parameters.gains[1]
             || self.previous_gains[2] != parameters.gains[2]
         {
-            //todo: previous what?
             let previous = self.current;
             self.current = 1 - self.current;
 
@@ -83,12 +91,43 @@ impl EqEffect {
             self.filters[1][self.current].copy_state_from(self.filters[1][previous]);
             self.filters[2][self.current].copy_state_from(self.filters[2][previous]);
 
-            //todo: unwrap and clone excessive?
             self.apply_filter_cascade_to_temp(previous, &input[0]);
+            self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
+
+            for i in 0..self.frame_size {
+                let weight = (i / self.frame_size) as f32;
+                output[0][i] = weight * output[0][i] + (1.0 - weight) * self.temp[i];
+            }
+
+            for i in 0..NUM_BANDS {
+                self.previous_gains[i] = parameters.gains[i];
+            }
+        } else {
             self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
         }
 
         return AudioEffectState::TailComplete;
+    }
+
+    fn tail_apply(
+        &mut self,
+        input: &AudioBuffer<1>,
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        self.apply(
+            EqEffectParameters {
+                gains: self.previous_gains,
+            },
+            input,
+            output,
+        )
+    }
+
+    fn tail(
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        output.make_silent();
+        AudioEffectState::TailComplete
     }
 
     fn set_filter_gains(&mut self, index: usize, gains: &[f32]) {
