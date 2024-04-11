@@ -11,6 +11,7 @@ rand = "0.8"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+plotters = "0.3"
 
 [[bench]]
 name = "audio_buffer_bench"
