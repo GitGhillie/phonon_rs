@@ -79,6 +79,7 @@ impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
 
     /// Writes interleaved slice to `AudioBuffer`.
     /// todo: Check perf?
+    /// todo: Can panic if the length of `other` is too small.
     pub fn write(&mut self, other: &[f32]) {
         let mut index = 0;
 
@@ -92,6 +93,7 @@ impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
 
     /// Converts `AudioBuffer` to interleaved slice.
     /// todo: Check perf?
+    /// todo: Can panic if the length of `other` is too small.
     pub fn read(&self, other: &mut [f32]) {
         let mut index = 0;
 
