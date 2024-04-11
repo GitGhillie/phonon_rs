@@ -4,42 +4,93 @@ use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
 use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
-use kira::track::effect::Effect;
-use kira::track::effect::filter::{FilterBuilder, FilterMode};
+use kira::track::effect::{Effect, EffectBuilder};
 use kira::track::TrackBuilder;
-use kira::tween::Parameter;
-use phonon::audio_buffer::AudioSettings;
-use phonon::eq_effect::EqEffect;
-//use ringbuf::HeapConsumer;
+use phonon::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::eq_effect::{EqEffect, EqEffectParameters};
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct EqEffectBuilder {
+    eq_gains: [f32; 3],
+}
+
+impl EffectBuilder for EqEffectBuilder {
+    type Handle = ();
+
+    fn build(self) -> (Box<dyn Effect>, Self::Handle) {
+        (Box::new(EqEffectWrapped::new(self)), ())
+    }
+}
 
 struct EqEffectWrapped {
+    eq_gains: [f32; 3],
     eq_effect: EqEffect,
-    //command_consumer: HeapConsumer<Command>,
-    ic1eq: Frame,
-    ic2eq: Frame,
+    audio_buffer: AudioBuffer<1>,
+    output_buffer: AudioBuffer<1>,
+    current_sample: usize,
+}
+
+impl EqEffectWrapped {
+    fn new(builder: EqEffectBuilder) -> Self {
+        let audio_settings = AudioSettings::new(44_100, 1024);
+        let eq_effect = EqEffect::new(audio_settings.clone());
+
+        Self {
+            eq_gains: builder.eq_gains,
+            eq_effect,
+            audio_buffer: AudioBuffer::new(audio_settings.frame_size),
+            output_buffer: AudioBuffer::new(audio_settings.frame_size),
+            current_sample: 0,
+        }
+    }
 }
 
 impl Effect for EqEffectWrapped {
-    fn on_start_processing(&mut self) {
-        todo!()
-    }
+    fn process(
+        &mut self,
+        input: Frame,
+        _dt: f64,
+        _clock_info_provider: &ClockInfoProvider,
+        _modulator_value_provider: &ModulatorValueProvider,
+    ) -> Frame {
+        let mut output_sample = 0.0;
 
-    fn process(&mut self, input: Frame, dt: f64, clock_info_provider: &ClockInfoProvider, modulator_value_provider: &ModulatorValueProvider) -> Frame {
-        todo!()
+        // todo: downmix to mono instead of taking one channel
+        self.audio_buffer[0][self.current_sample] = input.left;
+        output_sample = self.output_buffer[0][self.current_sample];
+
+        if self.current_sample < self.eq_effect.frame_size - 1 {
+            self.current_sample += 1;
+        } else {
+            self.eq_effect.apply(
+                EqEffectParameters {
+                    gains: self.eq_gains,
+                },
+                &self.audio_buffer,
+                &mut self.output_buffer,
+            );
+
+            self.current_sample = 0;
+        }
+
+        Frame {
+            left: output_sample,
+            right: output_sample,
+        }
     }
 }
 
 fn main() {
-    let audio_settings = AudioSettings::new(44_100, 1024);
-    let eq_effect = EqEffect::new(audio_settings);
     let eq_gains: [f32; 3] = [1.0, 1.0, 1.0];
 
     let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
+
     let track = manager
-        .add_sub_track(TrackBuilder::new().with_effect(FilterBuilder::new().cutoff(1000.0)))
+        .add_sub_track(TrackBuilder::new().with_effect(EqEffectBuilder { eq_gains }))
         .unwrap();
+
     let sound_data = StaticSoundData::from_file(
-        "data/audio/pink_noise.ogg",
+        "data/audio/return_solo.mp3",
         StaticSoundSettings::new().output_destination(&track),
     )
     .unwrap();

@@ -12,6 +12,7 @@ ndarray = "0.15"
 
 [dev-dependencies]
 kira = "0.8"
+ringbuf = "0.3"
 criterion = { version = "0.5", features = ["html_reports"] }
 plotters = "0.3"
 

@@ -21,13 +21,13 @@ use ndarray::{Array, Array1};
 use crate::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
 use crate::iir::{IIRFilterer, IIR};
 
-struct EqEffectParameters {
-    gains: [f32; NUM_BANDS],
+pub struct EqEffectParameters {
+    pub gains: [f32; NUM_BANDS],
 }
 
 pub struct EqEffect {
-    sampling_rate: i32,
-    frame_size: usize,
+    pub sampling_rate: i32,
+    pub frame_size: usize,
     /// Two rows of filterers, one for the current `EqEffectParameters` and one for the previous
     /// `EqEffectParameters`. Which row is which depends on the `current` field.
     filters: [[IIRFilterer; 2]; NUM_BANDS],
@@ -67,7 +67,7 @@ impl EqEffect {
         self.current = 0;
     }
 
-    fn apply(
+    pub fn apply(
         &mut self,
         parameters: EqEffectParameters,
         input: &AudioBuffer<1>,
