@@ -46,10 +46,8 @@ impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
     }
 
     pub fn make_silent(&mut self) {
-        for mut buffer in &mut self.0 {
-            for i in 0..buffer.len() {
-                buffer[i] = 0.0;
-            }
+        for channel in &mut self.0 {
+            channel.fill(0.0);
         }
     }
 
