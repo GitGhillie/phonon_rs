@@ -25,27 +25,27 @@ struct EqEffectParameters {
     gains: [f32; NUM_BANDS],
 }
 
-struct EqEffect {
+pub struct EqEffect {
     sampling_rate: i32,
     frame_size: usize,
     /// Two rows of filterers, one for the current `EqEffectParameters` and one for the previous
     /// `EqEffectParameters`. Which row is which depends on the `current` field.
-    filters: [[IIRFilterer; NUM_BANDS]; 2],
+    filters: [[IIRFilterer; 2]; NUM_BANDS],
     /// If the `EqEffectParameters` change this array is filled with samples processed by the
     /// previous filters, in order to be able to transition smoothly.
     temp: Array1<f32>,
-    /// Gains from the previous filters in case the `EqEffectParameters` change.
+    /// Gains from the previous filters, in case the `EqEffectParameters` change.
     previous_gains: [f32; NUM_BANDS],
     /// Current row of `filters` that is applicable.
     current: usize,
 }
 
 impl EqEffect {
-    fn new(audio_settings: AudioSettings) -> Self {
+    pub fn new(audio_settings: AudioSettings) -> Self {
         let mut eq_effect = Self {
             sampling_rate: audio_settings.sampling_rate,
             frame_size: audio_settings.frame_size,
-            filters: [[IIRFilterer::new(IIR::new_empty()); NUM_BANDS]; 2],
+            filters: [[IIRFilterer::new(IIR::new_empty()); 2]; NUM_BANDS],
             temp: Array::zeros(audio_settings.frame_size), // Doesn't need to be zeros
             previous_gains: [1.0, 1.0, 1.0],
             current: 0,
