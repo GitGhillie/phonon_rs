@@ -37,7 +37,7 @@ pub struct HrtfDatabase {
     /// Reference loundess of front HRIR.
     reference_loudness: f32,
     /// Map containing loaded hrtf data.
-    data: Box<HrtfMap>,
+    data: HrtfMap,
     /// FFT for interpolation and min-phase conversion.
     ///
     /// `samples -> spectrum_samples`.

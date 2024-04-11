@@ -10,6 +10,7 @@ pub mod hrtf;
 pub mod hrtf_database;
 pub mod hrtf_map;
 pub mod iir;
+pub mod polar_vector;
 pub mod reverb_effect;
 pub mod reverb_estimator;
 pub mod util;
