@@ -15,7 +15,6 @@
 // limitations under the License.
 //
 
-use crate::delay::Delay;
 use biquad::*;
 
 /// Represents a biquad IIR filter, that can be used to carry out various filtering operations on RealSignals. Such a
@@ -84,6 +83,16 @@ impl IIR {
             b2: 0.0,
         }))
     }
+
+    pub fn new_from_coefficients(coefficients: [f32; 5]) -> Self {
+        IIR(DirectForm1::<f32>::new(Coefficients {
+            a1: coefficients[0],
+            a2: coefficients[1],
+            b0: coefficients[2],
+            b1: coefficients[3],
+            b2: coefficients[4],
+        }))
+    }
 }
 
 /// State required for filtering a signal with an IIR filter over multiple frames. Ensures continuity between frames
@@ -104,7 +113,6 @@ pub struct IIRFilterer {
 }
 
 impl IIRFilterer {
-    // todo: With Phonon you can change the filterer at runtime. Let's see if we can get away with not doing that
     pub fn new(filter: IIR) -> Self {
         Self {
             filter,
@@ -127,7 +135,11 @@ impl IIRFilterer {
     }
 
     /// Applies the filter to an entire buffer of input, using SIMD operations.
-    pub fn apply(&self, size: usize, input: &[f32], output: &mut [f32]) {
-        todo!()
+    pub fn apply(&mut self, size: usize, input: &[f32], output: &mut [f32]) {
+        //todo: Temporary implementation, no SIMD optimizations yet
+        //todo: Can panic
+        for i in 0..input.len() {
+            output[i] = self.filter.0.run(input[i]);
+        }
     }
 }

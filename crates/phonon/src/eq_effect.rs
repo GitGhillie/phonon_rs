@@ -16,7 +16,7 @@
 //
 
 use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
-use ndarray::{array, Array, Array1, Shape};
+use ndarray::{Array, Array1};
 
 use crate::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
 use crate::iir::{IIRFilterer, IIR};
@@ -91,7 +91,7 @@ impl EqEffect {
             self.filters[1][self.current].copy_state_from(self.filters[1][previous]);
             self.filters[2][self.current].copy_state_from(self.filters[2][previous]);
 
-            self.apply_filter_cascade_to_temp(previous, &input[0]);
+            self.apply_filter_to_temp_cascade(previous, &input[0]);
             self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
 
             for i in 0..self.frame_size {
@@ -123,9 +123,7 @@ impl EqEffect {
         )
     }
 
-    fn tail(
-        output: &mut AudioBuffer<1>,
-    ) -> AudioEffectState {
+    fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete
     }
@@ -157,7 +155,7 @@ impl EqEffect {
         self.filters[2][index].apply(self.frame_size, input, output);
     }
 
-    fn apply_filter_cascade_to_temp(&mut self, index: usize, input: &[f32]) {
+    fn apply_filter_to_temp_cascade(&mut self, index: usize, input: &[f32]) {
         self.filters[0][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
         self.filters[1][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
         self.filters[2][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());

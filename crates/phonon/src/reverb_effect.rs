@@ -21,7 +21,6 @@ use crate::delay::Delay;
 use crate::reverb_estimator::Reverb;
 
 use crate::iir::{IIRFilterer, IIR};
-use biquad::*;
 use derive_deref::{Deref, DerefMut};
 use rand::Rng;
 
