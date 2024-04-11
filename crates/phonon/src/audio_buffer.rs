@@ -42,9 +42,7 @@ pub struct AudioBuffer<const N_CHANNELS: usize>(pub [Vec<f32>; N_CHANNELS]);
 
 impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
     pub fn new(num_samples: usize) -> Self {
-        AudioBuffer(core::array::from_fn(|_| {
-            std::iter::repeat(0.0).take(num_samples).collect::<Vec<_>>()
-        }))
+        AudioBuffer(core::array::from_fn(|_| vec![0.0; num_samples]))
     }
 
     pub fn make_silent(&mut self) {
