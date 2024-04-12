@@ -55,15 +55,9 @@ impl Effect for EqEffectWrapped {
         _clock_info_provider: &ClockInfoProvider,
         _modulator_value_provider: &ModulatorValueProvider,
     ) -> Frame {
-        let mut output_sample = 0.0;
-
-        if input.left > 0.0 {
-            output_sample = 0.1;
-        }
-
-        // todo: downmix to mono instead of taking one channel
+        // todo: Downmix to mono instead of taking one channel
         self.audio_buffer[0][self.current_sample] = input.left;
-        output_sample = self.output_buffer[0][self.current_sample];
+        let output_sample = self.output_buffer[0][self.current_sample];
 
         if self.current_sample < self.eq_effect.frame_size - 1 {
             self.current_sample += 1;
@@ -88,7 +82,10 @@ impl Effect for EqEffectWrapped {
 }
 
 fn main() {
-    let eq_gains: [f32; 3] = [1.0, 1.0, 1.0];
+    // Warning: This works
+    let eq_gains: [f32; 3] = [0.9999, 1.0, 1.0];
+    // This does not work
+    //let eq_gains: [f32; 3] = [1.0, 1.0, 1.0];
 
     let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
 
