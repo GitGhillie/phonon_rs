@@ -150,14 +150,26 @@ impl EqEffect {
     }
 
     fn apply_filter_cascade(&mut self, index: usize, input: &[f32], output: &mut [f32]) {
-        self.filters[0][index].apply(self.frame_size, input, output);
-        self.filters[1][index].apply(self.frame_size, input, output);
-        self.filters[2][index].apply(self.frame_size, input, output);
+        // todo: The original code does not have these allocations
+        let mut temp_output1 = vec![0.0; self.frame_size];
+        let mut temp_output2 = vec![0.0; self.frame_size];
+
+        self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
+        self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
+        self.filters[2][index].apply(self.frame_size, &temp_output2, output);
     }
 
     fn apply_filter_to_temp_cascade(&mut self, index: usize, input: &[f32]) {
-        self.filters[0][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
-        self.filters[1][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
-        self.filters[2][index].apply(self.frame_size, input, self.temp.as_slice_mut().unwrap());
+        // todo: The original code does not have these allocations
+        let mut temp_output1 = vec![0.0; self.frame_size];
+        let mut temp_output2 = vec![0.0; self.frame_size];
+
+        self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
+        self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
+        self.filters[2][index].apply(
+            self.frame_size,
+            &temp_output2,
+            self.temp.as_slice_mut().unwrap(),
+        );
     }
 }

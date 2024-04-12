@@ -28,6 +28,7 @@ struct EqEffectWrapped {
     audio_buffer: AudioBuffer<1>,
     output_buffer: AudioBuffer<1>,
     current_sample: usize,
+    frame_count: usize,
 }
 
 impl EqEffectWrapped {
@@ -41,6 +42,7 @@ impl EqEffectWrapped {
             audio_buffer: AudioBuffer::new(audio_settings.frame_size),
             output_buffer: AudioBuffer::new(audio_settings.frame_size),
             current_sample: 0,
+            frame_count: 0,
         }
     }
 }
@@ -54,6 +56,10 @@ impl Effect for EqEffectWrapped {
         _modulator_value_provider: &ModulatorValueProvider,
     ) -> Frame {
         let mut output_sample = 0.0;
+
+        if input.left > 0.0 {
+            output_sample = 0.1;
+        }
 
         // todo: downmix to mono instead of taking one channel
         self.audio_buffer[0][self.current_sample] = input.left;
@@ -71,6 +77,7 @@ impl Effect for EqEffectWrapped {
             );
 
             self.current_sample = 0;
+            self.frame_count += 1;
         }
 
         Frame {
