@@ -2,6 +2,7 @@
 members = [
     "crates/fmod_plugin",
     "crates/phonon",
+    "crates/phonon-kira",
 ]
 
 resolver = "2"

@@ -1,17 +1,13 @@
 use kira::clock::clock_info::ClockInfoProvider;
 use kira::dsp::Frame;
-use kira::manager::backend::cpal::CpalBackend;
-use kira::manager::{AudioManager, AudioManagerSettings};
 use kira::modulator::value_provider::ModulatorValueProvider;
-use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
 use kira::track::effect::{Effect, EffectBuilder};
-use kira::track::TrackBuilder;
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::eq_effect::{EqEffect, EqEffectParameters};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-struct EqEffectBuilder {
-    eq_gains: [f32; 3],
+pub struct EqEffectBuilder {
+    pub eq_gains: [f32; 3],
 }
 
 impl EffectBuilder for EqEffectBuilder {
@@ -79,24 +75,4 @@ impl Effect for EqEffectWrapped {
             right: output_sample,
         }
     }
-}
-
-fn main() {
-    let eq_gains: [f32; 3] = [1.0, 0.5, 1.0];
-
-    let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
-
-    let track = manager
-        .add_sub_track(TrackBuilder::new().with_effect(EqEffectBuilder { eq_gains }))
-        .unwrap();
-
-    let sound_data = StaticSoundData::from_file(
-        "data/audio/pink_noise.ogg",
-        StaticSoundSettings::new().output_destination(&track),
-    )
-    .unwrap();
-
-    manager.play(sound_data).unwrap();
-
-    loop {}
 }
