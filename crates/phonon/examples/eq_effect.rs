@@ -82,10 +82,7 @@ impl Effect for EqEffectWrapped {
 }
 
 fn main() {
-    // Warning: This works
-    let eq_gains: [f32; 3] = [0.9999, 1.0, 1.0];
-    // This does not work
-    //let eq_gains: [f32; 3] = [1.0, 1.0, 1.0];
+    let eq_gains: [f32; 3] = [1.0, 0.5, 1.0];
 
     let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
 
@@ -94,7 +91,7 @@ fn main() {
         .unwrap();
 
     let sound_data = StaticSoundData::from_file(
-        "data/audio/return_solo.mp3",
+        "data/audio/pink_noise.ogg",
         StaticSoundSettings::new().output_destination(&track),
     )
     .unwrap();

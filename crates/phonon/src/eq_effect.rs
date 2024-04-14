@@ -51,7 +51,9 @@ impl EqEffect {
             current: 0,
         };
 
-        eq_effect.set_filter_gains(0, [0.0, 0.0, 0.0].as_slice());
+        // Port note: Instead of initializing with gains of 0.0 we use gains of 1.0
+        // this is to avoid creating filters with NaN coefficients.
+        eq_effect.set_filter_gains(0, [1.0, 1.0, 1.0].as_slice());
 
         eq_effect
     }
