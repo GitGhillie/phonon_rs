@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 phonon = { path = "../phonon" }
 kira = "0.8"
+
+[dev-dependencies]
+eframe = "0.27"

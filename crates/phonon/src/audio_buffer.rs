@@ -22,7 +22,7 @@ pub enum AudioEffectState {
     TailComplete,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct AudioSettings {
     pub sampling_rate: i32,
     pub frame_size: usize,
