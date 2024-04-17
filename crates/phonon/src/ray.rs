@@ -15,14 +15,21 @@
 // limitations under the License.
 //
 
-use crate::bands::NUM_BANDS;
+use glam::Vec3;
+use parry3d;
 
-/// An acoustic material. The acoustic surface properties of an object are represented using multi-band absorption
-/// and transmission loss coefficients, and a single random-incidence scattering coefficient.
-/// All values are in the 0.0 to 1.0 range.
-#[derive(Copy, Clone)]
-pub struct Material {
-    pub absorption: [f32; NUM_BANDS],
-    pub scattering: f32,
-    pub transmission: [f32; NUM_BANDS],
+pub(crate) struct Ray(pub(crate) parry3d::query::Ray);
+
+impl Ray {
+    pub fn new(origin: Vec3, direction: Vec3) -> Self {
+        Self(parry3d::query::Ray::new(origin.into(), direction.into()))
+    }
+
+    fn origin(&self) -> Vec3 {
+        self.0.origin.into()
+    }
+
+    fn direction(&self) -> Vec3 {
+        self.0.dir.into()
+    }
 }

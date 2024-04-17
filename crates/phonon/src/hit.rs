@@ -15,14 +15,14 @@
 // limitations under the License.
 //
 
-use crate::bands::NUM_BANDS;
+use crate::material::Material;
+use glam::Vec3;
 
-/// An acoustic material. The acoustic surface properties of an object are represented using multi-band absorption
-/// and transmission loss coefficients, and a single random-incidence scattering coefficient.
-/// All values are in the 0.0 to 1.0 range.
-#[derive(Copy, Clone)]
-pub struct Material {
-    pub absorption: [f32; NUM_BANDS],
-    pub scattering: f32,
-    pub transmission: [f32; NUM_BANDS],
+pub(crate) struct Hit {
+    pub(crate) distance: f32,
+    pub(crate) triangle_index: usize,
+    pub(crate) object_index: usize,
+    pub(crate) material_index: usize,
+    pub(crate) normal: Vec3,
+    pub(crate) material: Material,
 }
