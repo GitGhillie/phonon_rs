@@ -79,6 +79,14 @@ impl StaticMesh {
             None
         };
     }
+
+    //todo implement min_distance
+    fn any_hit(&self, ray: Ray, min_distance: f32, max_distance: f32) -> bool {
+        self.mesh
+            .mesh
+            .cast_local_ray(&ray.0, max_distance, false)
+            .is_some()
+    }
 }
 
 #[cfg(test)]
@@ -115,6 +123,8 @@ mod tests {
         let ray1: Ray = Ray::new(Vec3::new(0.6, 0.6, -1.0), Vec3::new(0.0, 0.0, 1.0));
         let ray2: Ray = Ray::new(Vec3::new(1.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
 
+        let ray_miss: Ray = Ray::new(Vec3::new(1.0, 0.0, -1.0), Vec3::new(0.0, 1.0, 0.0));
+
         let hit0 = static_mesh.closest_hit(ray0, 0.0, 10.0);
         let hit1 = static_mesh.closest_hit(ray1, 0.0, 10.0);
         let hit2 = static_mesh.closest_hit(ray2, 0.0, 10.0);
@@ -122,5 +132,7 @@ mod tests {
         assert_eq!(hit0.unwrap().triangle_index, 0);
         assert_eq!(hit1.unwrap().triangle_index, 1);
         assert_eq!(hit2.unwrap().triangle_index, 2);
+
+        assert!(!static_mesh.any_hit(ray_miss, 0.0, 10.0));
     }
 }
