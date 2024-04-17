@@ -25,11 +25,15 @@ impl Ray {
         Self(parry3d::query::Ray::new(origin.into(), direction.into()))
     }
 
-    fn origin(&self) -> Vec3 {
+    pub(crate) fn origin(&self) -> Vec3 {
         self.0.origin.into()
     }
 
-    fn direction(&self) -> Vec3 {
+    pub(crate) fn direction(&self) -> Vec3 {
         self.0.dir.into()
+    }
+
+    pub(crate) fn point_at_distance(&self, distance: f32) -> Vec3 {
+        self.origin() + (distance * self.direction())
     }
 }

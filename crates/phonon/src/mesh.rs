@@ -16,8 +16,7 @@
 //
 
 use crate::triangle::Triangle;
-use glam::{Vec3, Vec4};
-use nalgebra::Point3;
+use glam::Vec3;
 use ndarray::Array1;
 use parry3d::math::Point;
 use parry3d::shape::TriMesh;
