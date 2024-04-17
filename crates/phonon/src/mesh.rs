@@ -17,23 +17,36 @@
 
 use crate::triangle::Triangle;
 use glam::{Vec3, Vec4};
+use nalgebra::Point3;
 use ndarray::Array1;
+use parry3d::math::Point;
+use parry3d::shape::TriMesh;
 
 /// A triangle mesh. Vertices are stored in a contiguous array, and the triangles are stored in indexed form. Each
 /// triangle requires three indices to store (i.e., strip or fan representations are not supported).
 pub struct Mesh {
-    vertices: Array1<Vec4>,
-    triangles: Array1<Triangle>,
+    mesh: TriMesh,
     normals: Array1<Vec3>,
 }
 
 impl Mesh {
-    pub fn new(vertices: &[Vec3], triangles: &[Triangle]) -> Self {
+    pub fn new(vertices: Vec<Vec3>, triangles: Vec<Triangle>) -> Self {
         let num_triangles = triangles.len();
 
+        let parry_vertices: Vec<Point<f32>> =
+            Vec::from_iter(vertices.iter().map(|vertex| (*vertex).into()));
+        let parry_indices = Vec::from_iter(triangles.iter().map(|triangle| {
+            [
+                triangle.indices[0] as u32,
+                triangle.indices[1] as u32,
+                triangle.indices[2] as u32,
+            ]
+        }));
+
+        let parry_mesh = TriMesh::new(parry_vertices, parry_indices);
+
         let mut mesh = Self {
-            vertices: Array1::from_shape_fn(vertices.len(), |i| vertices[i].extend(1.0)),
-            triangles: Array1::from_shape_fn(triangles.len(), |i| triangles[i]),
+            mesh: parry_mesh,
             normals: Array1::default(num_triangles),
         };
 
@@ -43,12 +56,12 @@ impl Mesh {
     }
 
     fn calculate_normals(&mut self) {
-        let num_triangles = self.triangles.len();
+        let triangles = self.mesh.triangles();
 
-        for i in 0..num_triangles {
-            let v0: Vec3 = self.vertices[self.triangles[i].indices[0]].truncate();
-            let v1: Vec3 = self.vertices[self.triangles[i].indices[1]].truncate();
-            let v2: Vec3 = self.vertices[self.triangles[i].indices[2]].truncate();
+        for (i, triangle) in triangles.enumerate() {
+            let v0: Vec3 = triangle.vertices()[0].into();
+            let v1: Vec3 = triangle.vertices()[1].into();
+            let v2: Vec3 = triangle.vertices()[2].into();
 
             self.normals[i] = (v1 - v0).cross(v2 - v0).normalize_or_zero();
         }

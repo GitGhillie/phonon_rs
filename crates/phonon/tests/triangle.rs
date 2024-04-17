@@ -21,7 +21,7 @@ use phonon::triangle::Triangle;
 
 #[test]
 fn triangle_normals() {
-    let vertices = [
+    let vertices = vec![
         Vec3::new(0.0, 0.0, 0.0),
         Vec3::new(1.0, 0.0, 0.0),
         Vec3::new(0.0, 1.0, 0.0),
@@ -29,7 +29,7 @@ fn triangle_normals() {
 
     let triangle = Triangle { indices: [0, 1, 2] };
 
-    let mesh = Mesh::new(vertices.as_slice(), &[triangle]);
+    let mesh = Mesh::new(vertices, (&[triangle]).to_vec());
 
     let normal = mesh.get_normal(0);
 
