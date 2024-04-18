@@ -16,6 +16,7 @@
 //
 
 use crate::instanced_mesh::InstancedMesh;
+use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
 use std::rc::Rc;
 
@@ -30,4 +31,108 @@ pub struct Scene {
     has_changed: bool,
     /// The change version of the scene.
     change_version: u32,
+}
+
+impl Scene {
+    pub fn new() -> Self {
+        Self {
+            static_meshes: [Vec::default(), Vec::default()],
+            instanced_meshes: [Vec::default(), Vec::default()],
+            has_changed: false,
+            change_version: 0,
+        }
+    }
+
+    pub fn add_static_mesh(&mut self, static_mesh: Rc<StaticMesh>) {
+        self.static_meshes[1].push(static_mesh);
+        self.has_changed = true;
+    }
+
+    // todo copy docs on commit and other functions
+    pub fn commit(&mut self) {
+        // If no static/instanced meshes have been added or removed since the last commit(), check to see if any
+        // instanced meshes have had their transforms updated.
+        if !self.has_changed {
+            for instanced_mesh in &self.instanced_meshes[0] {
+                if instanced_mesh.has_changed() {
+                    self.has_changed = true;
+                    break;
+                }
+            }
+        }
+
+        // If something changed in the scene, increment the version.
+        if self.has_changed {
+            self.change_version += 1;
+        }
+
+        self.static_meshes[0] = self.static_meshes[1].clone();
+        self.instanced_meshes[0] = self.instanced_meshes[1].clone();
+
+        for instanced_mesh in &self.instanced_meshes[0] {
+            //instanced_mesh.commit(); todo
+        }
+
+        // The scene will be considered unchanged until something is changed subsequently.
+        self.has_changed = false;
+    }
+
+    pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
+        for static_mesh in &self.static_meshes[0] {
+            if static_mesh.any_hit(ray, min_distance, max_distance) {
+                return true;
+            }
+        }
+
+        for instanced_mesh in &self.instanced_meshes[0] {
+            if instanced_mesh.any_hit(ray, min_distance, max_distance) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::material::Material;
+    use crate::triangle::Triangle;
+    use glam::Vec3;
+
+    #[test]
+    fn test_scene() {
+        let vertices = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+        ];
+
+        let triangle0 = Triangle { indices: [0, 1, 2] };
+
+        let triangles = vec![triangle0];
+
+        let material = Material {
+            absorption: [0.1, 0.1, 0.1],
+            scattering: 0.05,
+            transmission: [0.0, 0.0, 0.0],
+        };
+
+        let materials = vec![material];
+        let material_indices = vec![0];
+
+        let static_mesh = StaticMesh::new(vertices, triangles, material_indices, materials);
+
+        let mut scene = Scene::new();
+
+        scene.add_static_mesh(static_mesh.into());
+        scene.commit();
+
+        let ray_hit: Ray = Ray::new(Vec3::new(0.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
+        let ray_miss: Ray = Ray::new(Vec3::new(1.0, 1.0, -1.0), Vec3::new(0.0, 0.0, 1.0));
+
+        assert!(scene.any_hit(&ray_hit, 0.0, 1.0));
+        assert!(!scene.any_hit(&ray_miss, 0.0, 1.0));
+    }
 }

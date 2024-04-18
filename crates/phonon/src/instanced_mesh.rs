@@ -30,7 +30,7 @@ pub struct InstancedMesh {
 }
 
 impl InstancedMesh {
-    fn new(sub_scene: Rc<Scene>, transform: Mat4) -> Self {
+    pub fn new(sub_scene: Rc<Scene>, transform: Mat4) -> Self {
         // todo: Original code transposes the transform. Check if necessary.
         Self {
             sub_scene,
@@ -40,8 +40,12 @@ impl InstancedMesh {
         }
     }
 
+    pub(crate) fn has_changed(&self) -> bool {
+        self.has_changed
+    }
+
     // todo implement min_distance
-    fn any_hit(&self, ray: Ray, min_distance: f32, max_distance: f32) -> bool {
+    pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
         let mut min_distance = min_distance;
         let mut max_distance = max_distance;
 
@@ -51,9 +55,11 @@ impl InstancedMesh {
         false //todo remove
     }
 
+    /// Returns a `Ray` transformed back to the original mesh transformation.
+    /// `min_distance` and `max_distance` get changed accordingly.
     fn inverse_transform_ray(
         &self,
-        ray: Ray,
+        ray: &Ray,
         min_distance: &mut f32,
         max_distance: &mut f32,
     ) -> Ray {
@@ -70,7 +76,7 @@ impl InstancedMesh {
         let p = self.inverse_transform * ray.point_at_distance(1.0).extend(1.0);
         let direction = (p.truncate() - origin.truncate()).normalize_or_zero();
 
-        // Return the transformed ray
+        // Return a transformed Ray
         Ray::new(origin.truncate(), direction)
     }
 }
