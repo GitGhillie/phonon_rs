@@ -18,11 +18,12 @@
 use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Mat4;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 // Port note: mNumVertices and mNumTriangles have been left out, there doesn't seem to be a use.
 pub struct InstancedMesh {
-    sub_scene: Rc<Scene>,
+    sub_scene: Rc<RefCell<Scene>>,
     transform: Mat4,
     inverse_transform: Mat4,
     /// Flag indicating whether this instanced mesh has changed since the last call to commit().
@@ -30,7 +31,7 @@ pub struct InstancedMesh {
 }
 
 impl InstancedMesh {
-    pub fn new(sub_scene: Rc<Scene>, transform: Mat4) -> Self {
+    pub fn new(sub_scene: Rc<RefCell<Scene>>, transform: Mat4) -> Self {
         // todo: Original code transposes the transform. Check if necessary.
         Self {
             sub_scene,
@@ -38,6 +39,14 @@ impl InstancedMesh {
             inverse_transform: transform.inverse(),
             has_changed: false,
         }
+    }
+
+    pub(crate) fn commit(&mut self) {
+        self.sub_scene.borrow_mut().commit();
+
+        // After calling commit(), this instanced mesh will be considered unchanged until a subsequent call to
+        // updateTransform() changes the transform matrix.
+        self.has_changed = false;
     }
 
     pub(crate) fn has_changed(&self) -> bool {

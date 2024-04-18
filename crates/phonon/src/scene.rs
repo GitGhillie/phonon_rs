@@ -18,6 +18,7 @@
 use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 /// A 3D scene, comprised of multiple kinds of SceneObjects. Objects can be added and removed from the scene at any
@@ -25,8 +26,9 @@ use std::rc::Rc;
 /// the scene.
 pub struct Scene {
     //todo: Explain why there are two vectors of each
-    pub(crate) static_meshes: [Vec<Rc<StaticMesh>>; 2],
-    pub(crate) instanced_meshes: [Vec<Rc<InstancedMesh>>; 2],
+    //todo: Take a better look if Rc<RefCell<>> is the smart thing to do here.
+    pub(crate) static_meshes: [Vec<Rc<RefCell<StaticMesh>>>; 2],
+    pub(crate) instanced_meshes: [Vec<Rc<RefCell<InstancedMesh>>>; 2],
     /// Flag indicating whether the scene has changed in some way since the previous call to commit().
     has_changed: bool,
     /// The change version of the scene.
@@ -43,9 +45,13 @@ impl Scene {
         }
     }
 
-    pub fn add_static_mesh(&mut self, static_mesh: Rc<StaticMesh>) {
+    pub fn add_static_mesh(&mut self, static_mesh: Rc<RefCell<StaticMesh>>) {
         self.static_meshes[1].push(static_mesh);
         self.has_changed = true;
+    }
+
+    pub fn remove_static_mesh(&mut self, static_mesh: Rc<RefCell<StaticMesh>>) {
+        self.static_meshes[1].retain()
     }
 
     // todo copy docs on commit and other functions
@@ -54,7 +60,7 @@ impl Scene {
         // instanced meshes have had their transforms updated.
         if !self.has_changed {
             for instanced_mesh in &self.instanced_meshes[0] {
-                if instanced_mesh.has_changed() {
+                if instanced_mesh.borrow().has_changed() {
                     self.has_changed = true;
                     break;
                 }
@@ -70,7 +76,7 @@ impl Scene {
         self.instanced_meshes[0] = self.instanced_meshes[1].clone();
 
         for instanced_mesh in &self.instanced_meshes[0] {
-            //instanced_mesh.commit(); todo
+            instanced_mesh.borrow_mut().commit();
         }
 
         // The scene will be considered unchanged until something is changed subsequently.
@@ -79,13 +85,19 @@ impl Scene {
 
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
         for static_mesh in &self.static_meshes[0] {
-            if static_mesh.any_hit(ray, min_distance, max_distance) {
+            if static_mesh
+                .borrow()
+                .any_hit(ray, min_distance, max_distance)
+            {
                 return true;
             }
         }
 
         for instanced_mesh in &self.instanced_meshes[0] {
-            if instanced_mesh.any_hit(ray, min_distance, max_distance) {
+            if instanced_mesh
+                .borrow()
+                .any_hit(ray, min_distance, max_distance)
+            {
                 return true;
             }
         }
