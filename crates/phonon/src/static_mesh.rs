@@ -61,7 +61,6 @@ impl StaticMesh {
             .mesh
             .cast_local_ray_and_get_normal(&ray.0, max_distance, false);
 
-        println!("Tried raycast");
         return if let Some(hit) = info {
             let mut triangle_index = hit.feature.unwrap_face() as usize;
 

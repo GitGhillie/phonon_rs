@@ -19,6 +19,7 @@ use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
 use std::cell::RefCell;
+use std::ops::Deref;
 use std::rc::Rc;
 
 /// A 3D scene, comprised of multiple kinds of SceneObjects. Objects can be added and removed from the scene at any
@@ -51,7 +52,7 @@ impl Scene {
     }
 
     pub fn remove_static_mesh(&mut self, static_mesh: Rc<RefCell<StaticMesh>>) {
-        self.static_meshes[1].retain()
+        self.static_meshes[1].retain(|x| x.as_ptr() != static_mesh.as_ptr());
     }
 
     // todo copy docs on commit and other functions
@@ -134,11 +135,16 @@ mod tests {
         let materials = vec![material];
         let material_indices = vec![0];
 
-        let static_mesh = StaticMesh::new(vertices, triangles, material_indices, materials);
+        let static_mesh = Rc::new(StaticMesh::new(
+            vertices,
+            triangles,
+            material_indices,
+            materials,
+        ));
 
         let mut scene = Scene::new();
 
-        scene.add_static_mesh(static_mesh.into());
+        scene.add_static_mesh(static_mesh.clone());
         scene.commit();
 
         let ray_hit: Ray = Ray::new(Vec3::new(0.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
@@ -146,5 +152,10 @@ mod tests {
 
         assert!(scene.any_hit(&ray_hit, 0.0, 1.0));
         assert!(!scene.any_hit(&ray_miss, 0.0, 1.0));
+
+        scene.remove_static_mesh(static_mesh);
+        scene.commit();
+
+        assert!(!scene.any_hit(&ray_hit, 0.0, 1.0));
     }
 }
