@@ -23,9 +23,13 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 
-/// A 3D scene, comprised of multiple kinds of SceneObjects. Objects can be added and removed from the scene at any
-/// time. Objects can also be defined as instances of one another. This class also allows rays to be traced through
-/// the scene.
+/// A 3D scene, which can contain geometry objects that can interact with acoustic rays.
+/// The scene object itself does not contain any geometry, but is a container for
+/// `StaticMesh` and `InstancedMesh` objects, which do contain geometry.
+///
+/// Objects can be added and removed from the scene at any time.
+/// Objects can also be defined as instances of one another.
+/// This class also allows rays to be traced through the scene.
 pub struct Scene {
     //todo: Explain why there are two vectors of each
     //todo: Take a better look if Rc<RefCell<>> is the smart thing to do here.
@@ -38,6 +42,7 @@ pub struct Scene {
 }
 
 impl Scene {
+    /// Create a new empty scene.
     pub fn new() -> Self {
         Self {
             static_meshes: [Vec::default(), Vec::default()],

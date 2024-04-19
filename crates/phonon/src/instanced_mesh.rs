@@ -23,6 +23,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 // Port note: mNumVertices and mNumTriangles have been left out, there doesn't seem to be a use.
+/// A triangle mesh that can be moved (translated), rotated, or scaled, but cannot deform.
+///
+/// Portions of a scene that undergo rigid-body motion can be represented as instanced meshes.
+/// An instanced mesh is essentially a scene (called the “sub-scene”) with a transform applied to it.
+/// Adding an instanced mesh to a scene places the sub-scene into the scene with the transform applied.
+/// For example, the sub-scene may be a prefab door, and the transform can be used to place it
+/// in a doorway and animate it as it opens or closes.
 pub struct InstancedMesh {
     sub_scene: Rc<RefCell<Scene>>,
     transform: Mat4,

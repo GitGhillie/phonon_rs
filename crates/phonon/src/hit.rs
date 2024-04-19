@@ -36,7 +36,6 @@ impl Hit {
             object_index: 0,
             material_index: 0,
             normal: Default::default(),
-            //todo better Material default
             material: Material {
                 absorption: [0.0, 0.0, 0.0],
                 scattering: 0.0,
