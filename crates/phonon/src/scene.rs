@@ -15,6 +15,7 @@
 // limitations under the License.
 //
 
+use crate::hit::Hit;
 use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
@@ -53,6 +54,17 @@ impl Scene {
 
     pub fn remove_static_mesh(&mut self, static_mesh: Rc<RefCell<StaticMesh>>) {
         self.static_meshes[1].retain(|x| x.as_ptr() != static_mesh.as_ptr());
+        self.has_changed = true;
+    }
+
+    pub fn add_instanced_mesh(&mut self, instanced_mesh: Rc<RefCell<InstancedMesh>>) {
+        self.instanced_meshes[1].push(instanced_mesh);
+        self.has_changed = true;
+    }
+
+    pub fn remove_instanced_mesh(&mut self, instanced_mesh: Rc<RefCell<InstancedMesh>>) {
+        self.instanced_meshes[1].retain(|x| x.as_ptr() != instanced_mesh.as_ptr());
+        self.has_changed = true;
     }
 
     // todo copy docs on commit and other functions
@@ -82,6 +94,51 @@ impl Scene {
 
         // The scene will be considered unchanged until something is changed subsequently.
         self.has_changed = false;
+    }
+
+    //todo: This should return Option<Hit> to be consistent with *_mesh.closest_hit()
+    pub(crate) fn closest_hit(
+        &self,
+        ray: &Ray,
+        min_distance: f32,
+        max_distance: f32,
+    ) -> Option<Hit> {
+        let mut hit: Option<Hit> = None;
+        let mut hit_distance = f32::MAX;
+
+        // We sequentially calculate the closest hit of the ray with each scene object,
+        // recording the overall closest hit in the scene. If there are many objects
+        // in the scene, it would be better to use some sort of acceleration
+        // structure.
+        for static_mesh in &self.static_meshes[0] {
+            let object_hit_maybe =
+                static_mesh
+                    .borrow()
+                    .closest_hit(ray, min_distance, max_distance);
+
+            if let Some(object_hit) = object_hit_maybe {
+                if object_hit.distance < hit_distance {
+                    hit = Some(object_hit);
+                    hit_distance = object_hit.distance;
+                }
+            }
+        }
+
+        for instanced_mesh in &self.instanced_meshes[0] {
+            let object_hit_maybe =
+                instanced_mesh
+                    .borrow()
+                    .closest_hit(ray, min_distance, max_distance);
+
+            if let Some(object_hit) = object_hit_maybe {
+                if object_hit.distance < hit_distance {
+                    hit = Some(object_hit);
+                    hit_distance = object_hit.distance;
+                }
+            }
+        }
+
+        hit
     }
 
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {

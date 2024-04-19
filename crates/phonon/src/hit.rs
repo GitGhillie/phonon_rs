@@ -18,6 +18,7 @@
 use crate::material::Material;
 use glam::Vec3;
 
+#[derive(Copy, Clone)]
 pub(crate) struct Hit {
     pub(crate) distance: f32,
     pub(crate) triangle_index: usize,
@@ -25,4 +26,22 @@ pub(crate) struct Hit {
     pub(crate) material_index: usize,
     pub(crate) normal: Vec3,
     pub(crate) material: Material,
+}
+
+impl Hit {
+    pub(crate) fn new_empty() -> Self {
+        Self {
+            distance: f32::MAX,
+            triangle_index: 0,
+            object_index: 0,
+            material_index: 0,
+            normal: Default::default(),
+            //todo better Material default
+            material: Material {
+                absorption: [0.0, 0.0, 0.0],
+                scattering: 0.0,
+                transmission: [0.0, 0.0, 0.0],
+            },
+        }
+    }
 }

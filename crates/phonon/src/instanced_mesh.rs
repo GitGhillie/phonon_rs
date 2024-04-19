@@ -15,6 +15,7 @@
 // limitations under the License.
 //
 
+use crate::hit::Hit;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Mat4;
@@ -53,6 +54,28 @@ impl InstancedMesh {
         self.has_changed
     }
 
+    pub(crate) fn closest_hit(
+        &self,
+        ray: &Ray,
+        min_distance: f32,
+        max_distance: f32,
+    ) -> Option<Hit> {
+        let mut min_distance = min_distance;
+        let mut max_distance = max_distance;
+
+        let transformed_ray = self.inverse_transform_ray(ray, &mut min_distance, &mut max_distance);
+        let hit_maybe = self
+            .sub_scene
+            .borrow()
+            .closest_hit(ray, min_distance, max_distance);
+
+        if let Some(hit) = hit_maybe {
+            return Some(self.transform_hit(&hit, &transformed_ray));
+        } else {
+            return None;
+        }
+    }
+
     // todo implement min_distance
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
         let mut min_distance = min_distance;
@@ -87,5 +110,22 @@ impl InstancedMesh {
 
         // Return a transformed Ray
         Ray::new(origin.truncate(), direction)
+    }
+
+    fn transform_hit(&self, hit: &Hit, ray: &Ray) -> Hit {
+        let mut transformed_hit = hit.clone();
+
+        if hit.distance < f32::MAX {
+            let origin = self.transform * ray.origin().extend(1.0);
+            let hit_point =
+                self.inverse_transform * ray.point_at_distance(hit.distance).extend(1.0);
+            transformed_hit.distance = (hit_point - origin).length();
+        }
+
+        let normal = hit.normal.extend(0.0);
+        let transformed_normal = self.inverse_transform.transpose() * normal;
+        transformed_hit.normal = transformed_normal.truncate().normalize_or_zero();
+
+        transformed_hit
     }
 }
