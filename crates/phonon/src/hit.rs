@@ -18,7 +18,7 @@
 use crate::material::Material;
 use glam::Vec3;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct Hit {
     pub(crate) distance: f32,
     pub(crate) triangle_index: usize,

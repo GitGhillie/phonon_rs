@@ -169,14 +169,14 @@ mod tests {
     use super::*;
     use crate::material::Material;
     use crate::triangle::Triangle;
-    use glam::Vec3;
+    use glam::{Affine3A, Mat4, Vec3};
 
     #[test]
     fn test_scene() {
         let vertices = vec![
             Vec3::new(0.0, 0.0, 0.0),
             Vec3::new(1.0, 0.0, 0.0),
-            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::new(0.0, 1.0, 0.1),
         ];
 
         let triangle0 = Triangle { indices: [0, 1, 2] };
@@ -207,12 +207,26 @@ mod tests {
         let ray_hit: Ray = Ray::new(Vec3::new(0.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
         let ray_miss: Ray = Ray::new(Vec3::new(1.0, 1.0, -1.0), Vec3::new(0.0, 0.0, 1.0));
 
-        assert!(scene.any_hit(&ray_hit, 0.0, 1.0));
-        assert!(!scene.any_hit(&ray_miss, 0.0, 1.0));
+        assert!(scene.any_hit(&ray_hit, 0.0, 10.0));
+        assert!(!scene.any_hit(&ray_miss, 0.0, 10.0));
 
-        scene.remove_static_mesh(static_mesh);
+        scene.remove_static_mesh(static_mesh.clone());
         scene.commit();
 
         assert!(!scene.any_hit(&ray_hit, 0.0, 1.0));
+
+        let mut sub_scene = Rc::new(RefCell::new(Scene::new()));
+        sub_scene.borrow_mut().add_static_mesh(static_mesh);
+
+        let transform = Affine3A::from_translation(Vec3::new(1.0, 0.0, 2.0));
+        let instanced_mesh = Rc::new(InstancedMesh::new(sub_scene, Mat4::from(transform)));
+
+        scene.add_instanced_mesh(instanced_mesh);
+        scene.commit();
+
+        let ray_hit: Ray = Ray::new(Vec3::new(1.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
+        let hit_point = scene.closest_hit(&ray_hit, 0.0, 10.0).unwrap();
+        println!("{:?}", hit_point);
+        assert!(scene.any_hit(&ray_hit, 0.0, 10.0));
     }
 }

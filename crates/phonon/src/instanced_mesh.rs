@@ -32,14 +32,14 @@ pub struct InstancedMesh {
 }
 
 impl InstancedMesh {
-    pub fn new(sub_scene: Rc<RefCell<Scene>>, transform: Mat4) -> Self {
-        // todo: Original code transposes the transform. Check if necessary.
-        Self {
+    // Port note: Original code transposes the transform. For performance reasons maybe?
+    pub fn new(sub_scene: Rc<RefCell<Scene>>, transform: Mat4) -> RefCell<Self> {
+        RefCell::new(Self {
             sub_scene,
             transform,
             inverse_transform: transform.inverse(),
             has_changed: false,
-        }
+        })
     }
 
     pub(crate) fn commit(&mut self) {
@@ -64,16 +64,16 @@ impl InstancedMesh {
         let mut max_distance = max_distance;
 
         let transformed_ray = self.inverse_transform_ray(ray, &mut min_distance, &mut max_distance);
-        let hit_maybe = self
-            .sub_scene
-            .borrow()
-            .closest_hit(ray, min_distance, max_distance);
+        let hit_maybe =
+            self.sub_scene
+                .borrow()
+                .closest_hit(&transformed_ray, min_distance, max_distance);
 
-        if let Some(hit) = hit_maybe {
-            return Some(self.transform_hit(&hit, &transformed_ray));
+        return if let Some(hit) = hit_maybe {
+            Some(self.transform_hit(&hit, &transformed_ray))
         } else {
-            return None;
-        }
+            None
+        };
     }
 
     // todo implement min_distance
@@ -83,10 +83,12 @@ impl InstancedMesh {
 
         let transformed_ray = self.inverse_transform_ray(ray, &mut min_distance, &mut max_distance);
 
-        //self.sub_scene.any_hit //todo
-        false //todo remove
+        self.sub_scene
+            .borrow()
+            .any_hit(&transformed_ray, min_distance, max_distance)
     }
 
+    // todo: use Mat4 transform point fns
     /// Returns a `Ray` transformed back to the original mesh transformation.
     /// `min_distance` and `max_distance` get changed accordingly.
     fn inverse_transform_ray(
@@ -105,26 +107,25 @@ impl InstancedMesh {
             *max_distance = (end - origin).length();
         }
 
-        let p = self.inverse_transform * ray.point_at_distance(1.0).extend(1.0);
-        let direction = (p.truncate() - origin.truncate()).normalize_or_zero();
+        let direction = (self.inverse_transform * ray.direction().extend(0.0))
+            .truncate()
+            .normalize_or_zero();
 
         // Return a transformed Ray
         Ray::new(origin.truncate(), direction)
     }
 
+    // todo: use Mat4 transform point fns
     fn transform_hit(&self, hit: &Hit, ray: &Ray) -> Hit {
         let mut transformed_hit = hit.clone();
 
-        if hit.distance < f32::MAX {
-            let origin = self.transform * ray.origin().extend(1.0);
-            let hit_point =
-                self.inverse_transform * ray.point_at_distance(hit.distance).extend(1.0);
-            transformed_hit.distance = (hit_point - origin).length();
-        }
+        let origin = self.transform * ray.origin().extend(1.0);
+        let hit_point = self.transform * ray.point_at_distance(hit.distance).extend(1.0);
 
-        let normal = hit.normal.extend(0.0);
-        let transformed_normal = self.inverse_transform.transpose() * normal;
-        transformed_hit.normal = transformed_normal.truncate().normalize_or_zero();
+        transformed_hit.distance = (hit_point - origin).length();
+        transformed_hit.normal = (self.transform * hit.normal.extend(0.0))
+            .truncate()
+            .normalize_or_zero();
 
         transformed_hit
     }
