@@ -88,7 +88,6 @@ impl InstancedMesh {
             .any_hit(&transformed_ray, min_distance, max_distance)
     }
 
-    // todo: use Mat4 transform point fns
     /// Returns a `Ray` transformed back to the original mesh transformation.
     /// `min_distance` and `max_distance` get changed accordingly.
     fn inverse_transform_ray(
@@ -97,34 +96,41 @@ impl InstancedMesh {
         min_distance: &mut f32,
         max_distance: &mut f32,
     ) -> Ray {
-        let origin = self.inverse_transform * ray.origin().extend(1.0);
+        let origin = self.inverse_transform.transform_point3(ray.origin());
 
-        let start = self.inverse_transform * ray.point_at_distance(*min_distance).extend(1.0);
+        let start = self
+            .inverse_transform
+            .transform_point3(ray.point_at_distance(*min_distance));
         *min_distance = (start - origin).length();
 
         if *max_distance < f32::MAX {
-            let end = self.inverse_transform * ray.point_at_distance(*max_distance).extend(1.0);
+            let end = self
+                .inverse_transform
+                .transform_point3(ray.point_at_distance(*max_distance));
             *max_distance = (end - origin).length();
         }
 
-        let direction = (self.inverse_transform * ray.direction().extend(0.0))
-            .truncate()
+        let direction = self
+            .inverse_transform
+            .transform_vector3(ray.direction())
             .normalize_or_zero();
 
         // Return a transformed Ray
-        Ray::new(origin.truncate(), direction)
+        Ray::new(origin, direction)
     }
 
-    // todo: use Mat4 transform point fns
     fn transform_hit(&self, hit: &Hit, ray: &Ray) -> Hit {
         let mut transformed_hit = hit.clone();
 
-        let origin = self.transform * ray.origin().extend(1.0);
-        let hit_point = self.transform * ray.point_at_distance(hit.distance).extend(1.0);
+        let origin = self.transform.transform_point3(ray.origin());
+        let hit_point = self
+            .transform
+            .transform_point3(ray.point_at_distance(hit.distance));
 
         transformed_hit.distance = (hit_point - origin).length();
-        transformed_hit.normal = (self.transform * hit.normal.extend(0.0))
-            .truncate()
+        transformed_hit.normal = self
+            .transform
+            .transform_vector3(hit.normal)
             .normalize_or_zero();
 
         transformed_hit
