@@ -2,5 +2,8 @@
 name = "phonon-fmod"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "FMOD integration for the unofficial Steam Audio Rust rewrite"
+repository = "https://github.com/GitGhillie/phonon_rs"
 
 [dependencies]
