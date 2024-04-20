@@ -1,7 +1,3 @@
-// todo: This is probably cursed. Needed in the `AudioBuffer` `write` fn.
-// #![allow(incomplete_features)]
-// #![feature(generic_const_exprs)]
-
 pub mod audio_buffer;
 pub mod bands;
 pub mod context;
