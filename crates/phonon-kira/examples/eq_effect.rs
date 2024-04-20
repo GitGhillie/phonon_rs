@@ -16,7 +16,9 @@ fn main() {
 
     let sound_data = StaticSoundData::from_file(
         "data/audio/pink_noise.ogg",
-        StaticSoundSettings::new().output_destination(&track),
+        StaticSoundSettings::new()
+            .loop_region(..)
+            .output_destination(&track),
     )
     .unwrap();
 
