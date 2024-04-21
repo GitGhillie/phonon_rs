@@ -7,4 +7,5 @@ description = "Kira integration for the unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
 
 [dependencies]
+phonon = { path = "../phonon" }
 kira = "0.8"

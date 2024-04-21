@@ -4,6 +4,7 @@ pub mod context;
 pub mod coordinate_space;
 pub mod delay;
 pub mod direct_simulator;
+pub mod eq_effect;
 pub mod iir;
 pub mod reverb_effect;
 pub mod reverb_estimator;
