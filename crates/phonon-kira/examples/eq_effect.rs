@@ -1,8 +1,10 @@
 use eframe::egui;
+
 use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
 use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
 use kira::track::TrackBuilder;
+
 use phonon_kira::eq_effect::builder::EqEffectBuilder;
 
 fn main() {
