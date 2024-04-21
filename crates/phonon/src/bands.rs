@@ -16,3 +16,6 @@
 //
 
 pub(crate) const NUM_BANDS: usize = 3;
+
+pub(crate) const LOW_CUTOFF_FREQUENCIES: [f32; 3] = [0.0, 800.0, 8_000.0];
+pub(crate) const HIGH_CUTOFF_FREQUENCIES: [f32; 3] = [800.0, 8_000.0, 22_000.0];

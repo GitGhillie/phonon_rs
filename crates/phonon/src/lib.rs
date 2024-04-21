@@ -4,6 +4,7 @@ pub mod context;
 pub mod coordinate_space;
 pub mod delay;
 pub mod direct_simulator;
+pub mod eq_effect;
 pub mod hit;
 pub mod iir;
 pub mod instanced_mesh;

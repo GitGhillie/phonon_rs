@@ -15,26 +15,19 @@
 // limitations under the License.
 //
 
-use biquad::*;
+use phonon::iir::{IIRFilterer, IIR};
 
 #[test]
 fn iir_filter() {
-    let coefficients = Coefficients::<f32> {
-        a1: 2.0,
-        a2: 3.0,
-        b0: 4.0,
-        b1: 5.0,
-        b2: 6.0,
-    };
+    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
 
-    let mut biquad1 = DirectForm1::<f32>::new(coefficients);
+    let filter = IIR::new_from_coefficients(coefficients);
+    let mut filterer = IIRFilterer::new(filter);
 
-    let dry = [1.0, 2.0, 3.0, 4.0, 5.0];
+    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
     let mut wet: [f32; 5] = [0.0; 5];
 
-    for i in 0..dry.len() {
-        wet[i] = biquad1.run(dry[i]);
-    }
+    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
 
     assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
 }
