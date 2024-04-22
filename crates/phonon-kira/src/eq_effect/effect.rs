@@ -12,7 +12,8 @@ pub(crate) struct EqEffectWrapped {
     command_consumer: HeapConsumer<Command>,
     eq_gains: [f32; 3],
     eq_effect: EqEffect,
-    audio_buffer: AudioBuffer<1>,
+    audio_buffer: AudioBuffer<2>,
+    mono_buffer: AudioBuffer<1>,
     output_buffer: AudioBuffer<1>,
     current_sample: usize,
     frame_count: usize,
@@ -28,6 +29,7 @@ impl EqEffectWrapped {
             eq_gains: builder.eq_gains,
             eq_effect,
             audio_buffer: AudioBuffer::new(audio_settings.frame_size),
+            mono_buffer: AudioBuffer::new(audio_settings.frame_size),
             output_buffer: AudioBuffer::new(audio_settings.frame_size),
             current_sample: 0,
             frame_count: 0,
@@ -51,18 +53,21 @@ impl Effect for EqEffectWrapped {
         _clock_info_provider: &ClockInfoProvider,
         _modulator_value_provider: &ModulatorValueProvider,
     ) -> Frame {
-        // todo: Downmix to mono instead of taking one channel
         self.audio_buffer[0][self.current_sample] = input.left;
+        self.audio_buffer[1][self.current_sample] = input.right;
+
         let output_sample = self.output_buffer[0][self.current_sample];
 
         if self.current_sample < self.eq_effect.frame_size - 1 {
             self.current_sample += 1;
         } else {
+            self.audio_buffer.downmix(&mut self.mono_buffer);
+
             self.eq_effect.apply(
                 EqEffectParameters {
                     gains: self.eq_gains,
                 },
-                &self.audio_buffer,
+                &self.mono_buffer,
                 &mut self.output_buffer,
             );
 
