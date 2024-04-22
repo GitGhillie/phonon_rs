@@ -39,7 +39,7 @@ impl Effect for EqEffectWrapped {
     fn on_start_processing(&mut self) {
         while let Some(command) = self.command_consumer.pop() {
             match command {
-                Command::SetGains(gains) => self.eq_gains = gains,
+                Command::SetEqGains(gains) => self.eq_gains = gains,
             }
         }
     }

@@ -10,7 +10,7 @@ pub struct EqEffectHandle {
 impl EqEffectHandle {
     pub fn set_gains(&mut self, gains: [f32; 3]) -> Result<(), CommandError> {
         self.command_producer
-            .push(Command::SetGains(gains))
+            .push(Command::SetEqGains(gains))
             .map_err(|_| CommandError::CommandQueueFull)
     }
 }
