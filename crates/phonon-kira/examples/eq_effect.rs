@@ -28,7 +28,7 @@ fn main() {
     manager.play(sound_data).unwrap();
 
     eframe::run_simple_native(
-        "EQ Effect (Kira)",
+        "EQ & Gain Effect (Kira)",
         eframe::NativeOptions::default(),
         move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |ui| {
