@@ -9,3 +9,7 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 [dependencies]
 phonon = { path = "../phonon" }
 kira = "0.8"
+ringbuf = "0.3"
+
+[dev-dependencies]
+eframe = "0.27"
