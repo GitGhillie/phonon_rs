@@ -28,13 +28,13 @@ enum DirectSimulationType {
     CalcDela,
 }
 
-enum OcclusionType {
+pub(crate) enum OcclusionType {
     Raycast,
     Volumetric,
 }
 
 /// Describes the properties of a direct sound path.
-struct DirectSoundPath {
+pub(crate) struct DirectSoundPath {
     distance_attenuation: f32,
     air_absorption: [f32; bands::NUM_BANDS],
     delay: f32,

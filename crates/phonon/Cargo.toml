@@ -14,6 +14,7 @@ rand = "0.8"
 ndarray = "0.15"
 parry3d = "0.13" # todo: Enable SIMD? Replace with glam-based parry?
 nalgebra = { version = "0.32", features = ["default", "convert-glam025"] } # todo: Replace with glam after replacing parry3d
+bitflags = "2"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
