@@ -8,6 +8,7 @@ const COMMAND_CAPACITY: usize = 8;
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EqEffectBuilder {
     pub eq_gains: [f32; 3],
+    pub gain: f32,
 }
 
 impl EffectBuilder for EqEffectBuilder {

@@ -19,11 +19,11 @@ use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 
 const NUM_INTERPOLATION_FRAMES: usize = 4;
 
-pub(crate) struct GainEffectParameters {
-    gain: f32,
+pub struct GainEffectParameters {
+    pub gain: f32,
 }
 
-pub(crate) struct GainEffect {
+pub struct GainEffect {
     frame_size: usize,
     previous_gain: f32,
     first_frame: bool,
@@ -43,7 +43,7 @@ impl GainEffect {
         self.first_frame = true;
     }
 
-    pub(crate) fn apply(
+    pub fn apply(
         &mut self,
         parameters: GainEffectParameters,
         input: &AudioBuffer<1>,

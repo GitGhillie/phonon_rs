@@ -4,4 +4,5 @@ pub mod handle;
 
 pub(crate) enum Command {
     SetEqGains([f32; 3]),
+    SetGain(f32),
 }

@@ -6,12 +6,15 @@ use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::track::effect::Effect;
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::eq_effect::{EqEffect, EqEffectParameters};
+use phonon::gain_effect::{GainEffect, GainEffectParameters};
 use ringbuf::HeapConsumer;
 
 pub(crate) struct EqEffectWrapped {
     command_consumer: HeapConsumer<Command>,
     eq_gains: [f32; 3],
     eq_effect: EqEffect,
+    gain: f32,
+    gain_effect: GainEffect,
     audio_buffer: AudioBuffer<2>,
     mono_buffer: AudioBuffer<1>,
     output_buffer: AudioBuffer<1>,
@@ -23,11 +26,14 @@ impl EqEffectWrapped {
     pub(crate) fn new(builder: EqEffectBuilder, command_consumer: HeapConsumer<Command>) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
         let eq_effect = EqEffect::new(audio_settings.clone());
+        let gain_effect = GainEffect::new(audio_settings.clone());
 
         Self {
             command_consumer,
             eq_gains: builder.eq_gains,
             eq_effect,
+            gain: builder.gain,
+            gain_effect,
             audio_buffer: AudioBuffer::new(audio_settings.frame_size),
             mono_buffer: AudioBuffer::new(audio_settings.frame_size),
             output_buffer: AudioBuffer::new(audio_settings.frame_size),
@@ -42,6 +48,7 @@ impl Effect for EqEffectWrapped {
         while let Some(command) = self.command_consumer.pop() {
             match command {
                 Command::SetEqGains(gains) => self.eq_gains = gains,
+                Command::SetGain(gain) => self.gain = gain,
             }
         }
     }
@@ -61,7 +68,13 @@ impl Effect for EqEffectWrapped {
         if self.current_sample < self.eq_effect.frame_size - 1 {
             self.current_sample += 1;
         } else {
-            self.audio_buffer.downmix(&mut self.mono_buffer);
+            self.audio_buffer.downmix(&mut self.output_buffer);
+
+            self.gain_effect.apply(
+                GainEffectParameters { gain: self.gain },
+                &self.output_buffer,
+                &mut self.mono_buffer,
+            );
 
             self.eq_effect.apply(
                 EqEffectParameters {
