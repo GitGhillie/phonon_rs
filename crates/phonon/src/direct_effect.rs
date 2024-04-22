@@ -15,14 +15,14 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::AudioSettings;
+use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use crate::bands::NUM_BANDS;
 use bitflags::bitflags;
 use std::cmp::PartialEq;
 
 use crate::direct_simulator::DirectSoundPath;
-use crate::eq_effect::EqEffect;
-use crate::gain_effect::GainEffect;
+use crate::eq_effect::{EqEffect, EqEffectParameters};
+use crate::gain_effect::{GainEffect, GainEffectParameters};
 
 bitflags! {
     //todo check if these are all necessary
@@ -36,13 +36,13 @@ bitflags! {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TransmissionType {
     FrequencyIndependent,
     FrequencyDependent,
 }
 
-pub struct DirectEffectParams {
+pub struct DirectEffectParameters {
     direct_sound_path: DirectSoundPath,
     flags: DirectApplyFlags,
     transmission_type: TransmissionType,
@@ -74,6 +74,56 @@ impl DirectEffect {
         for mut gain_effect in &mut self.gain_effects {
             gain_effect.reset();
         }
+    }
+
+    // todo: Num channels may differ...
+    pub fn apply(
+        &mut self,
+        parameters: DirectEffectParameters,
+        input: &AudioBuffer<1>,
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        let mut gain: f32 = 0.0;
+        let mut eq_coefficients: [f32; NUM_BANDS] = [0.0, 0.0, 0.0];
+        // todo perf: This does not exist in the original code.
+        let mut buf: AudioBuffer<1> = AudioBuffer::new(input[0].len());
+
+        // todo: This function should just take a DirectEffectParameters?
+        Self::calculate_gain_and_eq(
+            parameters.direct_sound_path,
+            parameters.flags,
+            parameters.transmission_type,
+            &mut gain,
+            &mut eq_coefficients,
+        );
+
+        let air_absorption = (parameters.flags & DirectApplyFlags::AirAbsorption).bits() != 0;
+        let transmission = (parameters.flags & DirectApplyFlags::Transmission).bits() != 0;
+        let transmission_freq_dep =
+            parameters.transmission_type == TransmissionType::FrequencyDependent;
+        let apply_eq = air_absorption || (transmission && transmission_freq_dep);
+
+        for i in 0..self.num_channels {
+            let gain_parameters = GainEffectParameters { gain };
+
+            if apply_eq {
+                let eq_parameters = EqEffectParameters {
+                    gains: eq_coefficients,
+                };
+
+                self.eq_effects[i].apply(eq_parameters, input, &mut buf);
+                self.gain_effects[i].apply(gain_parameters, &mut buf, output);
+            } else {
+                self.gain_effects[i].apply(gain_parameters, input, output);
+            }
+        }
+
+        AudioEffectState::TailComplete
+    }
+
+    pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
+        output.make_silent();
+        AudioEffectState::TailComplete
     }
 
     fn calculate_gain_and_eq(
