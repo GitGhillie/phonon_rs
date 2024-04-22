@@ -35,12 +35,12 @@ pub(crate) enum OcclusionType {
 
 /// Describes the properties of a direct sound path.
 pub(crate) struct DirectSoundPath {
-    distance_attenuation: f32,
-    air_absorption: [f32; bands::NUM_BANDS],
-    delay: f32,
-    occlusion: f32,
-    transmission: [f32; bands::NUM_BANDS],
-    directivity: f32,
+    pub(crate) distance_attenuation: f32,
+    pub(crate) air_absorption: [f32; bands::NUM_BANDS],
+    pub(crate) delay: f32,
+    pub(crate) occlusion: f32,
+    pub(crate) transmission: [f32; bands::NUM_BANDS],
+    pub(crate) directivity: f32,
 }
 
 /// Encapsulates the state required to simulate direct sound, including distance
