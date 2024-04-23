@@ -27,7 +27,7 @@ use crate::gain_effect::{GainEffect, GainEffectParameters};
 bitflags! {
     //todo check if these are all necessary
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    struct DirectApplyFlags: u8 {
+    pub struct DirectApplyFlags: u8 {
         const DistanceAttenuation = 1 << 0;
         const AirAbsorption = 1 << 1;
         const Directivity = 1 << 2;
@@ -37,20 +37,22 @@ bitflags! {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum TransmissionType {
+pub enum TransmissionType {
     FrequencyIndependent,
     FrequencyDependent,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DirectEffectParameters {
-    direct_sound_path: DirectSoundPath,
-    flags: DirectApplyFlags,
-    transmission_type: TransmissionType,
+    pub direct_sound_path: DirectSoundPath,
+    pub flags: DirectApplyFlags,
+    pub transmission_type: TransmissionType,
 }
 
 /// Audio effect that applies direct sound path parameters to an incoming multichannel audio buffer.
 pub struct DirectEffect {
     num_channels: usize,
+    pub frame_size: usize,
     /// One filter object per channel to apply effect.
     eq_effects: Vec<EqEffect>,
     /// Attenuation interpolation.
@@ -61,17 +63,18 @@ impl DirectEffect {
     pub fn new(audio_settings: AudioSettings, num_channels: usize) -> Self {
         Self {
             num_channels,
+            frame_size: audio_settings.frame_size,
             eq_effects: vec![EqEffect::new(audio_settings.clone())],
             gain_effects: vec![GainEffect::new(audio_settings.clone())],
         }
     }
 
     pub(crate) fn reset(&mut self) {
-        for mut eq_effect in &mut self.eq_effects {
+        for eq_effect in &mut self.eq_effects {
             eq_effect.reset();
         }
 
-        for mut gain_effect in &mut self.gain_effects {
+        for gain_effect in &mut self.gain_effects {
             gain_effect.reset();
         }
     }
