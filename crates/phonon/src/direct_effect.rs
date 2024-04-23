@@ -49,39 +49,30 @@ pub struct DirectEffectParameters {
     pub transmission_type: TransmissionType,
 }
 
-// todo: For some reason DirectAffect can be applied to multiple channels, even though
-// one channel would seem to be sufficient. Consider removing it for better performance.
+// Port note: Compared to the original code this DirectEffect applies to 1 channel only.
 /// Audio effect that applies direct sound path parameters to an incoming multichannel audio buffer.
 pub struct DirectEffect {
-    num_channels: usize,
     pub frame_size: usize,
     /// One filter object per channel to apply effect.
-    eq_effects: Vec<EqEffect>,
+    eq_effect: EqEffect,
     /// Attenuation interpolation.
-    gain_effects: Vec<GainEffect>,
+    gain_effect: GainEffect,
 }
 
 impl DirectEffect {
-    pub fn new(audio_settings: AudioSettings, num_channels: usize) -> Self {
+    pub fn new(audio_settings: AudioSettings) -> Self {
         Self {
-            num_channels,
             frame_size: audio_settings.frame_size,
-            eq_effects: vec![EqEffect::new(audio_settings.clone())],
-            gain_effects: vec![GainEffect::new(audio_settings.clone())],
+            eq_effect: EqEffect::new(audio_settings.clone()),
+            gain_effect: GainEffect::new(audio_settings.clone()),
         }
     }
 
     pub(crate) fn reset(&mut self) {
-        for eq_effect in &mut self.eq_effects {
-            eq_effect.reset();
-        }
-
-        for gain_effect in &mut self.gain_effects {
-            gain_effect.reset();
-        }
+        self.eq_effect.reset();
+        self.gain_effect.reset();
     }
 
-    // todo: Num channels may differ...
     pub fn apply(
         &mut self,
         parameters: DirectEffectParameters,
@@ -108,19 +99,17 @@ impl DirectEffect {
             parameters.transmission_type == TransmissionType::FrequencyDependent;
         let apply_eq = air_absorption || (transmission && transmission_freq_dep);
 
-        for i in 0..self.num_channels {
-            let gain_parameters = GainEffectParameters { gain };
+        let gain_parameters = GainEffectParameters { gain };
 
-            if apply_eq {
-                let eq_parameters = EqEffectParameters {
-                    gains: eq_coefficients,
-                };
+        if apply_eq {
+            let eq_parameters = EqEffectParameters {
+                gains: eq_coefficients,
+            };
 
-                self.eq_effects[i].apply(eq_parameters, input, &mut buf);
-                self.gain_effects[i].apply(gain_parameters, &mut buf, output);
-            } else {
-                self.gain_effects[i].apply(gain_parameters, input, output);
-            }
+            self.eq_effect.apply(eq_parameters, input, &mut buf);
+            self.gain_effect.apply(gain_parameters, &mut buf, output);
+        } else {
+            self.gain_effect.apply(gain_parameters, input, output);
         }
 
         AudioEffectState::TailComplete

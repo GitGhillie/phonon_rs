@@ -25,7 +25,7 @@ impl DirectEffectWrapped {
         command_consumer: HeapConsumer<Command>,
     ) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
-        let direct_effect = DirectEffect::new(audio_settings.clone(), 1);
+        let direct_effect = DirectEffect::new(audio_settings.clone());
 
         Self {
             command_consumer,

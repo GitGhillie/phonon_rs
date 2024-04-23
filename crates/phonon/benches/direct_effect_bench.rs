@@ -27,14 +27,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("direct effect", |b| {
         let apply_transmission = true;
         let transmission_type = TransmissionType::FrequencyDependent;
-        let num_channels = 1; // todo this can only be 1 at the moment
+        let _num_channels = 1;
 
         let sampling_rate = 48_000;
         let frame_size = 1024;
 
         let render_settings = AudioSettings::new(sampling_rate, frame_size);
 
-        let mut direct_effect = DirectEffect::new(render_settings, num_channels);
+        let mut direct_effect = DirectEffect::new(render_settings);
 
         let mut in_buffer = AudioBuffer::new(frame_size);
         let mut out_buffer = AudioBuffer::new(frame_size);
