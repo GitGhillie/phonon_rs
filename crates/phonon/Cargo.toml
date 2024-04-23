@@ -23,3 +23,7 @@ plotters = "0.3"
 [[bench]]
 name = "audio_buffer_bench"
 harness = false
+
+[[bench]]
+name = "direct_effect_bench"
+harness = false

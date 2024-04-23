@@ -49,6 +49,8 @@ pub struct DirectEffectParameters {
     pub transmission_type: TransmissionType,
 }
 
+// todo: For some reason DirectAffect can be applied to multiple channels, even though
+// one channel would seem to be sufficient. Consider removing it for better performance.
 /// Audio effect that applies direct sound path parameters to an incoming multichannel audio buffer.
 pub struct DirectEffect {
     num_channels: usize,

@@ -1,0 +1,71 @@
+//
+// Copyright 2017-2023 Valve Corporation.
+// Copyright 2024 phonon_rs contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use phonon::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::direct_effect::{
+    DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
+};
+use phonon::direct_simulator::DirectSoundPath;
+
+pub fn criterion_benchmark(c: &mut Criterion) {
+    c.bench_function("direct effect", |b| {
+        let apply_transmission = true;
+        let transmission_type = TransmissionType::FrequencyIndependent;
+        let num_channels = 1; // todo this can only be 1 at the moment
+
+        let sampling_rate = 48_000;
+        let frame_size = 1024;
+
+        let render_settings = AudioSettings::new(sampling_rate, frame_size);
+
+        let mut direct_effect = DirectEffect::new(render_settings, num_channels);
+
+        let in_buffer = AudioBuffer::new(frame_size);
+        let mut out_buffer = AudioBuffer::new(frame_size);
+
+        for mut sample in in_buffer[0] {
+            sample = black_box(0.1);
+        }
+
+        let mut direct_params = DirectEffectParameters {
+            direct_sound_path: DirectSoundPath {
+                distance_attenuation: 1.0,
+                air_absorption: [0.1, 0.2, 0.3],
+                delay: 0.0,
+                occlusion: 0.5,
+                transmission: [0.1, 0.2, 0.3],
+                directivity: 0.0,
+            },
+            flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::Occlusion,
+            transmission_type,
+        };
+
+        direct_params
+            .flags
+            .set(DirectApplyFlags::Transmission, apply_transmission);
+
+        b.iter(|| {
+            // todo change transmission factor each run for worst case performance
+
+            direct_effect.apply(direct_params, &in_buffer, &mut out_buffer);
+        })
+    });
+}
+
+criterion_group!(benches, criterion_benchmark);
+criterion_main!(benches);
