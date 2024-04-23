@@ -47,6 +47,8 @@ fn main() {
         "Direct Sound Effect (Kira)",
         eframe::NativeOptions::default(),
         move |ctx, _frame| {
+            let mut sound_path = direct_params.direct_sound_path;
+
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.add(egui::Checkbox::new(
                     &mut distance_attenuation,
@@ -54,43 +56,28 @@ fn main() {
                 ));
 
                 ui.add(
-                    egui::Slider::new(
-                        &mut direct_params.direct_sound_path.distance_attenuation,
-                        0.0..=1.0,
-                    )
-                    .text("Distance Attenuation"),
+                    egui::Slider::new(&mut sound_path.distance_attenuation, 0.0..=1.0)
+                        .text("Distance Attenuation"),
                 );
 
                 ui.label("Air Absorption (AA) parameters:");
 
                 ui.add(
-                    egui::Slider::new(
-                        &mut direct_params.direct_sound_path.air_absorption[0],
-                        0.0..=1.0,
-                    )
-                    .text("AA Low"),
+                    egui::Slider::new(&mut sound_path.air_absorption[0], 0.0..=1.0).text("AA Low"),
                 );
 
                 ui.add(
-                    egui::Slider::new(
-                        &mut direct_params.direct_sound_path.air_absorption[1],
-                        0.0..=1.0,
-                    )
-                    .text("AA Mid"),
+                    egui::Slider::new(&mut sound_path.air_absorption[1], 0.0..=1.0).text("AA Mid"),
                 );
 
                 ui.add(
-                    egui::Slider::new(
-                        &mut direct_params.direct_sound_path.air_absorption[2],
-                        0.0..=1.0,
-                    )
-                    .text("AA High"),
+                    egui::Slider::new(&mut sound_path.air_absorption[2], 0.0..=1.0).text("AA High"),
                 );
 
                 ui.label("");
 
                 ui.add(
-                    egui::Slider::new(&mut direct_params.direct_sound_path.occlusion, 0.0..=1.0)
+                    egui::Slider::new(&mut sound_path.occlusion, 0.0..=1.0)
                         .text("Occlusion factor"),
                 );
             });
