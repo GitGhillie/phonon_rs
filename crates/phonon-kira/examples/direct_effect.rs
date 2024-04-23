@@ -47,7 +47,7 @@ fn main() {
         "Direct Sound Effect (Kira)",
         eframe::NativeOptions::default(),
         move |ctx, _frame| {
-            let mut sound_path = direct_params.direct_sound_path;
+            let sound_path = &mut direct_params.direct_sound_path;
 
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.add(egui::Checkbox::new(
