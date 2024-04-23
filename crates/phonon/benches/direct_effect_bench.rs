@@ -16,17 +16,17 @@
 //
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rand::Rng;
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
 use phonon::direct_simulator::DirectSoundPath;
+use rand::Rng;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("direct effect", |b| {
         let apply_transmission = true;
-        let transmission_type = TransmissionType::FrequencyIndependent;
+        let transmission_type = TransmissionType::FrequencyDependent;
         let num_channels = 1; // todo this can only be 1 at the moment
 
         let sampling_rate = 48_000;
@@ -64,7 +64,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
         b.iter(|| {
             // Changing transmission factor each run to get the worst case performance.
-            direct_params.direct_sound_path.transmission[0] = (black_box(0.1) + black_box(0.1)) / 100.0;
+            direct_params.direct_sound_path.transmission[0] =
+                (black_box(0.1) + black_box(0.1)) / 100.0;
             direct_effect.apply(direct_params, &in_buffer, &mut out_buffer);
         })
     });
