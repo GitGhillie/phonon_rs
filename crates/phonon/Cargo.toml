@@ -19,6 +19,7 @@ bitflags = "2"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 plotters = "0.3"
+rand = "0.8"
 
 [[bench]]
 name = "audio_buffer_bench"
