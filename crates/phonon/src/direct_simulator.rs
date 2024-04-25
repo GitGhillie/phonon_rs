@@ -16,7 +16,9 @@
 //
 
 use crate::bands;
+use crate::propagation_medium::SPEED_OF_SOUND;
 use crate::sampling::generate_sphere_volume_sample;
+use crate::scene::Scene;
 use glam::Vec3;
 
 enum DirectSimulationType {
@@ -66,6 +68,17 @@ impl DirectSimulator {
 
         Self {
             sphere_volume_samples,
+        }
+    }
+
+    fn direct_path_delay(listener: Vec3, source: Vec3) -> f32 {
+        (source - listener).length() / SPEED_OF_SOUND
+    }
+
+    fn raycast_occlusion(scene: Scene, listener_position: Vec3, source_position: Vec3) -> f32 {
+        match scene.is_occluded(listener_position, source_position) {
+            false => 0.0,
+            true => 1.0,
         }
     }
 }

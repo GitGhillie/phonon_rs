@@ -19,6 +19,7 @@ use crate::hit::Hit;
 use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
+use glam::Vec3;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -166,6 +167,12 @@ impl Scene {
         }
 
         false
+    }
+
+    pub(crate) fn is_occluded(&self, from: Vec3, to: Vec3) -> bool {
+        let direction = (to - from).normalize_or_zero();
+        let distance = (to - from).length();
+        self.any_hit(&Ray::new(from, direction), 0.0, distance)
     }
 }
 
