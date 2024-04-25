@@ -39,7 +39,7 @@ impl Directivity {
         base.abs().powf(self.dipole_power)
     }
 
-    fn evaluate_at(&self, point: Vec3, coordinates: CoordinateSpace3f) -> f32 {
+    pub(crate) fn evaluate_at(&self, point: Vec3, coordinates: &CoordinateSpace3f) -> f32 {
         if self.dipole_weight == 0.0 {
             return 1.0;
         }

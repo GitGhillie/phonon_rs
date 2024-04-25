@@ -15,7 +15,13 @@
 // limitations under the License.
 //
 
+use crate::air_absorption::AirAbsorptionModel;
 use crate::bands;
+use crate::bands::NUM_BANDS;
+use crate::coordinate_space::CoordinateSpace3f;
+use crate::direct_effect::DirectApplyFlags;
+use crate::directivity::Directivity;
+use crate::distance_attenuation::{DefaultDistanceAttenuationModel, DistanceAttenuationModel};
 use crate::propagation_medium::SPEED_OF_SOUND;
 use crate::sampling::generate_sphere_volume_sample;
 use crate::scene::Scene;
@@ -69,6 +75,69 @@ impl DirectSimulator {
         Self {
             sphere_volume_samples,
         }
+    }
+
+    fn simulate(
+        &self,
+        scene: Scene,
+        flags: DirectApplyFlags,
+        source: CoordinateSpace3f,
+        listener: CoordinateSpace3f,
+        distance_attenuation_model: &impl DistanceAttenuationModel,
+        air_absorption_model: &impl AirAbsorptionModel,
+        directivity: Directivity,
+        occlusion_type: OcclusionType,
+        occlusion_radius: f32,
+        num_occlusion_samples: i32,
+        num_transmission_rays: i32,
+        direct_sound_path: &mut DirectSoundPath,
+    ) {
+        let distance = (source.origin - listener.origin).length();
+
+        if flags.contains(DirectApplyFlags::DistanceAttenuation) {
+            direct_sound_path.distance_attenuation = distance_attenuation_model.evaluate(distance);
+        } else {
+            direct_sound_path.distance_attenuation = 1.0
+        }
+
+        if flags.contains(DirectApplyFlags::AirAbsorption) {
+            for i in 0..NUM_BANDS {
+                direct_sound_path.air_absorption[i] = air_absorption_model.evaluate(distance, i);
+            }
+        } else {
+            for i in 0..NUM_BANDS {
+                direct_sound_path.air_absorption[i] = 1.0;
+            }
+        }
+
+        if flags.contains(DirectApplyFlags::Delay) {
+            direct_sound_path.delay = Self::direct_path_delay(listener.origin, source.origin);
+        } else {
+            direct_sound_path.delay = 0.0;
+        }
+
+        if flags.contains(DirectApplyFlags::Directivity) {
+            direct_sound_path.directivity = directivity.evaluate_at(listener.origin, &source);
+        } else {
+            direct_sound_path.directivity = 1.0;
+        }
+
+        // todo: The scene must be optional
+        if flags.contains(DirectApplyFlags::Occlusion) {
+            match occlusion_type {
+                OcclusionType::Raycast => {
+                    direct_sound_path.occlusion =
+                        Self::raycast_occlusion(scene, listener.origin, source.origin);
+                }
+                OcclusionType::Volumetric => {
+                    todo!()
+                }
+            }
+        } else {
+            direct_sound_path.occlusion = 1.0
+        }
+
+        // todo transmission stuff
     }
 
     fn direct_path_delay(listener: Vec3, source: Vec3) -> f32 {
