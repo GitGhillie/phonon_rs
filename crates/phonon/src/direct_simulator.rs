@@ -52,6 +52,19 @@ pub struct DirectSoundPath {
     pub directivity: f32,
 }
 
+impl Default for DirectSoundPath {
+    fn default() -> Self {
+        Self {
+            distance_attenuation: 1.0,
+            air_absorption: [1.0, 1.0, 1.0],
+            delay: 0.0,
+            occlusion: 1.0,
+            transmission: [1.0, 1.0, 1.0],
+            directivity: 0.0,
+        }
+    }
+}
+
 /// Encapsulates the state required to simulate direct sound, including distance
 /// attenuation, air absorption, partial occlusion, and propagation delays.
 struct DirectSimulator {

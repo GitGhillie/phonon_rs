@@ -13,3 +13,6 @@ ringbuf = "0.3"
 
 [dev-dependencies]
 eframe = "0.27"
+bevy = "0.13"
+bevy_flycam = "0.13"
+bevy-kira-components = { git = "https://github.com/SolarLiner/bevy-kira-components.git" }

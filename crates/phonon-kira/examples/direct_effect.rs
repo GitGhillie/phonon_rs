@@ -11,14 +11,7 @@ use phonon_kira::direct_effect::builder::DirectEffectBuilder;
 
 fn main() {
     let mut direct_params = DirectEffectParameters {
-        direct_sound_path: DirectSoundPath {
-            distance_attenuation: 1.0,
-            air_absorption: [1.0, 1.0, 1.0],
-            delay: 0.0,
-            occlusion: 1.0,
-            transmission: [1.0, 1.0, 1.0],
-            directivity: 0.0,
-        },
+        direct_sound_path: DirectSoundPath::default(),
         flags: DirectApplyFlags::AirAbsorption | DirectApplyFlags::Occlusion,
         transmission_type: TransmissionType::FrequencyIndependent,
     };
