@@ -16,7 +16,6 @@
 //
 
 use crate::air_absorption::AirAbsorptionModel;
-use crate::bands;
 use crate::bands::NUM_BANDS;
 use crate::coordinate_space::CoordinateSpace3f;
 use crate::direct_effect::DirectApplyFlags;
@@ -36,7 +35,7 @@ enum DirectSimulationType {
     CalcDela,
 }
 
-pub(crate) enum OcclusionType {
+pub enum OcclusionType {
     Raycast,
     Volumetric,
 }
@@ -45,10 +44,10 @@ pub(crate) enum OcclusionType {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DirectSoundPath {
     pub distance_attenuation: f32,
-    pub air_absorption: [f32; bands::NUM_BANDS],
+    pub air_absorption: [f32; NUM_BANDS],
     pub delay: f32,
     pub occlusion: f32,
-    pub transmission: [f32; bands::NUM_BANDS],
+    pub transmission: [f32; NUM_BANDS],
     pub directivity: f32,
 }
 
@@ -67,7 +66,7 @@ impl Default for DirectSoundPath {
 
 /// Encapsulates the state required to simulate direct sound, including distance
 /// attenuation, air absorption, partial occlusion, and propagation delays.
-struct DirectSimulator {
+pub struct DirectSimulator {
     /// Sampling points distributed inside a spherical volume.
     ///
     /// The amount of sampling points taken can be configured per
@@ -78,7 +77,7 @@ struct DirectSimulator {
 }
 
 impl DirectSimulator {
-    fn new(max_occlusion_samples: usize) -> Self {
+    pub fn new(max_occlusion_samples: usize) -> Self {
         let mut sphere_volume_samples = Vec::new();
 
         for i in 0..max_occlusion_samples {
@@ -90,7 +89,7 @@ impl DirectSimulator {
         }
     }
 
-    fn simulate(
+    pub fn simulate(
         &self,
         scene: Scene,
         flags: DirectApplyFlags,

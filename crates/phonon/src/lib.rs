@@ -6,7 +6,7 @@ pub mod coordinate_space;
 pub mod delay;
 pub mod direct_effect;
 pub mod direct_simulator;
-mod directivity;
+pub mod directivity;
 pub mod distance_attenuation;
 pub mod eq_effect;
 pub mod gain_effect;
