@@ -3,5 +3,6 @@ pub(crate) mod effect;
 pub mod handle;
 
 pub(crate) enum Command {
-    SetGains([f32; 3]),
+    SetEqGains([f32; 3]),
+    SetGain(f32),
 }
