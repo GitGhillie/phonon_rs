@@ -58,7 +58,7 @@ impl EqEffect {
         eq_effect
     }
 
-    fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         for band in 0..NUM_BANDS {
             self.previous_gains[band] = 1.0;
         }
@@ -173,5 +173,26 @@ impl EqEffect {
             &temp_output2,
             self.temp.as_slice_mut().unwrap(),
         );
+    }
+
+    pub(crate) fn normalize_gains(eq_gains: &mut [f32; NUM_BANDS], overall_gain: &mut f32) {
+        const MAX_EQ_GAIN: f32 = 0.0625;
+
+        let max_gain = eq_gains[0].max(eq_gains[1]).max(eq_gains[2]);
+
+        // todo: Check if this makes sense
+        if max_gain < f32::MIN_POSITIVE {
+            *overall_gain = 0.0;
+            for eq_gain in eq_gains {
+                *eq_gain = 1.0;
+            }
+        } else {
+            for eq_gain in eq_gains {
+                *eq_gain /= max_gain;
+                *eq_gain = eq_gain.max(MAX_EQ_GAIN);
+            }
+
+            *overall_gain *= max_gain;
+        }
     }
 }

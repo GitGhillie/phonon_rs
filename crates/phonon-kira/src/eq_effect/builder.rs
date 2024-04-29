@@ -3,7 +3,7 @@ use super::handle::EqEffectHandle;
 use kira::track::effect::{Effect, EffectBuilder};
 use ringbuf::HeapRb;
 
-const COMMAND_CAPACITY: usize = 8;
+const COMMAND_CAPACITY: usize = 32;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EqEffectBuilder {

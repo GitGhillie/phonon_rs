@@ -3,6 +3,7 @@ pub mod bands;
 pub mod context;
 pub mod coordinate_space;
 pub mod delay;
+pub mod direct_effect;
 pub mod direct_simulator;
 pub mod eq_effect;
 pub mod gain_effect;
