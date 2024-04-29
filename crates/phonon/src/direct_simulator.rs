@@ -15,20 +15,29 @@
 // limitations under the License.
 //
 
-use crate::bands;
-use crate::sampling::generate_sphere_volume_sample;
+use crate::air_absorption::AirAbsorptionModel;
+use crate::bands::NUM_BANDS;
+use crate::coordinate_space::CoordinateSpace3f;
+use crate::direct_effect::DirectApplyFlags;
+use crate::directivity::Directivity;
+use crate::distance_attenuation::DistanceAttenuationModel;
+use crate::propagation_medium::SPEED_OF_SOUND;
+use crate::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
+use crate::scene::Scene;
+use crate::sphere::Sphere;
 use glam::Vec3;
 
+// todo: Remove in favor of DirectApplyFlags?
 enum DirectSimulationType {
     CalcDistanceAttenuation,
     CalcAirAbsorption,
     CalcDirectivity,
     CalcOcclusion,
     CalcTransmission,
-    CalcDela,
+    CalcDelay,
 }
 
-pub(crate) enum OcclusionType {
+pub enum OcclusionType {
     Raycast,
     Volumetric,
 }
@@ -37,16 +46,29 @@ pub(crate) enum OcclusionType {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DirectSoundPath {
     pub distance_attenuation: f32,
-    pub air_absorption: [f32; bands::NUM_BANDS],
+    pub air_absorption: [f32; NUM_BANDS],
     pub delay: f32,
     pub occlusion: f32,
-    pub transmission: [f32; bands::NUM_BANDS],
+    pub transmission: [f32; NUM_BANDS],
     pub directivity: f32,
+}
+
+impl Default for DirectSoundPath {
+    fn default() -> Self {
+        Self {
+            distance_attenuation: 1.0,
+            air_absorption: [1.0, 1.0, 1.0],
+            delay: 0.0,
+            occlusion: 1.0,
+            transmission: [1.0, 1.0, 1.0],
+            directivity: 0.0,
+        }
+    }
 }
 
 /// Encapsulates the state required to simulate direct sound, including distance
 /// attenuation, air absorption, partial occlusion, and propagation delays.
-struct DirectSimulator {
+pub struct DirectSimulator {
     /// Sampling points distributed inside a spherical volume.
     ///
     /// The amount of sampling points taken can be configured per
@@ -57,7 +79,7 @@ struct DirectSimulator {
 }
 
 impl DirectSimulator {
-    fn new(max_occlusion_samples: usize) -> Self {
+    pub fn new(max_occlusion_samples: usize) -> Self {
         let mut sphere_volume_samples = Vec::new();
 
         for i in 0..max_occlusion_samples {
@@ -67,6 +89,122 @@ impl DirectSimulator {
         Self {
             sphere_volume_samples,
         }
+    }
+
+    pub fn simulate(
+        &self,
+        scene: Scene,
+        flags: DirectApplyFlags,
+        source: CoordinateSpace3f,
+        listener: CoordinateSpace3f,
+        distance_attenuation_model: &impl DistanceAttenuationModel,
+        air_absorption_model: &impl AirAbsorptionModel,
+        directivity: Directivity,
+        occlusion_type: OcclusionType,
+        occlusion_radius: f32,
+        num_occlusion_samples: usize,
+        num_transmission_rays: i32,
+        direct_sound_path: &mut DirectSoundPath,
+    ) {
+        let distance = (source.origin - listener.origin).length();
+
+        if flags.contains(DirectApplyFlags::DistanceAttenuation) {
+            direct_sound_path.distance_attenuation = distance_attenuation_model.evaluate(distance);
+        } else {
+            direct_sound_path.distance_attenuation = 1.0
+        }
+
+        if flags.contains(DirectApplyFlags::AirAbsorption) {
+            for i in 0..NUM_BANDS {
+                direct_sound_path.air_absorption[i] = air_absorption_model.evaluate(distance, i);
+            }
+        } else {
+            for i in 0..NUM_BANDS {
+                direct_sound_path.air_absorption[i] = 1.0;
+            }
+        }
+
+        if flags.contains(DirectApplyFlags::Delay) {
+            direct_sound_path.delay = Self::direct_path_delay(listener.origin, source.origin);
+        } else {
+            direct_sound_path.delay = 0.0;
+        }
+
+        if flags.contains(DirectApplyFlags::Directivity) {
+            direct_sound_path.directivity = directivity.evaluate_at(listener.origin, &source);
+        } else {
+            direct_sound_path.directivity = 1.0;
+        }
+
+        // todo: The scene must be optional
+        if flags.contains(DirectApplyFlags::Occlusion) {
+            match occlusion_type {
+                OcclusionType::Raycast => {
+                    direct_sound_path.occlusion =
+                        Self::raycast_occlusion(scene, listener.origin, source.origin);
+                }
+                OcclusionType::Volumetric => {
+                    direct_sound_path.occlusion = Self::raycast_volumetric(
+                        self,
+                        scene,
+                        listener.origin,
+                        source.origin,
+                        occlusion_radius,
+                        num_occlusion_samples,
+                    );
+                }
+            }
+        } else {
+            direct_sound_path.occlusion = 1.0
+        }
+
+        // todo transmission stuff
+    }
+
+    fn direct_path_delay(listener: Vec3, source: Vec3) -> f32 {
+        (source - listener).length() / SPEED_OF_SOUND
+    }
+
+    fn raycast_occlusion(scene: Scene, listener_position: Vec3, source_position: Vec3) -> f32 {
+        match scene.is_occluded(listener_position, source_position) {
+            false => 1.0,
+            true => 0.0,
+        }
+    }
+
+    fn raycast_volumetric(
+        &self,
+        scene: Scene,
+        listener_position: Vec3,
+        source_position: Vec3,
+        source_radius: f32,
+        num_samples: usize,
+    ) -> f32 {
+        let mut occlusion: f32 = 0.0;
+        let mut num_valid_samples = 0;
+
+        let num_samples = self.sphere_volume_samples.len().min(num_samples);
+
+        for i in 0..num_samples {
+            let sphere = Sphere::new(source_position, source_radius);
+            let sample = transform_sphere_volume_sample(self.sphere_volume_samples[i], sphere);
+
+            if scene.is_occluded(source_position, sample) {
+                continue;
+            }
+
+            num_valid_samples += 1;
+
+            if !scene.is_occluded(listener_position, sample) {
+                occlusion += 1.0;
+            }
+        }
+
+        if num_valid_samples == 0 {
+            return 0.0;
+        }
+
+        occlusion / num_valid_samples as f32
     }
 }
 

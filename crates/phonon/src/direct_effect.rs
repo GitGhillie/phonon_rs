@@ -33,6 +33,7 @@ bitflags! {
         const Directivity = 1 << 2;
         const Occlusion = 1 << 3;
         const Transmission = 1 << 4;
+        const Delay = 1 << 5;
     }
 }
 

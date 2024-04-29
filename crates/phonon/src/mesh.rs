@@ -54,6 +54,21 @@ impl Mesh {
         mesh
     }
 
+    // todo better name or From impl
+    pub fn new_from_parry(shape: impl Into<TriMesh>) -> Self {
+        let parry_mesh: TriMesh = shape.into();
+        let num_triangles = parry_mesh.num_triangles();
+
+        let mut mesh = Self {
+            mesh: parry_mesh,
+            normals: Array1::default(num_triangles),
+        };
+
+        mesh.calculate_normals();
+
+        mesh
+    }
+
     fn calculate_normals(&mut self) {
         let triangles = self.mesh.triangles();
 

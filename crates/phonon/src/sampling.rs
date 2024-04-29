@@ -15,6 +15,7 @@
 // limitations under the License.
 //
 
+use crate::sphere::Sphere;
 use glam::Vec3;
 use std::f32::consts::PI;
 
@@ -34,6 +35,10 @@ pub(crate) fn generate_sphere_volume_sample(i: usize) -> Vec3 {
     let z = r * theta.cos();
 
     Vec3::new(x, y, z)
+}
+
+pub(crate) fn transform_sphere_volume_sample(sample: Vec3, sphere: Sphere) -> Vec3 {
+    sphere.center + (sample * sphere.radius)
 }
 
 // http://www.pbr-book.org/3ed-2018/Sampling_and_Reconstruction/The_Halton_Sampler.html#RadicalInverseSpecialized
