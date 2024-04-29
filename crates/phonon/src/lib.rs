@@ -21,5 +21,6 @@ pub mod reverb_effect;
 pub mod reverb_estimator;
 pub mod sampling;
 pub mod scene;
+mod sphere;
 pub mod static_mesh;
 pub mod triangle;

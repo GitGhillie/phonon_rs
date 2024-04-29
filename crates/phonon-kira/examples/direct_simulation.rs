@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 use bevy_flycam::prelude::*;
+use std::rc::Rc;
 
 use bevy_kira_components::kira::sound::Region;
 use bevy_kira_components::kira::track::TrackBuilder;
@@ -16,6 +17,7 @@ use phonon::direct_effect::{DirectApplyFlags, DirectEffectParameters, Transmissi
 use phonon::direct_simulator::{DirectSimulator, DirectSoundPath, OcclusionType};
 use phonon::directivity::Directivity;
 use phonon::distance_attenuation::DefaultDistanceAttenuationModel;
+use phonon::static_mesh::StaticMesh;
 use phonon_kira::direct_effect::builder::DirectEffectBuilder;
 use phonon_kira::direct_effect::handle::DirectEffectHandle;
 
@@ -51,14 +53,15 @@ fn setup(
     commands.spawn(PbrBundle {
         mesh: meshes.add(Circle::new(4.0)),
         material: materials.add(Color::WHITE),
-        transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+        transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+            .with_translation(Vec3::new(0.0, -1.0, 0.0)),
         ..default()
     });
     // cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        mesh: meshes.add(Cuboid::new(2.0, 2.0, 2.0)),
         material: materials.add(Color::rgb_u8(124, 144, 255)),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     });
     // light
@@ -159,13 +162,21 @@ fn update_direct_effect(
 
     for mut effect in &mut effect_query {
         let max_occlusion_samples = 100;
-        let num_samples_source = 10; // must be less than `max_occlusion_samples`
+        let num_samples_source = 100; // must be less than `max_occlusion_samples`
 
         let simulator = DirectSimulator::new(max_occlusion_samples);
 
-        let scene = phonon::scene::Scene::new();
+        let mut scene = phonon::scene::Scene::new();
 
-        let flags = DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::AirAbsorption;
+        let mesh =
+            phonon::mesh::Mesh::new_from_parry(parry3d::shape::Cuboid::new([1.0, 1.0, 1.0].into()));
+        let static_mesh = Rc::new(StaticMesh::new_from_mesh(mesh));
+        scene.add_static_mesh(static_mesh);
+        scene.commit();
+
+        let flags = DirectApplyFlags::DistanceAttenuation
+            | DirectApplyFlags::AirAbsorption
+            | DirectApplyFlags::Occlusion;
 
         let source_position = CoordinateSpace3f::from_vectors(
             cam_transform.forward(),
@@ -188,8 +199,8 @@ fn update_direct_effect(
             &DefaultDistanceAttenuationModel::default(),
             &DefaultAirAbsorptionModel::default(),
             Directivity::default(),
-            OcclusionType::Raycast,
-            0.0,
+            OcclusionType::Volumetric,
+            1.0,
             num_samples_source,
             1,
             &mut direct_sound_path,

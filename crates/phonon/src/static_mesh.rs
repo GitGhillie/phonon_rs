@@ -48,6 +48,28 @@ impl StaticMesh {
         })
     }
 
+    // todo ability to create mesh with a single material
+    pub fn new_from_mesh(
+        mesh: Mesh,
+        //material_indices: Vec<usize>,
+        //materials: Vec<Material>,
+    ) -> RefCell<Self> {
+        let material = Material {
+            absorption: [0.5, 0.5, 0.5],
+            scattering: 0.05,
+            transmission: [0.1, 0.1, 0.1],
+        };
+
+        let num_triangles = mesh.mesh.num_triangles();
+        let materials = vec![material];
+
+        RefCell::new(Self {
+            mesh,
+            material_indices: Array1::zeros(num_triangles),
+            materials: materials.into(),
+        })
+    }
+
     //todo implement min_distance
     pub(crate) fn closest_hit(
         &self,

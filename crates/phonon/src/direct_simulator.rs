@@ -22,8 +22,9 @@ use crate::direct_effect::DirectApplyFlags;
 use crate::directivity::Directivity;
 use crate::distance_attenuation::{DefaultDistanceAttenuationModel, DistanceAttenuationModel};
 use crate::propagation_medium::SPEED_OF_SOUND;
-use crate::sampling::generate_sphere_volume_sample;
+use crate::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
 use crate::scene::Scene;
+use crate::sphere::Sphere;
 use glam::Vec3;
 
 enum DirectSimulationType {
@@ -100,7 +101,7 @@ impl DirectSimulator {
         directivity: Directivity,
         occlusion_type: OcclusionType,
         occlusion_radius: f32,
-        num_occlusion_samples: i32,
+        num_occlusion_samples: usize,
         num_transmission_rays: i32,
         direct_sound_path: &mut DirectSoundPath,
     ) {
@@ -142,7 +143,14 @@ impl DirectSimulator {
                         Self::raycast_occlusion(scene, listener.origin, source.origin);
                 }
                 OcclusionType::Volumetric => {
-                    todo!()
+                    direct_sound_path.occlusion = Self::raycast_volumetric(
+                        self,
+                        scene,
+                        listener.origin,
+                        source.origin,
+                        occlusion_radius,
+                        num_occlusion_samples,
+                    );
                 }
             }
         } else {
@@ -158,9 +166,44 @@ impl DirectSimulator {
 
     fn raycast_occlusion(scene: Scene, listener_position: Vec3, source_position: Vec3) -> f32 {
         match scene.is_occluded(listener_position, source_position) {
-            false => 0.0,
-            true => 1.0,
+            false => 1.0,
+            true => 0.0,
         }
+    }
+
+    fn raycast_volumetric(
+        &self,
+        scene: Scene,
+        listener_position: Vec3,
+        source_position: Vec3,
+        source_radius: f32,
+        num_samples: usize,
+    ) -> f32 {
+        let mut occlusion: f32 = 0.0;
+        let mut num_valid_samples = 0;
+
+        let num_samples = self.sphere_volume_samples.len().min(num_samples);
+
+        for i in 0..num_samples {
+            let sphere = Sphere::new(source_position, source_radius);
+            let sample = transform_sphere_volume_sample(self.sphere_volume_samples[i], sphere);
+
+            if scene.is_occluded(source_position, sample) {
+                continue;
+            }
+
+            num_valid_samples += 1;
+
+            if !scene.is_occluded(listener_position, sample) {
+                occlusion += 1.0;
+            }
+        }
+
+        if num_valid_samples == 0 {
+            return 0.0;
+        }
+
+        occlusion / num_valid_samples as f32
     }
 }
 
