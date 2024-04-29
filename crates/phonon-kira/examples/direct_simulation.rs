@@ -6,11 +6,10 @@ use std::rc::Rc;
 
 use bevy_kira_components::kira::sound::Region;
 use bevy_kira_components::kira::track::TrackBuilder;
-use bevy_kira_components::kira::tween::Tween;
 
 use bevy_kira_components::prelude::*;
 use bevy_kira_components::tracks::TrackHandle;
-use bevy_kira_components::{AudioPlugin, InternalAudioMarker};
+use bevy_kira_components::AudioPlugin;
 use phonon::air_absorption::DefaultAirAbsorptionModel;
 use phonon::coordinate_space::CoordinateSpace3f;
 use phonon::direct_effect::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
@@ -47,7 +46,6 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
 ) {
     // circular base
     commands.spawn(PbrBundle {
@@ -76,15 +74,8 @@ fn setup(
 }
 
 fn setup_track(mut commands: Commands) {
-    let mut direct_params = DirectEffectParameters {
-        direct_sound_path: DirectSoundPath {
-            distance_attenuation: 0.3,
-            air_absorption: [1.0, 1.0, 1.0],
-            delay: 0.0,
-            occlusion: 0.1,
-            transmission: [1.0, 1.0, 1.0],
-            directivity: 0.0,
-        },
+    let direct_params = DirectEffectParameters {
+        direct_sound_path: DirectSoundPath::default(),
         flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::Occlusion,
         transmission_type: TransmissionType::FrequencyIndependent,
     };
@@ -105,7 +96,6 @@ fn init_sound(
     track_query: Query<Entity, Added<TrackHandle>>,
 ) {
     if let Ok(track_ent) = track_query.get_single() {
-        println!("Found track");
         // todo: consider moving the data folder
         let audio_file = asset_server.load::<AudioFile>("../../../data/audio/pink_noise.ogg");
 
@@ -164,6 +154,7 @@ fn update_direct_effect(
         let max_occlusion_samples = 100;
         let num_samples_source = 100; // must be less than `max_occlusion_samples`
 
+        // todo: Don't create all of this every frame
         let simulator = DirectSimulator::new(max_occlusion_samples);
 
         let mut scene = phonon::scene::Scene::new();

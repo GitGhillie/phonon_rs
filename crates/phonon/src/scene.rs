@@ -21,7 +21,6 @@ use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
 use glam::Vec3;
 use std::cell::RefCell;
-use std::ops::Deref;
 use std::rc::Rc;
 
 /// A 3D scene, which can contain geometry objects that can interact with acoustic rays.

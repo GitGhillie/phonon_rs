@@ -20,20 +20,21 @@ use crate::bands::NUM_BANDS;
 use crate::coordinate_space::CoordinateSpace3f;
 use crate::direct_effect::DirectApplyFlags;
 use crate::directivity::Directivity;
-use crate::distance_attenuation::{DefaultDistanceAttenuationModel, DistanceAttenuationModel};
+use crate::distance_attenuation::DistanceAttenuationModel;
 use crate::propagation_medium::SPEED_OF_SOUND;
 use crate::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
 use crate::scene::Scene;
 use crate::sphere::Sphere;
 use glam::Vec3;
 
+// todo: Remove in favor of DirectApplyFlags?
 enum DirectSimulationType {
     CalcDistanceAttenuation,
     CalcAirAbsorption,
     CalcDirectivity,
     CalcOcclusion,
     CalcTransmission,
-    CalcDela,
+    CalcDelay,
 }
 
 pub enum OcclusionType {
