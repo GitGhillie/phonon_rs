@@ -93,7 +93,7 @@ impl DirectSimulator {
 
     pub fn simulate(
         &self,
-        scene: Scene,
+        scene: &Scene,
         flags: DirectApplyFlags,
         source: CoordinateSpace3f,
         listener: CoordinateSpace3f,
@@ -165,7 +165,7 @@ impl DirectSimulator {
         (source - listener).length() / SPEED_OF_SOUND
     }
 
-    fn raycast_occlusion(scene: Scene, listener_position: Vec3, source_position: Vec3) -> f32 {
+    fn raycast_occlusion(scene: &Scene, listener_position: Vec3, source_position: Vec3) -> f32 {
         match scene.is_occluded(listener_position, source_position) {
             false => 1.0,
             true => 0.0,
@@ -174,7 +174,7 @@ impl DirectSimulator {
 
     fn raycast_volumetric(
         &self,
-        scene: Scene,
+        scene: &Scene,
         listener_position: Vec3,
         source_position: Vec3,
         source_radius: f32,

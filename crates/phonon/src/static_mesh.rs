@@ -24,6 +24,7 @@ use glam::Vec3;
 use ndarray::Array1;
 use parry3d::query::RayCast;
 use std::cell::RefCell;
+use std::sync::Mutex;
 
 /// A static triangle mesh. The geometry of this mesh is assumed to never change at runtime. It is described in
 /// world-space coordinates. Materials are specified for each triangle.
@@ -53,7 +54,7 @@ impl StaticMesh {
         mesh: Mesh,
         //material_indices: Vec<usize>,
         //materials: Vec<Material>,
-    ) -> RefCell<Self> {
+    ) -> Mutex<Self> {
         let material = Material {
             absorption: [0.5, 0.5, 0.5],
             scattering: 0.05,
@@ -63,7 +64,7 @@ impl StaticMesh {
         let num_triangles = mesh.mesh.num_triangles();
         let materials = vec![material];
 
-        RefCell::new(Self {
+        Mutex::new(Self {
             mesh,
             material_indices: Array1::zeros(num_triangles),
             materials: materials.into(),

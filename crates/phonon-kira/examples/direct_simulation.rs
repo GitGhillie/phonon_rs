@@ -3,6 +3,7 @@
 use bevy::prelude::*;
 use bevy_flycam::prelude::*;
 use std::rc::Rc;
+use std::sync::Arc;
 
 use bevy_kira_components::kira::sound::Region;
 use bevy_kira_components::kira::track::TrackBuilder;
@@ -26,8 +27,29 @@ struct DirectTrack;
 #[derive(Component)]
 struct SourceMarker;
 
+#[derive(Resource)]
+struct Phonon {
+    simulator: DirectSimulator,
+    scene: phonon::scene::Scene,
+}
+
 fn main() {
+    let max_occlusion_samples = 100;
+
+    let mesh =
+        phonon::mesh::Mesh::new_from_parry(parry3d::shape::Cuboid::new([1.0, 1.0, 1.0].into()));
+    let static_mesh = Arc::new(StaticMesh::new_from_mesh(mesh));
+
+    let mut scene = phonon::scene::Scene::new();
+    scene.add_static_mesh(static_mesh);
+    scene.commit();
+
     App::new()
+        // todo: should we make this send resource?
+        .insert_resource(Phonon {
+            simulator: DirectSimulator::new(max_occlusion_samples),
+            scene,
+        })
         .add_plugins(DefaultPlugins)
         .add_plugins(PlayerPlugin)
         .add_plugins(AudioPlugin)
@@ -140,6 +162,7 @@ fn update_direct_effect(
     cam_query: Query<&GlobalTransform, With<Camera>>,
     audio_source_query: Query<&GlobalTransform, With<SourceMarker>>,
     mut effect_query: Query<&mut EffectHandle<DirectEffectHandle>>,
+    phonon_res: Res<Phonon>,
 ) {
     let cam_transform = cam_query.get_single().unwrap();
     let source_transform = audio_source_query.get_single();
@@ -151,19 +174,7 @@ fn update_direct_effect(
     let source_transform = source_transform.unwrap();
 
     for mut effect in &mut effect_query {
-        let max_occlusion_samples = 100;
         let num_samples_source = 100; // must be less than `max_occlusion_samples`
-
-        // todo: Don't create all of this every frame
-        let simulator = DirectSimulator::new(max_occlusion_samples);
-
-        let mut scene = phonon::scene::Scene::new();
-
-        let mesh =
-            phonon::mesh::Mesh::new_from_parry(parry3d::shape::Cuboid::new([1.0, 1.0, 1.0].into()));
-        let static_mesh = Rc::new(StaticMesh::new_from_mesh(mesh));
-        scene.add_static_mesh(static_mesh);
-        scene.commit();
 
         let flags = DirectApplyFlags::DistanceAttenuation
             | DirectApplyFlags::AirAbsorption
@@ -182,8 +193,8 @@ fn update_direct_effect(
 
         let mut direct_sound_path = DirectSoundPath::default();
 
-        simulator.simulate(
-            scene,
+        phonon_res.simulator.simulate(
+            &phonon_res.scene,
             flags,
             source_position,
             listener_position,

@@ -19,8 +19,7 @@ use crate::hit::Hit;
 use crate::ray::Ray;
 use crate::scene::Scene;
 use glam::Mat4;
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 // Port note: mNumVertices and mNumTriangles have been left out, there doesn't seem to be a use.
 /// A triangle mesh that can be moved (translated), rotated, or scaled, but cannot deform.
@@ -31,7 +30,7 @@ use std::rc::Rc;
 /// For example, the sub-scene may be a prefab door, and the transform can be used to place it
 /// in a doorway and animate it as it opens or closes.
 pub struct InstancedMesh {
-    sub_scene: Rc<RefCell<Scene>>,
+    sub_scene: Arc<Mutex<Scene>>,
     transform: Mat4,
     inverse_transform: Mat4,
     /// Flag indicating whether this instanced mesh has changed since the last call to commit().
@@ -40,8 +39,8 @@ pub struct InstancedMesh {
 
 impl InstancedMesh {
     // Port note: Original code transposes the transform. For performance reasons maybe?
-    pub fn new(sub_scene: Rc<RefCell<Scene>>, transform: Mat4) -> RefCell<Self> {
-        RefCell::new(Self {
+    pub fn new(sub_scene: Arc<Mutex<Scene>>, transform: Mat4) -> Mutex<Self> {
+        Mutex::new(Self {
             sub_scene,
             transform,
             inverse_transform: transform.inverse(),
@@ -50,7 +49,7 @@ impl InstancedMesh {
     }
 
     pub(crate) fn commit(&mut self) {
-        self.sub_scene.borrow_mut().commit();
+        self.sub_scene.lock().unwrap().commit();
 
         // After calling commit(), this instanced mesh will be considered unchanged until a subsequent call to
         // updateTransform() changes the transform matrix.
@@ -71,10 +70,11 @@ impl InstancedMesh {
         let mut max_distance = max_distance;
 
         let transformed_ray = self.inverse_transform_ray(ray, &mut min_distance, &mut max_distance);
-        let hit_maybe =
-            self.sub_scene
-                .borrow()
-                .closest_hit(&transformed_ray, min_distance, max_distance);
+        let hit_maybe = self.sub_scene.lock().unwrap().closest_hit(
+            &transformed_ray,
+            min_distance,
+            max_distance,
+        );
 
         return if let Some(hit) = hit_maybe {
             Some(self.transform_hit(&hit, &transformed_ray))
@@ -91,7 +91,8 @@ impl InstancedMesh {
         let transformed_ray = self.inverse_transform_ray(ray, &mut min_distance, &mut max_distance);
 
         self.sub_scene
-            .borrow()
+            .lock()
+            .unwrap()
             .any_hit(&transformed_ray, min_distance, max_distance)
     }
 
