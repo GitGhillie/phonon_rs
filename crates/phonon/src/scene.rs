@@ -20,9 +20,7 @@ use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
 use glam::Vec3;
-use std::cell::RefCell;
 use std::ops::Deref;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 /// A 3D scene, which can contain geometry objects that can interact with acoustic rays.
@@ -214,7 +212,7 @@ mod tests {
         let materials = vec![material];
         let material_indices = vec![0];
 
-        let static_mesh = Rc::new(StaticMesh::new(
+        let static_mesh = Arc::new(StaticMesh::new(
             vertices,
             triangles,
             material_indices,
@@ -237,11 +235,11 @@ mod tests {
 
         assert!(!scene.any_hit(&ray_hit, 0.0, 1.0));
 
-        let mut sub_scene = Rc::new(RefCell::new(Scene::new()));
-        sub_scene.borrow_mut().add_static_mesh(static_mesh);
+        let mut sub_scene = Arc::new(Mutex::new(Scene::new()));
+        sub_scene.lock().unwrap().add_static_mesh(static_mesh);
 
         let transform = Affine3A::from_translation(Vec3::new(1.0, 0.0, 2.0));
-        let instanced_mesh = Rc::new(InstancedMesh::new(sub_scene, Mat4::from(transform)));
+        let instanced_mesh = Arc::new(InstancedMesh::new(sub_scene, Mat4::from(transform)));
 
         scene.add_instanced_mesh(instanced_mesh);
         scene.commit();

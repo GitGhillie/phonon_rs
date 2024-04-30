@@ -41,8 +41,8 @@ impl StaticMesh {
         triangles: Vec<Triangle>,
         material_indices: Vec<usize>,
         materials: Vec<Material>,
-    ) -> RefCell<Self> {
-        RefCell::new(Self {
+    ) -> Mutex<Self> {
+        Mutex::new(Self {
             mesh: Mesh::new(vertices, triangles),
             material_indices: material_indices.into(),
             materials: materials.into(),
@@ -153,14 +153,14 @@ mod tests {
 
         let ray_miss: Ray = Ray::new(Vec3::new(1.0, 0.0, -1.0), Vec3::new(0.0, 1.0, 0.0));
 
-        let hit0 = static_mesh.borrow().closest_hit(&ray0, 0.0, 10.0);
-        let hit1 = static_mesh.borrow().closest_hit(&ray1, 0.0, 10.0);
-        let hit2 = static_mesh.borrow().closest_hit(&ray2, 0.0, 10.0);
+        let hit0 = static_mesh.lock().unwrap().closest_hit(&ray0, 0.0, 10.0);
+        let hit1 = static_mesh.lock().unwrap().closest_hit(&ray1, 0.0, 10.0);
+        let hit2 = static_mesh.lock().unwrap().closest_hit(&ray2, 0.0, 10.0);
 
         assert_eq!(hit0.unwrap().triangle_index, 0);
         assert_eq!(hit1.unwrap().triangle_index, 1);
         assert_eq!(hit2.unwrap().triangle_index, 2);
 
-        assert!(!static_mesh.borrow().any_hit(&ray_miss, 0.0, 10.0));
+        assert!(!static_mesh.lock().unwrap().any_hit(&ray_miss, 0.0, 10.0));
     }
 }

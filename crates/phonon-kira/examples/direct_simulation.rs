@@ -2,7 +2,6 @@
 
 use bevy::prelude::*;
 use bevy_flycam::prelude::*;
-use std::rc::Rc;
 use std::sync::Arc;
 
 use bevy_kira_components::kira::sound::Region;
