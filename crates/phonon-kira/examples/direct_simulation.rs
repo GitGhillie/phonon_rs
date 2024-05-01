@@ -44,7 +44,6 @@ fn main() {
     scene.commit();
 
     App::new()
-        // todo: should we make this send resource?
         .insert_resource(Phonon {
             simulator: DirectSimulator::new(max_occlusion_samples),
             scene,
