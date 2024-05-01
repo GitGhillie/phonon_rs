@@ -33,7 +33,7 @@ use std::sync::{Arc, Mutex};
 pub struct Scene {
     //todo: Explain why there are two vectors of each
     //todo (perf): Take a better look if Arc<Mutex<>> is the smart thing to do here.
-    pub(crate) static_meshes: [Vec<Arc<Mutex<StaticMesh>>>; 2],
+    pub(crate) static_meshes: [Vec<Arc<StaticMesh>>; 2],
     pub(crate) instanced_meshes: [Vec<Arc<Mutex<InstancedMesh>>>; 2],
     /// Flag indicating whether the scene has changed in some way since the previous call to commit().
     has_changed: bool,
@@ -52,15 +52,14 @@ impl Scene {
         }
     }
 
-    pub fn add_static_mesh(&mut self, static_mesh: Arc<Mutex<StaticMesh>>) {
+    pub fn add_static_mesh(&mut self, static_mesh: Arc<StaticMesh>) {
         self.static_meshes[1].push(static_mesh);
         self.has_changed = true;
     }
 
-    pub fn remove_static_mesh(&mut self, static_mesh: Arc<Mutex<StaticMesh>>) {
-        self.static_meshes[1].retain(|x| {
-            Arc::<Mutex<StaticMesh>>::as_ptr(x) != Arc::<Mutex<StaticMesh>>::as_ptr(&static_mesh)
-        });
+    pub fn remove_static_mesh(&mut self, static_mesh: Arc<StaticMesh>) {
+        self.static_meshes[1]
+            .retain(|x| Arc::<StaticMesh>::as_ptr(x) != Arc::<StaticMesh>::as_ptr(&static_mesh));
         self.has_changed = true;
     }
 
@@ -121,11 +120,7 @@ impl Scene {
         // in the scene, it would be better to use some sort of acceleration
         // structure.
         for static_mesh in &self.static_meshes[0] {
-            let object_hit_maybe =
-                static_mesh
-                    .lock()
-                    .unwrap()
-                    .closest_hit(ray, min_distance, max_distance);
+            let object_hit_maybe = static_mesh.closest_hit(ray, min_distance, max_distance);
 
             if let Some(object_hit) = object_hit_maybe {
                 if object_hit.distance < hit_distance {
@@ -155,11 +150,7 @@ impl Scene {
 
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
         for static_mesh in &self.static_meshes[0] {
-            if static_mesh
-                .lock()
-                .unwrap()
-                .any_hit(ray, min_distance, max_distance)
-            {
+            if static_mesh.any_hit(ray, min_distance, max_distance) {
                 return true;
             }
         }
