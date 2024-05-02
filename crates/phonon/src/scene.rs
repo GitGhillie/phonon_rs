@@ -30,14 +30,25 @@ use std::sync::{Arc, Mutex};
 /// Objects can be added and removed from the scene at any time.
 /// Objects can also be defined as instances of one another.
 /// This class also allows rays to be traced through the scene.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Scene {
-    //todo: Explain why there are two vectors of each
+    /// Two lists of static meshes. The one at index 0 is used internally while
+    /// the one at index 1 can be changed by the user through `add_static_mesh`
+    /// for example. After this it's necessary to call `commit` on the `Scene`
+    /// in order to apply the changes.
     //todo (perf): Take a better look if Arc<Mutex<>> is the smart thing to do here.
+    //todo: Only static_meshes[0] should be serialized/deserialized.
     pub(crate) static_meshes: [Vec<Arc<StaticMesh>>; 2],
+
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub(crate) instanced_meshes: [Vec<Arc<Mutex<InstancedMesh>>>; 2],
+
     /// Flag indicating whether the scene has changed in some way since the previous call to commit().
+    #[cfg_attr(feature = "serde", serde(skip))]
     has_changed: bool,
+
     /// The change version of the scene.
+    #[cfg_attr(feature = "serde", serde(skip))]
     change_version: u32,
 }
 
@@ -237,7 +248,7 @@ mod tests {
 
         let ray_hit: Ray = Ray::new(Vec3::new(1.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
         let hit_point = scene.closest_hit(&ray_hit, 0.0, 10.0).unwrap();
-        println!("{:?}", hit_point);
+
         assert!(scene.any_hit(&ray_hit, 0.0, 10.0));
     }
 }

@@ -28,6 +28,7 @@ use std::sync::Mutex;
 
 /// A static triangle mesh. The geometry of this mesh is assumed to never change at runtime. It is described in
 /// world-space coordinates. Materials are specified for each triangle.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct StaticMesh {
     mesh: Mesh,
     material_indices: Array1<usize>,

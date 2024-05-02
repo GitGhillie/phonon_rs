@@ -16,6 +16,7 @@
 //
 
 /// An indexed triangle, which can only be interpreted relative to a vertex buffer.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone)]
 pub struct Triangle {
     pub indices: [usize; 3],
