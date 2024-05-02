@@ -22,7 +22,7 @@ const MONO_SPEAKERS: [[f32; 3]; 1] = [[0.0, 0.0, 0.0]];
 
 const STEREO_SPEAKERS: [[f32; 3]; 2] = [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum SpeakerLayoutType {
     Mono,
     Stereo,
@@ -32,10 +32,11 @@ pub(crate) enum SpeakerLayoutType {
     Custom,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct SpeakerLayout {
-    layout_type: SpeakerLayoutType,
+    pub(crate) layout_type: SpeakerLayoutType,
     num_speakers: i16,
-    speakers: Vec<Vec3>,
+    speakers: Array1<Vec3>,
 }
 
 impl SpeakerLayout {
