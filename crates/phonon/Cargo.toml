@@ -26,7 +26,6 @@ serde = {version = "1", optional = true}
 criterion = { version = "0.5", features = ["html_reports"] }
 plotters = "0.3"
 rand = "0.8"
-serde_json = "1"
 
 [[bench]]
 name = "audio_buffer_bench"
