@@ -20,8 +20,8 @@ use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
 use glam::Vec3;
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 
 /// A 3D scene, which can contain geometry objects that can interact with acoustic rays.
 /// The scene object itself does not contain any geometry, but is a container for
@@ -32,9 +32,9 @@ use std::rc::Rc;
 /// This class also allows rays to be traced through the scene.
 pub struct Scene {
     //todo: Explain why there are two vectors of each
-    //todo: Take a better look if Rc<RefCell<>> is the smart thing to do here.
-    pub(crate) static_meshes: [Vec<Rc<RefCell<StaticMesh>>>; 2],
-    pub(crate) instanced_meshes: [Vec<Rc<RefCell<InstancedMesh>>>; 2],
+    //todo (perf): Take a better look if Arc<Mutex<>> is the smart thing to do here.
+    pub(crate) static_meshes: [Vec<Arc<StaticMesh>>; 2],
+    pub(crate) instanced_meshes: [Vec<Arc<Mutex<InstancedMesh>>>; 2],
     /// Flag indicating whether the scene has changed in some way since the previous call to commit().
     has_changed: bool,
     /// The change version of the scene.
@@ -52,23 +52,27 @@ impl Scene {
         }
     }
 
-    pub fn add_static_mesh(&mut self, static_mesh: Rc<RefCell<StaticMesh>>) {
+    pub fn add_static_mesh(&mut self, static_mesh: Arc<StaticMesh>) {
         self.static_meshes[1].push(static_mesh);
         self.has_changed = true;
     }
 
-    pub fn remove_static_mesh(&mut self, static_mesh: Rc<RefCell<StaticMesh>>) {
-        self.static_meshes[1].retain(|x| x.as_ptr() != static_mesh.as_ptr());
+    pub fn remove_static_mesh(&mut self, static_mesh: Arc<StaticMesh>) {
+        self.static_meshes[1]
+            .retain(|x| Arc::<StaticMesh>::as_ptr(x) != Arc::<StaticMesh>::as_ptr(&static_mesh));
         self.has_changed = true;
     }
 
-    pub fn add_instanced_mesh(&mut self, instanced_mesh: Rc<RefCell<InstancedMesh>>) {
+    pub fn add_instanced_mesh(&mut self, instanced_mesh: Arc<Mutex<InstancedMesh>>) {
         self.instanced_meshes[1].push(instanced_mesh);
         self.has_changed = true;
     }
 
-    pub fn remove_instanced_mesh(&mut self, instanced_mesh: Rc<RefCell<InstancedMesh>>) {
-        self.instanced_meshes[1].retain(|x| x.as_ptr() != instanced_mesh.as_ptr());
+    pub fn remove_instanced_mesh(&mut self, instanced_mesh: Arc<Mutex<InstancedMesh>>) {
+        self.instanced_meshes[1].retain(|x| {
+            Arc::<Mutex<InstancedMesh>>::as_ptr(x)
+                != Arc::<Mutex<InstancedMesh>>::as_ptr(&instanced_mesh)
+        });
         self.has_changed = true;
     }
 
@@ -78,7 +82,7 @@ impl Scene {
         // instanced meshes have had their transforms updated.
         if !self.has_changed {
             for instanced_mesh in &self.instanced_meshes[0] {
-                if instanced_mesh.borrow().has_changed() {
+                if instanced_mesh.lock().unwrap().has_changed() {
                     self.has_changed = true;
                     break;
                 }
@@ -94,7 +98,7 @@ impl Scene {
         self.instanced_meshes[0] = self.instanced_meshes[1].clone();
 
         for instanced_mesh in &self.instanced_meshes[0] {
-            instanced_mesh.borrow_mut().commit();
+            instanced_mesh.lock().unwrap().commit();
         }
 
         // The scene will be considered unchanged until something is changed subsequently.
@@ -116,10 +120,7 @@ impl Scene {
         // in the scene, it would be better to use some sort of acceleration
         // structure.
         for static_mesh in &self.static_meshes[0] {
-            let object_hit_maybe =
-                static_mesh
-                    .borrow()
-                    .closest_hit(ray, min_distance, max_distance);
+            let object_hit_maybe = static_mesh.closest_hit(ray, min_distance, max_distance);
 
             if let Some(object_hit) = object_hit_maybe {
                 if object_hit.distance < hit_distance {
@@ -132,7 +133,8 @@ impl Scene {
         for instanced_mesh in &self.instanced_meshes[0] {
             let object_hit_maybe =
                 instanced_mesh
-                    .borrow()
+                    .lock()
+                    .unwrap()
                     .closest_hit(ray, min_distance, max_distance);
 
             if let Some(object_hit) = object_hit_maybe {
@@ -148,17 +150,15 @@ impl Scene {
 
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
         for static_mesh in &self.static_meshes[0] {
-            if static_mesh
-                .borrow()
-                .any_hit(ray, min_distance, max_distance)
-            {
+            if static_mesh.any_hit(ray, min_distance, max_distance) {
                 return true;
             }
         }
 
         for instanced_mesh in &self.instanced_meshes[0] {
             if instanced_mesh
-                .borrow()
+                .lock()
+                .unwrap()
                 .any_hit(ray, min_distance, max_distance)
             {
                 return true;
@@ -203,7 +203,7 @@ mod tests {
         let materials = vec![material];
         let material_indices = vec![0];
 
-        let static_mesh = Rc::new(StaticMesh::new(
+        let static_mesh = Arc::new(StaticMesh::new(
             vertices,
             triangles,
             material_indices,
@@ -226,11 +226,11 @@ mod tests {
 
         assert!(!scene.any_hit(&ray_hit, 0.0, 1.0));
 
-        let mut sub_scene = Rc::new(RefCell::new(Scene::new()));
-        sub_scene.borrow_mut().add_static_mesh(static_mesh);
+        let mut sub_scene = Arc::new(Mutex::new(Scene::new()));
+        sub_scene.lock().unwrap().add_static_mesh(static_mesh);
 
         let transform = Affine3A::from_translation(Vec3::new(1.0, 0.0, 2.0));
-        let instanced_mesh = Rc::new(InstancedMesh::new(sub_scene, Mat4::from(transform)));
+        let instanced_mesh = Arc::new(InstancedMesh::new(sub_scene, Mat4::from(transform)));
 
         scene.add_instanced_mesh(instanced_mesh);
         scene.commit();
