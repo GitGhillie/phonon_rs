@@ -23,6 +23,7 @@ fn main() {
     let mut track_builder = TrackBuilder::new();
     let mut effect_handle = track_builder.add_effect(DirectEffectBuilder {
         parameters: direct_params,
+        panning_params: Default::default(),
     });
     let track = manager.add_sub_track(track_builder).unwrap();
 

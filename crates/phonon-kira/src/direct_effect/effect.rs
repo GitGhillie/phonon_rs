@@ -7,6 +7,7 @@ use kira::track::effect::Effect;
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, DirectEffectParameters};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
+use phonon::speaker_layout::SpeakerLayoutType;
 use ringbuf::HeapConsumer;
 
 pub(crate) struct DirectEffectWrapped {
@@ -30,11 +31,13 @@ impl DirectEffectWrapped {
     ) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
         let direct_effect = DirectEffect::new(audio_settings.clone());
+        let panning_effect = PanningEffect::new(SpeakerLayoutType::Stereo);
 
         Self {
             command_consumer,
             direct_effect,
             parameters: builder.parameters,
+            panning_effect,
             panning_params: builder.panning_params,
             audio_buffer: AudioBuffer::new(audio_settings.frame_size),
             mono_buffer0: AudioBuffer::new(audio_settings.frame_size),

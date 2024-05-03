@@ -7,7 +7,7 @@ use ringbuf::HeapRb;
 
 const COMMAND_CAPACITY: usize = 32;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug)]
 pub struct DirectEffectBuilder {
     pub parameters: DirectEffectParameters,
     pub panning_params: PanningEffectParameters,

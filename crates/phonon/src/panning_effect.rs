@@ -31,12 +31,12 @@ struct PanningData {
     delta_phi: f32,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct PanningEffectParameters {
-    direction: Vec3,
+    pub direction: Vec3,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug)]
 pub struct PanningEffect {
     speaker_layout: SpeakerLayout,
     prev_direction: Vec3,
