@@ -90,6 +90,7 @@ impl PanningEffect {
         AudioEffectState::TailComplete
     }
 
+    /// Returns the weight for speaker `index` within the given `speaker_layout`.
     fn panning_weight(
         direction: Vec3,
         speaker_layout: &SpeakerLayout,
@@ -115,7 +116,7 @@ impl PanningEffect {
     }
 
     fn stereo_panning_weight(direction: Vec3, channel: usize) -> f32 {
-        let horizontal = direction.normalize();
+        let horizontal = direction.normalize_or_zero();
         let p = horizontal.x;
         let q = (p + 1.0) * (PI / 4.0);
 
