@@ -36,6 +36,7 @@ pub struct PanningEffectParameters {
     pub direction: Vec3,
 }
 
+/// Audio effect that applies multichannel panning coefficients to an incoming mono audio buffer.
 #[derive(Debug)]
 pub struct PanningEffect {
     speaker_layout: SpeakerLayout,
@@ -64,8 +65,7 @@ impl PanningEffect {
         let panning_data = PanningData::default();
         let prev_panning_data = PanningData::default();
 
-        // todo output.num_channels
-        for i in 0..output.len() {
+        for i in 0..output.num_channels() {
             let weight =
                 Self::panning_weight(parameters.direction, &self.speaker_layout, i, &panning_data);
             let weight_prev = Self::panning_weight(
@@ -75,8 +75,7 @@ impl PanningEffect {
                 &prev_panning_data,
             );
 
-            // todo input.num_samples
-            for j in 0..input[0].len() {
+            for j in 0..input.num_samples() {
                 // Crossfade between the panning coefficients for the previous frame and the
                 // current frame.
                 let alpha = (i as f32) / (input[0].len() as f32);
@@ -115,12 +114,12 @@ impl PanningEffect {
         }
     }
 
-    fn stereo_panning_weight(direction: Vec3, index: usize) -> f32 {
+    fn stereo_panning_weight(direction: Vec3, channel: usize) -> f32 {
         let horizontal = direction.normalize();
         let p = horizontal.x;
         let q = (p + 1.0) * (PI / 4.0);
 
-        if index == 0 {
+        if channel == 0 {
             q.cos()
         } else {
             q.sin()

@@ -45,6 +45,16 @@ impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
         AudioBuffer(core::array::from_fn(|_| vec![0.0; num_samples]))
     }
 
+    /// Returns the number of channels this `AudioBuffer` has.
+    pub fn num_channels(&self) -> usize {
+        self.len()
+    }
+
+    /// Returns the number of samples each channel has.
+    pub fn num_samples(&self) -> usize {
+        self[0].len()
+    }
+
     pub fn make_silent(&mut self) {
         for channel in &mut self.0 {
             channel.fill(0.0);
