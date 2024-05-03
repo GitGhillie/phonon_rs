@@ -1,3 +1,7 @@
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
+
 pub mod air_absorption;
 pub mod audio_buffer;
 pub mod bands;
