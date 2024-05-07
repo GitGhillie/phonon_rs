@@ -57,9 +57,9 @@ impl StaticMesh {
         //materials: Vec<Material>,
     ) -> Self {
         let material = Material {
-            absorption: [0.5, 0.5, 0.5],
+            absorption: [0.5, 0.3, 0.1],
             scattering: 0.05,
-            transmission: [0.1, 0.1, 0.1],
+            transmission: [0.5, 0.3, 0.1],
         };
 
         let num_triangles = mesh.mesh.num_triangles();
