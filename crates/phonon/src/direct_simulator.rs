@@ -244,7 +244,7 @@ impl DirectSimulator {
         // prevent self-intersection.
         let ray_offset = 1e-2f32;
 
-        // todo: I'm not sure I understand the following. Might be worth investigation.
+        // todo: I'm not sure I understand the following. Might be worth investigating.
         // We will alternate between tracing a ray from the listener to the source, and from the source to the listener.
         // The motivation is that if the listener observes the source go behind an object, then that object's material is
         // most relevant in terms of the expected amount of transmitted sound, even if there are multiple other occluders
