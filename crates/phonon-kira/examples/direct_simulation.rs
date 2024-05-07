@@ -16,6 +16,7 @@ use phonon::direct_effect::{DirectApplyFlags, DirectEffectParameters, Transmissi
 use phonon::direct_simulator::{DirectSimulator, DirectSoundPath, OcclusionType};
 use phonon::directivity::Directivity;
 use phonon::distance_attenuation::DefaultDistanceAttenuationModel;
+use phonon::panning_effect::PanningEffectParameters;
 use phonon::static_mesh::StaticMesh;
 use phonon_kira::direct_effect::builder::DirectEffectBuilder;
 use phonon_kira::direct_effect::handle::DirectEffectHandle;
@@ -103,6 +104,7 @@ fn setup_track(mut commands: Commands) {
     let mut track = TrackBuilder::new();
     let panning = track.add_effect(DirectEffectBuilder {
         parameters: direct_params,
+        panning_params: Default::default(),
     });
     // Spawn track entity
     commands.spawn((Track(track), EffectHandle(panning), DirectTrack));
@@ -212,6 +214,23 @@ fn update_direct_effect(
                 direct_sound_path,
                 flags,
                 transmission_type: TransmissionType::FrequencyIndependent,
+            })
+            .unwrap();
+
+        // Todo: The following probably doesn't need to use the Steam Audio coordinate utilities
+        let coordinates = CoordinateSpace3f::from_vectors(
+            cam_transform.forward(),
+            cam_transform.up(),
+            cam_transform.translation(),
+        );
+        let point = source_transform.translation();
+        let world_space_direction = (point - coordinates.origin).normalize_or_zero();
+        let local_space_direction = coordinates.direction_to_local(world_space_direction);
+
+        effect
+            .0
+            .set_panning(PanningEffectParameters {
+                direction: local_space_direction,
             })
             .unwrap();
     }
