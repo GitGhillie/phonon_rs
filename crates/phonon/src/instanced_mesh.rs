@@ -83,7 +83,6 @@ impl InstancedMesh {
         };
     }
 
-    // todo implement min_distance
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
         let mut min_distance = min_distance;
         let mut max_distance = max_distance;

@@ -143,8 +143,7 @@ impl DirectSimulator {
                         Self::raycast_occlusion(scene, listener.origin, source.origin);
                 }
                 OcclusionType::Volumetric => {
-                    direct_sound_path.occlusion = Self::raycast_volumetric(
-                        self,
+                    direct_sound_path.occlusion = self.raycast_volumetric(
                         scene,
                         listener.origin,
                         source.origin,
@@ -159,7 +158,13 @@ impl DirectSimulator {
 
         // todo: The scene must be optional
         if flags.contains(DirectApplyFlags::Transmission) {
-            Self::transmission(self, scene, listener.origin, source.origin, &mut direct_sound_path.transmission, num_transmission_rays);
+            self.transmission(
+                scene,
+                listener.origin,
+                source.origin,
+                &mut direct_sound_path.transmission,
+                num_transmission_rays,
+            );
         } else {
             direct_sound_path.transmission.fill(1.0);
         }
@@ -221,7 +226,6 @@ impl DirectSimulator {
         occlusion / num_valid_samples as f32
     }
 
-    // todo: Need to implement min_distance on ray tests for this to work
     fn transmission(
         &self,
         scene: &Scene,
@@ -230,7 +234,7 @@ impl DirectSimulator {
         transmission_factors: &mut [f32],
         num_transmission_rays: usize,
     ) {
-        // todo: Warning maybe?
+        // todo: Warn instead?
         if num_transmission_rays <= 0 {
             return;
         }

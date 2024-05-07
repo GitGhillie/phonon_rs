@@ -72,13 +72,14 @@ impl StaticMesh {
         }
     }
 
-    //todo implement min_distance
     pub(crate) fn closest_hit(
         &self,
         ray: &Ray,
         min_distance: f32,
         max_distance: f32,
     ) -> Option<Hit> {
+        let ray = Ray::new(ray.point_at_distance(min_distance), ray.direction());
+
         // todo: What does `solid` need to be?
         let info = self
             .mesh
@@ -109,8 +110,9 @@ impl StaticMesh {
         };
     }
 
-    //todo implement min_distance
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
+        let ray = Ray::new(ray.point_at_distance(min_distance), ray.direction());
+
         self.mesh
             .mesh
             .cast_local_ray(&ray.0, max_distance, false)
