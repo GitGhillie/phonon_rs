@@ -22,10 +22,12 @@ use crate::direct_effect::DirectApplyFlags;
 use crate::directivity::Directivity;
 use crate::distance_attenuation::DistanceAttenuationModel;
 use crate::propagation_medium::SPEED_OF_SOUND;
+use crate::ray::Ray;
 use crate::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
 use crate::scene::Scene;
 use crate::sphere::Sphere;
 use glam::Vec3;
+use parry3d::query::SplitResult::Pair;
 
 // todo: Remove in favor of DirectApplyFlags?
 enum DirectSimulationType {
@@ -172,6 +174,16 @@ impl DirectSimulator {
         }
     }
 
+    /// Each source has a radius, and several points are sampled within the volume
+    /// of this sphere. To calculate a source's volumetric occlusion factor, we first
+    /// count the number of samples that are visible to the source. (If the source is
+    /// close to a wall or the floor, some samples may stick out through the surface,
+    /// and these should not be counted when calculating occlusion in the next step.
+    /// Essentially the source is shaped like a subset of the sphere's volume, where
+    /// the subset is determined by the volumetric samples that do not cross surface
+    /// boundaries.) For each sample that's visible to the source, we check whether
+    /// it's also visible to the listener. The fraction of samples visible to the
+    /// source that are also visible to the listener is then the occlusion factor.
     fn raycast_volumetric(
         &self,
         scene: &Scene,
@@ -205,6 +217,102 @@ impl DirectSimulator {
         }
 
         occlusion / num_valid_samples as f32
+    }
+
+    // todo: Need to implement min_distance on ray tests for this to work
+    fn transmission(
+        &self,
+        scene: &Scene,
+        listener_position: Vec3,
+        source_position: Vec3,
+        transmission_factors: &mut [f32],
+        num_transmission_rays: usize,
+    ) {
+        // todo: Warning maybe?
+        if num_transmission_rays <= 0 {
+            return;
+        }
+
+        // If, after finding a hit point, we want to continue tracing the ray towards the
+        // source, then offset the ray origin by this distance along the ray direction, to
+        // prevent self-intersection.
+        let ray_offset = 1e-2f32;
+
+        // todo: I'm not sure I understand the following. Might be worth investigation.
+        // We will alternate between tracing a ray from the listener to the source, and from the source to the listener.
+        // The motivation is that if the listener observes the source go behind an object, then that object's material is
+        // most relevant in terms of the expected amount of transmitted sound, even if there are multiple other occluders
+        // between the source and the listener.
+        let rays = [
+            Ray::new(
+                listener_position,
+                (source_position - listener_position).normalize(),
+            ),
+            Ray::new(
+                source_position,
+                (listener_position - source_position).normalize(),
+            ),
+        ];
+
+        let mut current_ray_index = 0;
+        let mut hit_count = 0;
+        let mut min_distances: [f32; 2] = [0.0, 0.0];
+        let max_distance = (source_position - listener_position).length();
+
+        // Product of the transmission coefficients of all hit points.
+        let mut accumulated_transmission: [f32; NUM_BANDS] = [1.0, 1.0, 1.0];
+
+        for i in 0..num_transmission_rays {
+            // Select the ray we want to trace for this iteration.
+            let ray = &rays[current_ray_index];
+            let mut min_distance = &mut min_distances[current_ray_index];
+
+            let hit = scene.closest_hit(ray, *min_distance, max_distance);
+
+            // If there's nothing more between the ray origin and the source, stop.
+            if hit.is_none() {
+                break;
+            }
+
+            let hit = hit.unwrap();
+            hit_count += 1;
+
+            // Accumulate the product of the transmission coefficients of all materials
+            // encountered so far.
+            for j in 0..NUM_BANDS {
+                accumulated_transmission[j] *= hit.material.transmission[j];
+            }
+
+            // Calculate the origin of the next ray segment we'll trace, if any.
+            *min_distance = hit.distance + ray_offset;
+            if *min_distance >= max_distance {
+                break;
+            }
+
+            // If the total distance traveled by both rays is greater than the distance between
+            // the source and the listener, then the rays have crossed, so stop.
+            if (min_distances[0] + min_distances[1]) >= max_distance {
+                break;
+            }
+
+            // Switch to the other ray for the next iteration.
+            current_ray_index = 1 - current_ray_index;
+        }
+
+        if hit_count <= 1 {
+            // If we have only 1 hit, then use the transmission coefficients of that material.
+            // If we have no hits, this will automatically set the transmission coefficients to
+            // [1.0, 1.0, 1.0] (i.e., 100% transmission).
+            transmission_factors.copy_from_slice(accumulated_transmission.as_slice());
+        } else {
+            // We have more than one hit, so set the total transmission to the square root of the
+            // product of the transmission coefficients of all hit points. This assumes that hit
+            // points occur in pairs, e.g. both sides of a solid wall, in which case we avoid
+            // double-counting the transmission due to both sides of the wall.
+            for i in 0..NUM_BANDS {
+                transmission_factors[i] = accumulated_transmission[i].sqrt();
+            }
+        }
     }
 }
 
