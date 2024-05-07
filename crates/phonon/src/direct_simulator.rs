@@ -27,7 +27,6 @@ use crate::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sam
 use crate::scene::Scene;
 use crate::sphere::Sphere;
 use glam::Vec3;
-use parry3d::query::SplitResult::Pair;
 
 // todo: Remove in favor of DirectApplyFlags?
 enum DirectSimulationType {
@@ -105,7 +104,7 @@ impl DirectSimulator {
         occlusion_type: OcclusionType,
         occlusion_radius: f32,
         num_occlusion_samples: usize,
-        num_transmission_rays: i32,
+        num_transmission_rays: usize,
         direct_sound_path: &mut DirectSoundPath,
     ) {
         let distance = (source.origin - listener.origin).length();
@@ -121,9 +120,7 @@ impl DirectSimulator {
                 direct_sound_path.air_absorption[i] = air_absorption_model.evaluate(distance, i);
             }
         } else {
-            for i in 0..NUM_BANDS {
-                direct_sound_path.air_absorption[i] = 1.0;
-            }
+            direct_sound_path.air_absorption.fill(1.0);
         }
 
         if flags.contains(DirectApplyFlags::Delay) {
@@ -160,7 +157,12 @@ impl DirectSimulator {
             direct_sound_path.occlusion = 1.0
         }
 
-        // todo transmission stuff
+        // todo: The scene must be optional
+        if flags.contains(DirectApplyFlags::Transmission) {
+            Self::transmission(self, scene, listener.origin, source.origin, &mut direct_sound_path.transmission, num_transmission_rays);
+        } else {
+            direct_sound_path.transmission.fill(1.0);
+        }
     }
 
     fn direct_path_delay(listener: Vec3, source: Vec3) -> f32 {
