@@ -34,7 +34,7 @@ const FIVE_ONE_SPEAKERS: [[f32; 3]; 6] = [
     [0.0, 0.0, -1.0],
     [0.0, 0.0, -1.0],
     [-1.0, 0.0, 1.0],
-    [1.0, 0.0, 1.0]
+    [1.0, 0.0, 1.0],
 ];
 
 const SEVEN_ONE_SPEAKERS: [[f32; 3]; 8] = [
@@ -88,12 +88,16 @@ impl SpeakerLayout {
                 SpeakerLayoutType::Quadraphonic => {
                     Vec::from_iter(QUAD_SPEAKERS.iter().map(|x| Vec3::new(x[0], x[1], x[2])))
                 }
-                SpeakerLayoutType::FivePointOne => {
-                    Vec::from_iter(FIVE_ONE_SPEAKERS.iter().map(|x| Vec3::new(x[0], x[1], x[2])))
-                }
-                SpeakerLayoutType::SevenPointOne => {
-                    Vec::from_iter(SEVEN_ONE_SPEAKERS.iter().map(|x| Vec3::new(x[0], x[1], x[2])))
-                }
+                SpeakerLayoutType::FivePointOne => Vec::from_iter(
+                    FIVE_ONE_SPEAKERS
+                        .iter()
+                        .map(|x| Vec3::new(x[0], x[1], x[2])),
+                ),
+                SpeakerLayoutType::SevenPointOne => Vec::from_iter(
+                    SEVEN_ONE_SPEAKERS
+                        .iter()
+                        .map(|x| Vec3::new(x[0], x[1], x[2])),
+                ),
                 SpeakerLayoutType::Custom => {
                     unimplemented!(
                         "Use `SpeakerLayout::new_custom` to specify a custom speaker layout"
@@ -111,9 +115,7 @@ impl SpeakerLayout {
             SpeakerLayoutType::FivePointOne => 6,
             SpeakerLayoutType::SevenPointOne => 8,
             SpeakerLayoutType::Custom => {
-                unimplemented!(
-                    "Use `SpeakerLayout::new_custom` to specify a custom speaker layout"
-                )
+                unimplemented!("Use `SpeakerLayout::new_custom` to specify a custom speaker layout")
             }
         }
     }
