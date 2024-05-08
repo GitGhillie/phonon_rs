@@ -16,11 +16,37 @@
 //
 
 use glam::Vec3;
-use ndarray::Array1;
 
 const MONO_SPEAKERS: [[f32; 3]; 1] = [[0.0, 0.0, 0.0]];
 
 const STEREO_SPEAKERS: [[f32; 3]; 2] = [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]];
+
+const QUAD_SPEAKERS: [[f32; 3]; 4] = [
+    [-1.0, 0.0, -1.0],
+    [1.0, 0.0, -1.0],
+    [-1.0, 0.0, 1.0],
+    [1.0, 0.0, 1.0],
+];
+
+const FIVE_ONE_SPEAKERS: [[f32; 3]; 6] = [
+    [-1.0, 0.0, -1.0],
+    [1.0, 0.0, -1.0],
+    [0.0, 0.0, -1.0],
+    [0.0, 0.0, -1.0],
+    [-1.0, 0.0, 1.0],
+    [1.0, 0.0, 1.0],
+];
+
+const SEVEN_ONE_SPEAKERS: [[f32; 3]; 8] = [
+    [-1.0, 0.0, -1.0],
+    [1.0, 0.0, -1.0],
+    [0.0, 0.0, -1.0],
+    [0.0, 0.0, -1.0],
+    [-1.0, 0.0, 1.0],
+    [1.0, 0.0, 1.0],
+    [-1.0, 0.0, 0.0],
+    [1.0, 0.0, 0.0],
+];
 
 #[derive(Debug, Clone, Copy)]
 pub enum SpeakerLayoutType {
@@ -40,6 +66,14 @@ pub(crate) struct SpeakerLayout {
 }
 
 impl SpeakerLayout {
+    pub fn new_custom(num_speakers: i16, speakers: &[Vec3]) -> Self {
+        Self {
+            layout_type: SpeakerLayoutType::Custom,
+            num_speakers,
+            speakers: Vec::from(speakers),
+        }
+    }
+
     pub fn new(layout_type: SpeakerLayoutType) -> Self {
         Self {
             layout_type,
@@ -52,16 +86,22 @@ impl SpeakerLayout {
                     Vec::from_iter(STEREO_SPEAKERS.iter().map(|x| Vec3::new(x[0], x[1], x[2])))
                 }
                 SpeakerLayoutType::Quadraphonic => {
-                    todo!()
+                    Vec::from_iter(QUAD_SPEAKERS.iter().map(|x| Vec3::new(x[0], x[1], x[2])))
                 }
-                SpeakerLayoutType::FivePointOne => {
-                    todo!()
-                }
-                SpeakerLayoutType::SevenPointOne => {
-                    todo!()
-                }
+                SpeakerLayoutType::FivePointOne => Vec::from_iter(
+                    FIVE_ONE_SPEAKERS
+                        .iter()
+                        .map(|x| Vec3::new(x[0], x[1], x[2])),
+                ),
+                SpeakerLayoutType::SevenPointOne => Vec::from_iter(
+                    SEVEN_ONE_SPEAKERS
+                        .iter()
+                        .map(|x| Vec3::new(x[0], x[1], x[2])),
+                ),
                 SpeakerLayoutType::Custom => {
-                    todo!()
+                    unimplemented!(
+                        "Use `SpeakerLayout::new_custom` to specify a custom speaker layout"
+                    )
                 }
             },
         }
@@ -75,7 +115,7 @@ impl SpeakerLayout {
             SpeakerLayoutType::FivePointOne => 6,
             SpeakerLayoutType::SevenPointOne => 8,
             SpeakerLayoutType::Custom => {
-                unimplemented!()
+                unimplemented!("Use `SpeakerLayout::new_custom` to specify a custom speaker layout")
             }
         }
     }
