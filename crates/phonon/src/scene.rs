@@ -116,7 +116,6 @@ impl Scene {
         self.has_changed = false;
     }
 
-    //todo: This should return Option<Hit> to be consistent with *_mesh.closest_hit()
     pub(crate) fn closest_hit(
         &self,
         ray: &Ray,

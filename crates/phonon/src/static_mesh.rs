@@ -57,9 +57,9 @@ impl StaticMesh {
         //materials: Vec<Material>,
     ) -> Self {
         let material = Material {
-            absorption: [0.5, 0.5, 0.5],
+            absorption: [0.5, 0.3, 0.1],
             scattering: 0.05,
-            transmission: [0.1, 0.1, 0.1],
+            transmission: [0.5, 0.3, 0.1],
         };
 
         let num_triangles = mesh.mesh.num_triangles();
@@ -72,13 +72,14 @@ impl StaticMesh {
         }
     }
 
-    //todo implement min_distance
     pub(crate) fn closest_hit(
         &self,
         ray: &Ray,
         min_distance: f32,
         max_distance: f32,
     ) -> Option<Hit> {
+        let ray = Ray::new(ray.point_at_distance(min_distance), ray.direction());
+
         // todo: What does `solid` need to be?
         let info = self
             .mesh
@@ -109,8 +110,9 @@ impl StaticMesh {
         };
     }
 
-    //todo implement min_distance
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
+        let ray = Ray::new(ray.point_at_distance(min_distance), ray.direction());
+
         self.mesh
             .mesh
             .cast_local_ray(&ray.0, max_distance, false)

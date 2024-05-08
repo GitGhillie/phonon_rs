@@ -178,7 +178,8 @@ fn update_direct_effect(
 
         let flags = DirectApplyFlags::DistanceAttenuation
             | DirectApplyFlags::AirAbsorption
-            | DirectApplyFlags::Occlusion;
+            | DirectApplyFlags::Occlusion
+            | DirectApplyFlags::Transmission;
 
         let source_position = CoordinateSpace3f::from_vectors(
             cam_transform.forward(),
@@ -201,7 +202,7 @@ fn update_direct_effect(
             &DefaultDistanceAttenuationModel::default(),
             &DefaultAirAbsorptionModel::default(),
             Directivity::default(),
-            OcclusionType::Volumetric,
+            OcclusionType::Raycast,
             1.0,
             num_samples_source,
             1,
@@ -213,7 +214,7 @@ fn update_direct_effect(
             .set_parameters(DirectEffectParameters {
                 direct_sound_path,
                 flags,
-                transmission_type: TransmissionType::FrequencyIndependent,
+                transmission_type: TransmissionType::FrequencyDependent,
             })
             .unwrap();
 
