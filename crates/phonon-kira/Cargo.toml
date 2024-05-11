@@ -8,12 +8,14 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 
 [dependencies]
 phonon = { path = "../phonon" }
-kira = "0.8"
+kira = { path = "../../../../rust/bevy-dev/kira/crates/kira", features = ["serde"] } # todo switch to kira 0.9 when it's out
 ringbuf = "0.3"
+paste = "1"
 
 [dev-dependencies]
 eframe = "0.27"
 bevy = "0.13"
 parry3d = "0.13" # todo: get rid of this
 bevy_flycam = "0.13"
-bevy-kira-components = { git = "https://github.com/SolarLiner/bevy-kira-components.git", rev = "a0a530c"}
+# bevy-kira-components = { git = "https://github.com/GitGhillie/bevy-kira-components.git", rev = "a2a3720" }
+bevy-kira-components = { path = "../../../../rust/bevy-kira-components" }

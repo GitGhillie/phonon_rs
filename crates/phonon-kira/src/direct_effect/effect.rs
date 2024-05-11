@@ -1,17 +1,16 @@
 use super::builder::DirectEffectBuilder;
-use super::Command;
+use super::CommandReaders;
 use kira::clock::clock_info::ClockInfoProvider;
-use kira::dsp::Frame;
+use kira::effect::Effect;
+use kira::frame::Frame;
 use kira::modulator::value_provider::ModulatorValueProvider;
-use kira::track::effect::Effect;
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, DirectEffectParameters};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use phonon::speaker_layout::SpeakerLayoutType;
-use ringbuf::HeapConsumer;
 
 pub(crate) struct DirectEffectWrapped {
-    command_consumer: HeapConsumer<Command>,
+    command_readers: CommandReaders,
     direct_effect: DirectEffect,
     parameters: DirectEffectParameters,
     panning_effect: PanningEffect,
@@ -25,16 +24,13 @@ pub(crate) struct DirectEffectWrapped {
 }
 
 impl DirectEffectWrapped {
-    pub(crate) fn new(
-        builder: DirectEffectBuilder,
-        command_consumer: HeapConsumer<Command>,
-    ) -> Self {
+    pub(crate) fn new(builder: DirectEffectBuilder, command_readers: CommandReaders) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
         let direct_effect = DirectEffect::new(audio_settings.clone());
         let panning_effect = PanningEffect::new(SpeakerLayoutType::Stereo);
 
         Self {
-            command_consumer,
+            command_readers,
             direct_effect,
             parameters: builder.parameters,
             panning_effect,
@@ -51,11 +47,12 @@ impl DirectEffectWrapped {
 
 impl Effect for DirectEffectWrapped {
     fn on_start_processing(&mut self) {
-        while let Some(command) = self.command_consumer.pop() {
-            match command {
-                Command::SetParameters(params) => self.parameters = params,
-                Command::SetPanning(params) => self.panning_params = params,
-            }
+        //todo: consider using read_commands_into_parameters macro
+        if let Some(command) = self.command_readers.set_parameters.read() {
+            self.parameters = command;
+        }
+        if let Some(command) = self.command_readers.set_panning.read() {
+            self.panning_params = command;
         }
     }
 
