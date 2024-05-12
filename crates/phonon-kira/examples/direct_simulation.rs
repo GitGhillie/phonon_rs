@@ -10,6 +10,12 @@ use bevy_kira_components::kira::track::TrackBuilder;
 use bevy_kira_components::prelude::*;
 use bevy_kira_components::AudioPlugin;
 use bevy_kira_components::TrackBuilderWrapped;
+use kira::effect::delay::DelayBuilder;
+use kira::effect::delay::DelayHandle;
+use kira::effect::distortion::DistortionBuilder;
+use kira::effect::distortion::DistortionHandle;
+use kira::effect::reverb::ReverbBuilder;
+use kira::effect::reverb::ReverbHandle;
 use phonon::air_absorption::DefaultAirAbsorptionModel;
 use phonon::coordinate_space::CoordinateSpace3f;
 use phonon::direct_effect::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
@@ -94,6 +100,7 @@ fn setup(
 #[derive(EffectRack)]
 struct MyEffectRack {
     direct_effect: DirectEffectBuilder,
+    delay: DelayBuilder,
 }
 
 fn init_sound(
@@ -103,7 +110,7 @@ fn init_sound(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // todo: consider moving the data folder
-    let audio_file = asset_server.load::<AudioFile>("../../../data/audio/pink_noise.ogg");
+    let audio_file = asset_server.load::<AudioFile>("../../../data/audio/Windless Slopes.ogg");
 
     let direct_params = DirectEffectParameters {
         direct_sound_path: DirectSoundPath::default(),
@@ -127,6 +134,7 @@ fn init_sound(
                 parameters: direct_params,
                 panning_params: Default::default(),
             },
+            delay: DelayBuilder::new(),
         }
         .apply(TrackBuilder::new()),
         PbrBundle {
@@ -162,8 +170,8 @@ fn update_direct_effect(
 
         let flags = DirectApplyFlags::DistanceAttenuation
             | DirectApplyFlags::AirAbsorption
-            | DirectApplyFlags::Occlusion
-            | DirectApplyFlags::Transmission;
+            | DirectApplyFlags::Occlusion;
+        //| DirectApplyFlags::Transmission;
 
         let source_position = CoordinateSpace3f::from_vectors(
             cam_transform.forward(),
