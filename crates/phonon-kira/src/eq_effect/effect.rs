@@ -1,16 +1,15 @@
 use super::builder::EqEffectBuilder;
-use crate::eq_effect::Command;
+use super::CommandReaders;
 use kira::clock::clock_info::ClockInfoProvider;
-use kira::dsp::Frame;
+use kira::effect::Effect;
 use kira::modulator::value_provider::ModulatorValueProvider;
-use kira::track::effect::Effect;
+use kira::Frame;
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::eq_effect::{EqEffect, EqEffectParameters};
 use phonon::gain_effect::{GainEffect, GainEffectParameters};
-use ringbuf::HeapConsumer;
 
 pub(crate) struct EqEffectWrapped {
-    command_consumer: HeapConsumer<Command>,
+    command_readers: CommandReaders,
     eq_gains: [f32; 3],
     eq_effect: EqEffect,
     gain: f32,
@@ -23,13 +22,13 @@ pub(crate) struct EqEffectWrapped {
 }
 
 impl EqEffectWrapped {
-    pub(crate) fn new(builder: EqEffectBuilder, command_consumer: HeapConsumer<Command>) -> Self {
+    pub(crate) fn new(builder: EqEffectBuilder, command_readers: CommandReaders) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
         let eq_effect = EqEffect::new(audio_settings.clone());
         let gain_effect = GainEffect::new(audio_settings.clone());
 
         Self {
-            command_consumer,
+            command_readers,
             eq_gains: builder.eq_gains,
             eq_effect,
             gain: builder.gain,
@@ -45,11 +44,11 @@ impl EqEffectWrapped {
 
 impl Effect for EqEffectWrapped {
     fn on_start_processing(&mut self) {
-        while let Some(command) = self.command_consumer.pop() {
-            match command {
-                Command::SetEqGains(gains) => self.eq_gains = gains,
-                Command::SetGain(gain) => self.gain = gain,
-            }
+        if let Some(command) = self.command_readers.set_eq_gains.read() {
+            self.eq_gains = command;
+        }
+        if let Some(command) = self.command_readers.set_gain.read() {
+            self.gain = command;
         }
     }
 

@@ -33,3 +33,7 @@ harness = false
 [[bench]]
 name = "direct_effect_bench"
 harness = false
+
+[[bench]]
+name = "panning_bench"
+harness = false

@@ -2,7 +2,7 @@ use eframe::egui;
 
 use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
-use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
+use kira::sound::static_sound::StaticSoundData;
 use kira::track::TrackBuilder;
 
 use phonon_kira::eq_effect::builder::EqEffectBuilder;
@@ -17,13 +17,10 @@ fn main() {
     let mut effect_handle = track_builder.add_effect(EqEffectBuilder { eq_gains, gain });
     let track = manager.add_sub_track(track_builder).unwrap();
 
-    let sound_data = StaticSoundData::from_file(
-        "data/audio/pink_noise.ogg",
-        StaticSoundSettings::new()
-            .loop_region(..)
-            .output_destination(&track),
-    )
-    .unwrap();
+    let sound_data = StaticSoundData::from_file("data/audio/pink_noise.ogg")
+        .unwrap()
+        .loop_region(..)
+        .output_destination(&track);
 
     manager.play(sound_data).unwrap();
 
@@ -38,8 +35,8 @@ fn main() {
                 ui.add(egui::Slider::new(&mut eq_gains[2], 0.0..=1.0).text("Gain High"));
             });
 
-            effect_handle.set_eq_gains(eq_gains).unwrap();
-            effect_handle.set_gain(gain).unwrap();
+            effect_handle.set_eq_gains(eq_gains);
+            effect_handle.set_gain(gain);
         },
     )
     .unwrap()

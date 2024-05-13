@@ -1,9 +1,7 @@
+use super::command_writers_and_readers;
 use super::effect::EqEffectWrapped;
 use super::handle::EqEffectHandle;
-use kira::track::effect::{Effect, EffectBuilder};
-use ringbuf::HeapRb;
-
-const COMMAND_CAPACITY: usize = 32;
+use kira::effect::{Effect, EffectBuilder};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EqEffectBuilder {
@@ -15,10 +13,10 @@ impl EffectBuilder for EqEffectBuilder {
     type Handle = EqEffectHandle;
 
     fn build(self) -> (Box<dyn Effect>, Self::Handle) {
-        let (command_producer, command_consumer) = HeapRb::new(COMMAND_CAPACITY).split();
+        let (command_writers, command_readers) = command_writers_and_readers();
         (
-            Box::new(EqEffectWrapped::new(self, command_consumer)),
-            EqEffectHandle { command_producer },
+            Box::new(EqEffectWrapped::new(self, command_readers)),
+            EqEffectHandle { command_writers },
         )
     }
 }

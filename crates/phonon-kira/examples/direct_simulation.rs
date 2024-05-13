@@ -8,8 +8,10 @@ use bevy_kira_components::kira::sound::Region;
 use bevy_kira_components::kira::track::TrackBuilder;
 
 use bevy_kira_components::prelude::*;
-use bevy_kira_components::tracks::TrackHandle;
 use bevy_kira_components::AudioPlugin;
+use bevy_kira_components::TrackBuilderWrapped;
+use kira::effect::delay::DelayBuilder;
+use kira::effect::delay::DelayHandle;
 use phonon::air_absorption::DefaultAirAbsorptionModel;
 use phonon::coordinate_space::CoordinateSpace3f;
 use phonon::direct_effect::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
@@ -20,9 +22,6 @@ use phonon::panning_effect::PanningEffectParameters;
 use phonon::static_mesh::StaticMesh;
 use phonon_kira::direct_effect::builder::DirectEffectBuilder;
 use phonon_kira::direct_effect::handle::DirectEffectHandle;
-
-#[derive(Component)]
-struct DirectTrack;
 
 #[derive(Component)]
 struct SourceMarker;
@@ -52,8 +51,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(PlayerPlugin)
         .add_plugins(AudioPlugin)
-        .add_systems(Startup, (setup, setup_track))
-        .add_systems(Update, (init_camera, init_sound, update_direct_effect))
+        .add_systems(Startup, (setup, init_sound))
+        .add_systems(Update, (init_camera, update_direct_effect))
         .run();
 }
 
@@ -94,20 +93,10 @@ fn setup(
     });
 }
 
-fn setup_track(mut commands: Commands) {
-    let direct_params = DirectEffectParameters {
-        direct_sound_path: DirectSoundPath::default(),
-        flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::Occlusion,
-        transmission_type: TransmissionType::FrequencyIndependent,
-    };
-
-    let mut track = TrackBuilder::new();
-    let panning = track.add_effect(DirectEffectBuilder {
-        parameters: direct_params,
-        panning_params: Default::default(),
-    });
-    // Spawn track entity
-    commands.spawn((Track(track), EffectHandle(panning), DirectTrack));
+#[derive(EffectRack)]
+struct MyEffectRack {
+    direct_effect: DirectEffectBuilder,
+    delay: DelayBuilder,
 }
 
 fn init_sound(
@@ -115,53 +104,52 @@ fn init_sound(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    track_query: Query<Entity, Added<TrackHandle>>,
 ) {
-    if let Ok(track_ent) = track_query.get_single() {
-        // todo: consider moving the data folder
-        let audio_file = asset_server.load::<AudioFile>("../../../data/audio/pink_noise.ogg");
+    // todo: consider moving the data folder
+    let audio_file = asset_server.load::<AudioFile>("../../../data/audio/Windless Slopes.ogg");
 
-        // Audio emitter
-        commands
-            .spawn((
-                SourceMarker,
-                InheritedVisibility::VISIBLE,
-                TransformBundle {
-                    local: Transform::from_xyz(0., 1., -6.0),
-                    ..default()
-                },
-            ))
-            .with_children(|children| {
-                children.spawn((
-                    //SpatialEmitter::default(), // todo this breaks the track routing
-                    bevy_kira_components::prelude::AudioBundle {
-                        source: audio_file,
-                        settings: AudioFileSettings {
-                            loop_region: Some(Region::from(..)),
-                            ..default()
-                        },
-                        output: OutputDestination::SpecificTrack(track_ent),
-                        ..default()
-                    },
-                    PbrBundle {
-                        mesh: meshes.add(Sphere::new(0.1).mesh()),
-                        material: materials.add(StandardMaterial {
-                            base_color: Color::WHITE,
-                            emissive: Color::GREEN,
-                            ..default()
-                        }),
-                        transform: Transform::from_xyz(0., 0., 0.0),
-                        ..default()
-                    },
-                ));
-            });
-    }
+    let direct_params = DirectEffectParameters {
+        direct_sound_path: DirectSoundPath::default(),
+        flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::Occlusion,
+        transmission_type: TransmissionType::FrequencyIndependent,
+    };
+
+    // Audio emitter
+    commands.spawn((
+        SourceMarker,
+        AudioFileBundle {
+            source: audio_file,
+            settings: AudioFileSettings {
+                loop_region: Some(Region::from(..)),
+                ..default()
+            },
+            ..default()
+        },
+        MyEffectRack {
+            direct_effect: DirectEffectBuilder {
+                parameters: direct_params,
+                panning_params: Default::default(),
+            },
+            delay: DelayBuilder::new(),
+        }
+        .apply(TrackBuilder::new()),
+        PbrBundle {
+            mesh: meshes.add(Sphere::new(0.1).mesh()),
+            material: materials.add(StandardMaterial {
+                base_color: Color::WHITE,
+                emissive: Color::GREEN,
+                ..default()
+            }),
+            transform: Transform::from_xyz(0., 1., -6.0),
+            ..default()
+        },
+    ));
 }
 
 fn update_direct_effect(
     cam_query: Query<&GlobalTransform, With<Camera>>,
     audio_source_query: Query<&GlobalTransform, With<SourceMarker>>,
-    mut effect_query: Query<&mut EffectHandle<DirectEffectHandle>>,
+    mut effect_query: Query<&mut MyEffectRackController>,
     phonon_res: Res<Phonon>,
 ) {
     let cam_transform = cam_query.get_single().unwrap();
@@ -178,8 +166,8 @@ fn update_direct_effect(
 
         let flags = DirectApplyFlags::DistanceAttenuation
             | DirectApplyFlags::AirAbsorption
-            | DirectApplyFlags::Occlusion
-            | DirectApplyFlags::Transmission;
+            | DirectApplyFlags::Occlusion;
+        //| DirectApplyFlags::Transmission;
 
         let source_position = CoordinateSpace3f::from_vectors(
             cam_transform.forward(),
@@ -209,14 +197,11 @@ fn update_direct_effect(
             &mut direct_sound_path,
         );
 
-        effect
-            .0
-            .set_parameters(DirectEffectParameters {
-                direct_sound_path,
-                flags,
-                transmission_type: TransmissionType::FrequencyDependent,
-            })
-            .unwrap();
+        effect.direct_effect.set_parameters(DirectEffectParameters {
+            direct_sound_path,
+            flags,
+            transmission_type: TransmissionType::FrequencyDependent,
+        });
 
         // Todo: The following probably doesn't need to use the Steam Audio coordinate utilities
         let coordinates = CoordinateSpace3f::from_vectors(
@@ -228,11 +213,8 @@ fn update_direct_effect(
         let world_space_direction = (point - coordinates.origin).normalize_or_zero();
         let local_space_direction = coordinates.direction_to_local(world_space_direction);
 
-        effect
-            .0
-            .set_panning(PanningEffectParameters {
-                direction: local_space_direction,
-            })
-            .unwrap();
+        effect.direct_effect.set_panning(PanningEffectParameters {
+            direction: local_space_direction,
+        });
     }
 }

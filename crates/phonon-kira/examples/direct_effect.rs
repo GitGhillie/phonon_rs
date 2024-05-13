@@ -2,7 +2,7 @@ use eframe::egui;
 
 use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
-use kira::sound::static_sound::{StaticSoundData, StaticSoundSettings};
+use kira::sound::static_sound::StaticSoundData;
 use kira::track::TrackBuilder;
 use phonon::direct_effect::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
 use phonon::direct_simulator::DirectSoundPath;
@@ -27,13 +27,10 @@ fn main() {
     });
     let track = manager.add_sub_track(track_builder).unwrap();
 
-    let sound_data = StaticSoundData::from_file(
-        "data/audio/pink_noise.ogg",
-        StaticSoundSettings::new()
-            .loop_region(..)
-            .output_destination(&track),
-    )
-    .unwrap();
+    let sound_data = StaticSoundData::from_file("data/audio/pink_noise.ogg")
+        .unwrap()
+        .loop_region(..)
+        .output_destination(&track);
 
     manager.play(sound_data).unwrap();
 
@@ -80,7 +77,7 @@ fn main() {
                 .flags
                 .set(DirectApplyFlags::DistanceAttenuation, distance_attenuation);
 
-            effect_handle.set_parameters(direct_params).unwrap();
+            effect_handle.set_parameters(direct_params);
         },
     )
     .unwrap()
