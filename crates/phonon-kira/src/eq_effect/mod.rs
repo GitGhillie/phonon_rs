@@ -15,8 +15,8 @@ pub(crate) struct CommandReaders {
 }
 
 pub(crate) fn command_writers_and_readers() -> (CommandWriters, CommandReaders) {
-    let (set_eq_gains_writer, set_eq_gains_reader) = ::kira::command::command_writer_and_reader();
-    let (set_gain_writer, set_gain_reader) = ::kira::command::command_writer_and_reader();
+    let (set_eq_gains_writer, set_eq_gains_reader) = kira::command::command_writer_and_reader();
+    let (set_gain_writer, set_gain_reader) = kira::command::command_writer_and_reader();
 
     let command_writers = CommandWriters {
         set_eq_gains: set_eq_gains_writer,
