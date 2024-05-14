@@ -8,7 +8,7 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 
 [features]
 default = []
-serde-serialize = ["serde", "parry3d/serde-serialize", "ndarray/serde"]
+serde-serialize = ["dep:serde", "parry3d/serde-serialize", "ndarray/serde"]
 
 [dependencies]
 derive_deref = "1"

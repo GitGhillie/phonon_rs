@@ -47,7 +47,6 @@ impl DirectEffectWrapped {
 
 impl Effect for DirectEffectWrapped {
     fn on_start_processing(&mut self) {
-        //todo: consider using read_commands_into_parameters macro
         if let Some(command) = self.command_readers.set_parameters.read() {
             self.parameters = command;
         }
