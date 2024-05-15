@@ -60,7 +60,7 @@ impl Delay {
         }
     }
 
-    pub fn put(mut self, num_samples: usize, input: &[f32]) {
+    pub fn put(&mut self, num_samples: usize, input: &[f32]) {
         if self.cursor + (num_samples - 1) < self.ring_buffer.len() {
             self.ring_buffer[self.cursor..self.cursor + num_samples].copy_from_slice(input);
             self.cursor += num_samples;

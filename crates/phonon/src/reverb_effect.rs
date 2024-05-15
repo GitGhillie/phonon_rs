@@ -23,6 +23,7 @@ use crate::reverb_estimator::Reverb;
 use crate::iir::{IIRFilterer, IIR};
 use derive_deref::{Deref, DerefMut};
 use rand::Rng;
+use ultraviolet::f32x4;
 
 const NUM_DELAYS: usize = 16;
 const NUM_ALLPASS_DELAYS: i32 = 4;
@@ -106,8 +107,8 @@ impl ReverbEffect {
 
         output.fill(0.0);
 
-        const LOW_CUTOFF: [f32; NUM_BANDS] = [20.0, 500.0, 5000.0];
-        const HIGH_CUTOFF: [f32; NUM_BANDS] = [500.0, 5000.0, 22000.0];
+        const LOW_CUTOFF: [f32; NUM_BANDS] = [20.0, 500.0, 5_000.0];
+        const HIGH_CUTOFF: [f32; NUM_BANDS] = [500.0, 5_000.0, 22_000.0];
 
         for i in 0..NUM_DELAYS {
             let absorptive_gains = core::array::from_fn::<_, NUM_BANDS, _>(|j| {
@@ -129,8 +130,6 @@ impl ReverbEffect {
                 self.absorptive[i][j][self.current] = IIRFilterer::new(iir[j]);
             }
         }
-
-        // ----
 
         let mut tone_correction_gains = [0.0f32; NUM_BANDS];
         Self::calc_tone_correction_gains(&clamped_reverb_times, &mut tone_correction_gains);
@@ -154,26 +153,43 @@ impl ReverbEffect {
             self.delay_lines[i].get(self.frame_size, self.x_old[i].as_mut_slice());
         }
 
-        // todo: SIMD optimizations
-        let mut x_old = [0.0f32; NUM_DELAYS];
-        let mut x_new = [0.0f32; NUM_DELAYS];
-        for i in 0..self.frame_size {
+        let mut x_old = [f32x4::ZERO; NUM_DELAYS];
+        let mut x_new = [f32x4::ZERO; NUM_DELAYS];
+        for i in (0..self.frame_size).step_by(4) {
             for j in 0..NUM_DELAYS {
-                x_old[j] = self.x_old[j][i];
+                x_old[j] = f32x4::from(&self.x_old[j][i..i + 4]);
             }
 
             Self::multiply_hadamard_matrix(x_old.as_slice(), x_new.as_mut_slice());
 
             for j in 0..NUM_DELAYS {
-                self.x_new[j][i] = x_new[j];
+                self.x_new[j][i..i + 4].copy_from_slice(x_new[j].as_array_ref());
             }
         }
 
         for i in 0..NUM_DELAYS {
             for j in 0..NUM_BANDS {
-                //self.absorptive[i][j][self.current].apply();
+                // todo: perf?
+                let copy = self.x_new[i].clone();
+
+                self.absorptive[i][j][self.current].apply(
+                    self.frame_size,
+                    copy.as_slice(),
+                    self.x_new[i].as_mut_slice(),
+                );
             }
+
+            // Element-wise addition the `input` of this function to self.x_new[i]
+            // todo: Consider using ndarray for this
+            input
+                .into_iter()
+                .zip(self.x_new[i].iter_mut())
+                .for_each(|(i, o)| *o += *i);
+
+            self.delay_lines[i].put(self.frame_size, self.x_new[i].as_slice());
         }
+
+        // for...
     }
 
     fn calc_delays_for_reverb_time(reverb_time: f32, sampling_rate: i32) -> [i32; NUM_DELAYS] {
@@ -228,7 +244,7 @@ impl ReverbEffect {
     }
 
     #[rustfmt::skip]
-    fn multiply_hadamard_matrix(x: &[f32], y: &mut [f32]) {
+    fn multiply_hadamard_matrix(x: &[f32x4], y: &mut [f32x4]) {
         y[0]  = x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7] + x[8] + x[9] + x[10] + x[11] + x[12] + x[13] + x[14] + x[15];
         y[1]  = x[0] - x[1] + x[2] - x[3] + x[4] - x[5] + x[6] - x[7] + x[8] - x[9] + x[10] - x[11] + x[12] - x[13] + x[14] - x[15];
         y[2]  = x[0] + x[1] - x[2] - x[3] + x[4] + x[5] - x[6] - x[7] + x[8] + x[9] - x[10] - x[11] + x[12] + x[13] - x[14] - x[15];
@@ -247,7 +263,7 @@ impl ReverbEffect {
         y[15] = x[0] - x[1] - x[2] + x[3] - x[4] + x[5] + x[6] - x[7] - x[8] + x[9] + x[10] - x[11] + x[12] - x[13] - x[14] + x[15];
 
         for i in 0..NUM_DELAYS {
-            y[i] *= 0.25;
+            y[i] = y[i] * 0.25;
         }
     }
 
