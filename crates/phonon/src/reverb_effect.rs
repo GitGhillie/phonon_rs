@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::audio_buffer::AudioSettings;
 use crate::bands::NUM_BANDS;
 use crate::delay::Delay;
 use crate::reverb_estimator::Reverb;
@@ -27,8 +27,6 @@ use rand::Rng;
 use ultraviolet::f32x4;
 
 const NUM_DELAYS: usize = 16;
-const NUM_ALLPASS_DELAYS: i32 = 4;
-const TONE_CORRECTION_WEIGHT: f32 = 0.5;
 
 const ALLPASS_DELAYS: [usize; 4] = [225, 341, 441, 556];
 
@@ -91,12 +89,6 @@ impl ReverbEffect {
         }
 
         //todo: reset ReverbEffect?
-    }
-
-    fn tail_float4(&self, out: &mut [f32]) {
-        // for i in 0..NUM_DELAYS {
-        //     self.delay_lines[i].get(self.frame_size, self.x_old[i]);
-        // }
     }
 
     fn apply_float32x4(&mut self, reverb_times: &[f32], input: &[f32], output: &mut [f32]) {
@@ -190,6 +182,69 @@ impl ReverbEffect {
             let mut view = self.x_new.slice_mut(s![i, ..]);
             let input_view = ArrayView::from(input);
             view += &input_view;
+
+            self.delay_lines[i].put(self.frame_size, self.x_new.row(i).as_slice().unwrap());
+        }
+
+        let mut sum = self.x_old.sum_axis(Axis(0)).to_owned();
+        sum = sum / NUM_DELAYS as f32;
+        self.x_old.row_mut(0).assign(&sum);
+
+        let mut x_m: f32x4;
+        let mut y_m: f32x4;
+        let g = f32x4::splat(0.25);
+        for i in (0..self.frame_size).step_by(4) {
+            let mut v = f32x4::from(self.x_old.slice(s![0, i..(i + 4)]).as_slice().unwrap());
+
+            for k in 0..2 {
+                let x = v;
+                x_m = self.allpass_x[0][k].get4();
+                y_m = self.allpass_y[1][k].get4();
+                let y = (x_m + (g * y_m)) - (g * x);
+                self.allpass_x[0][k].put4(&x);
+                self.allpass_y[1][k].put4(&y);
+                v = y;
+            }
+
+            output[i..i + 4].copy_from_slice(v.as_array_ref());
+        }
+
+        for band in 0..NUM_BANDS {
+            self.tone_correction[band].apply_self(output);
+        }
+    }
+
+    // todo: Get rid of code duplication (see apply_float32x4)
+    fn tail_float32x4(&mut self, output: &mut [f32]) {
+        for i in 0..NUM_DELAYS {
+            self.delay_lines[i].get(
+                self.frame_size,
+                self.x_old.row_mut(i).as_slice_mut().unwrap(),
+            );
+        }
+
+        let mut x_old = [f32x4::ZERO; NUM_DELAYS];
+        let mut x_new = [f32x4::ZERO; NUM_DELAYS];
+        for i in (0..self.frame_size).step_by(4) {
+            for j in 0..NUM_DELAYS {
+                x_old[j] = f32x4::from(self.x_old.slice(s![j, i..(i + 4)]).as_slice().unwrap());
+            }
+
+            Self::multiply_hadamard_matrix(x_old.as_slice(), x_new.as_mut_slice());
+
+            for j in 0..NUM_DELAYS {
+                self.x_new
+                    .slice_mut(s![j, i..(i + 4)])
+                    .as_slice_mut()
+                    .unwrap()
+                    .copy_from_slice(x_new[j].as_array_ref());
+            }
+        }
+
+        for i in 0..NUM_DELAYS {
+            for band in 0..NUM_BANDS {
+                self.absorptive[i][band].apply_self(self.x_new.row_mut(i).as_slice_mut().unwrap());
+            }
 
             self.delay_lines[i].put(self.frame_size, self.x_new.row(i).as_slice().unwrap());
         }

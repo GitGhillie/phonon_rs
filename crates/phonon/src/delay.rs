@@ -19,7 +19,6 @@
 // - `Delay` is just a ring buffer implementation
 // - Skipped implementing `resize()` as it does not seem to be used in Steam Audio
 
-use ndarray::s;
 use ultraviolet::f32x4;
 
 pub struct Delay {
@@ -77,8 +76,8 @@ impl Delay {
             // todo perf? alignas(float4_t)
             let mut values = [0.0f32; 4];
 
-            for mut value in values {
-                value = self.ring_buffer[self.read_cursor];
+            for value in &mut values {
+                *value = self.ring_buffer[self.read_cursor];
                 self.read_cursor += 1;
                 if self.read_cursor >= self.ring_buffer.len() {
                     self.read_cursor = 0;
