@@ -22,6 +22,7 @@ use crate::reverb_estimator::Reverb;
 
 use crate::iir::{IIRFilterer, IIR};
 use derive_deref::{Deref, DerefMut};
+use ndarray::{s, Array, Array2, ArrayView};
 use rand::Rng;
 use ultraviolet::f32x4;
 
@@ -45,8 +46,8 @@ pub struct ReverbEffect {
     allpass_y: [[Delay; 2]; NUM_DELAYS],
     absorptive: Vec<Vec<Vec<IIRFilterer>>>, //todo perf
     tone_correction: Vec<Vec<IIRFilterer>>,
-    x_old: Vec<Vec<f32>>,
-    x_new: Vec<Vec<f32>>,
+    x_old: Array2<f32>,
+    x_new: Array2<f32>,
     previous_reverb: Reverb,
     num_tail_frames_remaining: i32,
 }
@@ -84,8 +85,8 @@ impl ReverbEffect {
             allpass_y,
             absorptive: Vec::default(),
             tone_correction: Vec::default(),
-            x_old: vec![vec![0.0; audio_settings.frame_size]; NUM_DELAYS],
-            x_new: vec![vec![0.0; audio_settings.frame_size]; NUM_DELAYS],
+            x_old: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
+            x_new: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             previous_reverb: Reverb::default(),
             num_tail_frames_remaining: 0,
         }
@@ -150,43 +151,48 @@ impl ReverbEffect {
         }
 
         for i in 0..NUM_DELAYS {
-            self.delay_lines[i].get(self.frame_size, self.x_old[i].as_mut_slice());
+            self.delay_lines[i].get(
+                self.frame_size,
+                self.x_old.row_mut(i).as_slice_mut().unwrap(),
+            );
         }
 
         let mut x_old = [f32x4::ZERO; NUM_DELAYS];
         let mut x_new = [f32x4::ZERO; NUM_DELAYS];
         for i in (0..self.frame_size).step_by(4) {
             for j in 0..NUM_DELAYS {
-                x_old[j] = f32x4::from(&self.x_old[j][i..i + 4]);
+                x_old[j] = f32x4::from(self.x_old.slice(s![j, i..(i + 4)]).as_slice().unwrap());
             }
 
             Self::multiply_hadamard_matrix(x_old.as_slice(), x_new.as_mut_slice());
 
             for j in 0..NUM_DELAYS {
-                self.x_new[j][i..i + 4].copy_from_slice(x_new[j].as_array_ref());
+                self.x_new
+                    .slice_mut(s![j, i..(i + 4)])
+                    .as_slice_mut()
+                    .unwrap()
+                    .copy_from_slice(x_new[j].as_array_ref());
             }
         }
 
         for i in 0..NUM_DELAYS {
             for j in 0..NUM_BANDS {
                 // todo: perf?
-                let copy = self.x_new[i].clone();
+                let copy = self.x_new.row(i).to_owned();
 
                 self.absorptive[i][j][self.current].apply(
                     self.frame_size,
-                    copy.as_slice(),
-                    self.x_new[i].as_mut_slice(),
+                    copy.as_slice().unwrap(),
+                    self.x_new.row_mut(i).as_slice_mut().unwrap(),
                 );
             }
 
             // Element-wise addition the `input` of this function to self.x_new[i]
-            // todo: Consider using ndarray for this
-            input
-                .into_iter()
-                .zip(self.x_new[i].iter_mut())
-                .for_each(|(i, o)| *o += *i);
+            let mut view = self.x_new.slice_mut(s![i, ..]);
+            let input_view = ArrayView::from(input);
+            view += &input_view;
 
-            self.delay_lines[i].put(self.frame_size, self.x_new[i].as_slice());
+            self.delay_lines[i].put(self.frame_size, self.x_new.row(i).as_slice().unwrap());
         }
 
         // for...
