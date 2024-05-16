@@ -142,4 +142,12 @@ impl IIRFilterer {
             output[i] = self.filter.0.run(input[i]);
         }
     }
+
+    /// Applies the filter to an entire buffer of input, using SIMD operations.
+    pub fn apply_self(&mut self, input: &mut [f32]) {
+        //todo: Temporary implementation, no SIMD optimizations yet
+        for sample in input {
+            *sample = self.filter.0.run(*sample);
+        }
+    }
 }

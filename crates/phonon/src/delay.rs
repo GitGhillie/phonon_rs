@@ -19,6 +19,9 @@
 // - `Delay` is just a ring buffer implementation
 // - Skipped implementing `resize()` as it does not seem to be used in Steam Audio
 
+use ndarray::s;
+use ultraviolet::f32x4;
+
 pub struct Delay {
     ring_buffer: Vec<f32>,
     cursor: usize,
@@ -60,6 +63,32 @@ impl Delay {
         }
     }
 
+    pub fn get4(&mut self) -> f32x4 {
+        if self.read_cursor + 3 < self.ring_buffer.len() {
+            let result = f32x4::from(&self.ring_buffer[self.read_cursor..self.read_cursor + 4]);
+
+            self.read_cursor += 4;
+            if self.read_cursor > self.ring_buffer.len() {
+                self.read_cursor -= self.ring_buffer.len();
+            }
+
+            result
+        } else {
+            // todo perf? alignas(float4_t)
+            let mut values = [0.0f32; 4];
+
+            for mut value in values {
+                value = self.ring_buffer[self.read_cursor];
+                self.read_cursor += 1;
+                if self.read_cursor >= self.ring_buffer.len() {
+                    self.read_cursor = 0;
+                }
+            }
+
+            f32x4::from(values)
+        }
+    }
+
     pub fn put(&mut self, num_samples: usize, input: &[f32]) {
         if self.cursor + (num_samples - 1) < self.ring_buffer.len() {
             self.ring_buffer[self.cursor..self.cursor + num_samples].copy_from_slice(input);
@@ -75,6 +104,26 @@ impl Delay {
             self.ring_buffer[..size2].copy_from_slice(&input[size2..]);
 
             self.cursor = size2;
+        }
+    }
+
+    pub fn put4(&mut self, input: &f32x4) {
+        if self.cursor + 3 < self.ring_buffer.len() {
+            self.ring_buffer[self.cursor..self.cursor + 4].copy_from_slice(input.as_array_ref());
+
+            self.cursor += 4;
+            if self.cursor > self.ring_buffer.len() {
+                self.cursor -= self.ring_buffer.len();
+            }
+        } else {
+            for &value in input.as_array_ref() {
+                self.ring_buffer[self.cursor] = value;
+                self.cursor += 1;
+
+                if self.cursor >= self.ring_buffer.len() {
+                    self.cursor = 0;
+                }
+            }
         }
     }
 }

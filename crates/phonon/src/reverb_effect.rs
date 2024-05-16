@@ -22,7 +22,7 @@ use crate::reverb_estimator::Reverb;
 
 use crate::iir::{IIRFilterer, IIR};
 use derive_deref::{Deref, DerefMut};
-use ndarray::{s, Array, Array2, ArrayView};
+use ndarray::{s, Array, Array2, ArrayView, Axis};
 use rand::Rng;
 use ultraviolet::f32x4;
 
@@ -40,12 +40,12 @@ pub struct ReverbEffect {
     frame_size: usize,
     delay_values: [i32; NUM_DELAYS],
     delay_lines: [Delay; NUM_DELAYS],
-    current: usize,
+    //current: usize, 'current' does not seem to be used
     is_first_frame: bool,
     allpass_x: [[Delay; 2]; NUM_DELAYS],
     allpass_y: [[Delay; 2]; NUM_DELAYS],
-    absorptive: Vec<Vec<Vec<IIRFilterer>>>, //todo perf
-    tone_correction: Vec<Vec<IIRFilterer>>,
+    absorptive: Vec<Vec<IIRFilterer>>,
+    tone_correction: Vec<IIRFilterer>,
     x_old: Array2<f32>,
     x_new: Array2<f32>,
     previous_reverb: Reverb,
@@ -79,7 +79,6 @@ impl ReverbEffect {
             frame_size: audio_settings.frame_size,
             delay_values,
             delay_lines,
-            current: 0,
             is_first_frame: false,
             allpass_x,
             allpass_y,
@@ -128,7 +127,7 @@ impl ReverbEffect {
             ];
 
             for j in 0..NUM_BANDS {
-                self.absorptive[i][j][self.current] = IIRFilterer::new(iir[j]);
+                self.absorptive[i][j] = IIRFilterer::new(iir[j]);
             }
         }
 
@@ -147,7 +146,7 @@ impl ReverbEffect {
         ];
 
         for i in 0..NUM_BANDS {
-            self.tone_correction[i][self.current] = IIRFilterer::new(iir[i]);
+            self.tone_correction[i] = IIRFilterer::new(iir[i]);
         }
 
         for i in 0..NUM_DELAYS {
@@ -180,7 +179,7 @@ impl ReverbEffect {
                 // todo: perf?
                 let copy = self.x_new.row(i).to_owned();
 
-                self.absorptive[i][j][self.current].apply(
+                self.absorptive[i][j].apply(
                     self.frame_size,
                     copy.as_slice().unwrap(),
                     self.x_new.row_mut(i).as_slice_mut().unwrap(),
@@ -195,7 +194,32 @@ impl ReverbEffect {
             self.delay_lines[i].put(self.frame_size, self.x_new.row(i).as_slice().unwrap());
         }
 
-        // for...
+        let mut sum = self.x_old.sum_axis(Axis(0)).to_owned();
+        sum = sum / NUM_DELAYS as f32;
+        self.x_old.row_mut(0).assign(&sum);
+
+        let mut x_m: f32x4;
+        let mut y_m: f32x4;
+        let g = f32x4::splat(0.25);
+        for i in (0..self.frame_size).step_by(4) {
+            let mut v = f32x4::from(self.x_old.slice(s![0, i..(i + 4)]).as_slice().unwrap());
+
+            for k in 0..2 {
+                let x = v;
+                x_m = self.allpass_x[0][k].get4();
+                y_m = self.allpass_y[1][k].get4();
+                let y = (x_m + (g * y_m)) - (g * x);
+                self.allpass_x[0][k].put4(&x);
+                self.allpass_y[1][k].put4(&y);
+                v = y;
+            }
+
+            output[i..i + 4].copy_from_slice(v.as_array_ref());
+        }
+
+        for band in 0..NUM_BANDS {
+            self.tone_correction[band].apply_self(output);
+        }
     }
 
     fn calc_delays_for_reverb_time(reverb_time: f32, sampling_rate: i32) -> [i32; NUM_DELAYS] {
