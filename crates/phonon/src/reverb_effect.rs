@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::AudioSettings;
+use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use crate::bands::NUM_BANDS;
 use crate::delay::Delay;
 use crate::reverb_estimator::Reverb;
@@ -38,8 +38,8 @@ pub struct ReverbEffect {
     frame_size: usize,
     delay_values: [i32; NUM_DELAYS],
     delay_lines: [Delay; NUM_DELAYS],
-    //current: usize, 'current' does not seem to be used
-    is_first_frame: bool,
+    //current: usize, // 'current' does not seem to be used
+    //is_first_frame: bool, // Same here
     allpass_x: [[Delay; 2]; NUM_DELAYS],
     allpass_y: [[Delay; 2]; NUM_DELAYS],
     absorptive: Vec<Vec<IIRFilterer>>,
@@ -72,12 +72,11 @@ impl ReverbEffect {
             ]
         });
 
-        Self {
+        let mut effect = Self {
             sampling_rate: audio_settings.sampling_rate,
             frame_size: audio_settings.frame_size,
             delay_values,
             delay_lines,
-            is_first_frame: false,
             allpass_x,
             allpass_y,
             absorptive: Vec::default(),
@@ -86,14 +85,89 @@ impl ReverbEffect {
             x_new: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             previous_reverb: Reverb::default(),
             num_tail_frames_remaining: 0,
+        };
+
+        effect.reset();
+
+        effect
+    }
+
+    pub(crate) fn reset(&mut self) {
+        for i in 0..NUM_DELAYS {
+            self.delay_lines[i].reset();
+
+            self.allpass_x[i][0].reset();
+            self.allpass_x[i][1].reset();
+            self.allpass_y[i][0].reset();
+            self.allpass_y[i][1].reset();
         }
 
-        //todo: reset ReverbEffect?
+        self.previous_reverb = Reverb::default();
+
+        self.num_tail_frames_remaining = 0;
+    }
+
+    fn apply(
+        &mut self,
+        params: &ReverbEffectParams,
+        input: &AudioBuffer<1>,
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        // todo: input and output must have the same length.
+
+        // todo: Is this really necessary?
+        output.make_silent();
+
+        self.apply_float32x4(
+            params.reverb_times.as_slice(),
+            input[0].as_slice(),
+            output[0].as_mut_slice(),
+        );
+
+        self.previous_reverb.reverb_times = params.reverb_times;
+
+        let reverb_times = params.reverb_times;
+        let max_reverb_time = reverb_times[0].max(reverb_times[1]).max(reverb_times[2]);
+
+        // "fixme: why 2x?"
+        self.num_tail_frames_remaining = 2
+            * ((max_reverb_time * self.sampling_rate as f32) / self.frame_size as f32).ceil()
+                as i32;
+
+        if self.num_tail_frames_remaining > 0 {
+            AudioEffectState::TailRemaining
+        } else {
+            AudioEffectState::TailComplete
+        }
+    }
+
+    fn tail_apply(
+        &mut self,
+        input: &AudioBuffer<1>,
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        let prev_params = ReverbEffectParams(Reverb {
+            reverb_times: self.previous_reverb.reverb_times,
+        });
+
+        self.apply(&prev_params, input, output)
+    }
+
+    fn tail(&mut self, output: &mut AudioBuffer<1>) -> AudioEffectState {
+        output.make_silent();
+
+        self.tail_float32x4(output[0].as_mut_slice());
+
+        self.num_tail_frames_remaining -= 1;
+
+        if self.num_tail_frames_remaining > 0 {
+            AudioEffectState::TailRemaining
+        } else {
+            AudioEffectState::TailComplete
+        }
     }
 
     fn apply_float32x4(&mut self, reverb_times: &[f32], input: &[f32], output: &mut [f32]) {
-        // todo profile function
-
         let clamped_reverb_times =
             core::array::from_fn::<_, NUM_BANDS, _>(|i| reverb_times[i].max(0.1));
 
