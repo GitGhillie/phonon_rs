@@ -25,7 +25,7 @@ fn main() {
     });
     let track = manager.add_sub_track(track_builder).unwrap();
 
-    let sound_data = StaticSoundData::from_file("data/audio/pink_noise.ogg")
+    let sound_data = StaticSoundData::from_file("data/audio/windless_slopes.ogg")
         .unwrap()
         .loop_region(..)
         .output_destination(&track);
