@@ -30,12 +30,13 @@ const NUM_DELAYS: usize = 16;
 
 const ALLPASS_DELAYS: [usize; 4] = [225, 341, 441, 556];
 
-#[derive(Deref, DerefMut)]
-pub struct ReverbEffectParams(Reverb);
+// todo don't make the Reverb field pub?
+#[derive(Deref, DerefMut, Default)]
+pub struct ReverbEffectParams(pub Reverb);
 
 pub struct ReverbEffect {
     sampling_rate: i32,
-    frame_size: usize,
+    pub frame_size: usize,
     delay_values: [i32; NUM_DELAYS],
     delay_lines: [Delay; NUM_DELAYS],
     //current: usize, // 'current' does not seem to be used
@@ -79,8 +80,8 @@ impl ReverbEffect {
             delay_lines,
             allpass_x,
             allpass_y,
-            absorptive: Vec::default(),
-            tone_correction: Vec::default(),
+            absorptive: vec![vec![IIRFilterer::new(IIR::new_empty()); NUM_BANDS]; NUM_DELAYS],
+            tone_correction: vec![IIRFilterer::new(IIR::new_empty()); NUM_BANDS],
             x_old: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             x_new: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             previous_reverb: Reverb::default(),
@@ -107,7 +108,7 @@ impl ReverbEffect {
         self.num_tail_frames_remaining = 0;
     }
 
-    fn apply(
+    pub fn apply(
         &mut self,
         params: &ReverbEffectParams,
         input: &AudioBuffer<1>,

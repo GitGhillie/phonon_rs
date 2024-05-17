@@ -30,7 +30,7 @@ pub struct Delay {
 impl Delay {
     pub fn new(delay: usize, frame_size: usize) -> Self {
         Self {
-            ring_buffer: Vec::with_capacity(delay + frame_size),
+            ring_buffer: vec![0.0; delay + frame_size],
             cursor: 0,
             read_cursor: 0,
         }
@@ -67,7 +67,7 @@ impl Delay {
             let result = f32x4::from(&self.ring_buffer[self.read_cursor..self.read_cursor + 4]);
 
             self.read_cursor += 4;
-            if self.read_cursor > self.ring_buffer.len() {
+            if self.read_cursor >= self.ring_buffer.len() {
                 self.read_cursor -= self.ring_buffer.len();
             }
 
@@ -92,7 +92,7 @@ impl Delay {
         if self.cursor + (num_samples - 1) < self.ring_buffer.len() {
             self.ring_buffer[self.cursor..self.cursor + num_samples].copy_from_slice(input);
             self.cursor += num_samples;
-            if self.cursor > self.ring_buffer.len() {
+            if self.cursor >= self.ring_buffer.len() {
                 self.cursor -= self.ring_buffer.len();
             }
         } else {
@@ -100,7 +100,7 @@ impl Delay {
             let size2 = num_samples - size1;
 
             self.ring_buffer[self.cursor..].copy_from_slice(&input[..size1]);
-            self.ring_buffer[..size2].copy_from_slice(&input[size2..]);
+            self.ring_buffer[..size2].copy_from_slice(&input[size1..]);
 
             self.cursor = size2;
         }
@@ -111,7 +111,7 @@ impl Delay {
             self.ring_buffer[self.cursor..self.cursor + 4].copy_from_slice(input.as_array_ref());
 
             self.cursor += 4;
-            if self.cursor > self.ring_buffer.len() {
+            if self.cursor >= self.ring_buffer.len() {
                 self.cursor -= self.ring_buffer.len();
             }
         } else {
