@@ -91,7 +91,7 @@ impl CoordinateSpace3f {
     }
 
     /// Transforms a direction from world space (the canonical coordinate space) to this coordinate space.
-    pub fn direction_to_local(&self, direction: &Vec3) -> Vec3 {
+    pub fn direction_to_local(&self, direction: Vec3) -> Vec3 {
         Vec3 {
             x: direction.dot(self.right),
             y: direction.dot(self.up),
@@ -100,7 +100,7 @@ impl CoordinateSpace3f {
     }
 
     /// Transforms a direction from this coordinate space to world space.
-    pub fn direction_to_world(&self, direction: &Vec3) -> Vec3 {
+    pub fn direction_to_world(&self, direction: Vec3) -> Vec3 {
         self.right * direction.x + self.up * direction.y - self.ahead * direction.z
     }
 }

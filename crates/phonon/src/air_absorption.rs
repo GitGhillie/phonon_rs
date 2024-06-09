@@ -15,19 +15,26 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
+use crate::bands::NUM_BANDS;
 
-#[test]
-fn iir_filter() {
-    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
+pub trait AirAbsorptionModel {
+    fn evaluate(&self, distance: f32, band: usize) -> f32;
+}
 
-    let filter = IIR::new_from_coefficients(coefficients);
-    let mut filterer = IIRFilterer::new(filter);
+pub struct DefaultAirAbsorptionModel {
+    coefficients: [f32; NUM_BANDS],
+}
 
-    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
-    let mut wet: [f32; 5] = [0.0; 5];
+impl Default for DefaultAirAbsorptionModel {
+    fn default() -> Self {
+        Self {
+            coefficients: [0.0002, 0.0017, 0.182],
+        }
+    }
+}
 
-    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
-
-    assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
+impl AirAbsorptionModel for DefaultAirAbsorptionModel {
+    fn evaluate(&self, distance: f32, band: usize) -> f32 {
+        (-self.coefficients[band] * distance).exp()
+    }
 }

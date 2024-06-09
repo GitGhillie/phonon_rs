@@ -15,19 +15,25 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
+use glam::Vec3;
+use phonon::mesh::Mesh;
+use phonon::triangle::Triangle;
 
 #[test]
-fn iir_filter() {
-    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
+fn triangle_normals() {
+    let vertices = vec![
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(1.0, 0.0, 0.0),
+        Vec3::new(0.0, 1.0, 0.0),
+    ];
 
-    let filter = IIR::new_from_coefficients(coefficients);
-    let mut filterer = IIRFilterer::new(filter);
+    let triangle = Triangle { indices: [0, 1, 2] };
 
-    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
-    let mut wet: [f32; 5] = [0.0; 5];
+    let mesh = Mesh::new(vertices, (&[triangle]).to_vec());
 
-    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
+    let normal = mesh.get_normal(0);
 
-    assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
+    assert_eq!(normal.x, 0.0);
+    assert_eq!(normal.y, 0.0);
+    assert_eq!(normal.z, 1.0);
 }

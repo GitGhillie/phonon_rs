@@ -15,19 +15,19 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
+use glam::Vec3;
 
-#[test]
-fn iir_filter() {
-    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
+pub(crate) struct Sphere {
+    pub(crate) center: Vec3,
+    pub(crate) radius: f32,
+}
 
-    let filter = IIR::new_from_coefficients(coefficients);
-    let mut filterer = IIRFilterer::new(filter);
+impl Sphere {
+    pub(crate) fn new(center: Vec3, radius: f32) -> Self {
+        Self { center, radius }
+    }
 
-    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
-    let mut wet: [f32; 5] = [0.0; 5];
-
-    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
-
-    assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
+    pub(crate) fn contains(&self, point: Vec3) -> bool {
+        (point - self.center).length_squared() <= self.radius * self.radius
+    }
 }

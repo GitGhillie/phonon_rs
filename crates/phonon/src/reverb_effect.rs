@@ -21,32 +21,32 @@ use crate::delay::Delay;
 use crate::reverb_estimator::Reverb;
 
 use crate::iir::{IIRFilterer, IIR};
-use biquad::*;
 use derive_deref::{Deref, DerefMut};
+use ndarray::{s, Array, Array2, ArrayView, Axis};
 use rand::Rng;
+use ultraviolet::f32x4;
 
 const NUM_DELAYS: usize = 16;
-const NUM_ALLPASS_DELAYS: i32 = 4;
-const TONE_CORRECTION_WEIGHT: f32 = 0.5;
 
 const ALLPASS_DELAYS: [usize; 4] = [225, 341, 441, 556];
 
-#[derive(Deref, DerefMut)]
-pub struct ReverbEffectParams(Reverb);
+// todo don't make the Reverb field pub?
+#[derive(Deref, DerefMut, Default)]
+pub struct ReverbEffectParams(pub Reverb);
 
 pub struct ReverbEffect {
     sampling_rate: i32,
-    frame_size: usize,
+    pub frame_size: usize,
     delay_values: [i32; NUM_DELAYS],
     delay_lines: [Delay; NUM_DELAYS],
-    current: usize,
-    is_first_frame: bool,
+    //current: usize, // 'current' does not seem to be used
+    //is_first_frame: bool, // Same here
     allpass_x: [[Delay; 2]; NUM_DELAYS],
     allpass_y: [[Delay; 2]; NUM_DELAYS],
-    absorptive: Vec<Vec<Vec<IIRFilterer>>>, //todo perf
-    tone_correction: Vec<Vec<IIRFilterer>>,
-    x_old: Vec<Vec<f32>>,
-    x_new: Vec<Vec<f32>>,
+    absorptive: Vec<Vec<IIRFilterer>>,
+    tone_correction: Vec<IIRFilterer>,
+    x_old: Array2<f32>,
+    x_new: Array2<f32>,
     previous_reverb: Reverb,
     num_tail_frames_remaining: i32,
 }
@@ -73,42 +73,109 @@ impl ReverbEffect {
             ]
         });
 
-        Self {
+        let mut effect = Self {
             sampling_rate: audio_settings.sampling_rate,
             frame_size: audio_settings.frame_size,
             delay_values,
             delay_lines,
-            current: 0,
-            is_first_frame: false,
             allpass_x,
             allpass_y,
-            absorptive: Vec::default(),
-            tone_correction: Vec::default(),
-            x_old: vec![vec![0.0; audio_settings.frame_size]; NUM_DELAYS],
-            x_new: vec![vec![0.0; audio_settings.frame_size]; NUM_DELAYS],
+            absorptive: vec![vec![IIRFilterer::new(IIR::new_empty()); NUM_BANDS]; NUM_DELAYS],
+            tone_correction: vec![IIRFilterer::new(IIR::new_empty()); NUM_BANDS],
+            x_old: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
+            x_new: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             previous_reverb: Reverb::default(),
             num_tail_frames_remaining: 0,
-        }
+        };
 
-        //todo: reset ReverbEffect?
+        effect.reset();
+
+        effect
     }
 
-    fn tail_float4(&self, out: &mut [f32]) {
-        // for i in 0..NUM_DELAYS {
-        //     self.delay_lines[i].get(self.frame_size, self.x_old[i]);
-        // }
+    pub(crate) fn reset(&mut self) {
+        for i in 0..NUM_DELAYS {
+            self.delay_lines[i].reset();
+
+            self.allpass_x[i][0].reset();
+            self.allpass_x[i][1].reset();
+            self.allpass_y[i][0].reset();
+            self.allpass_y[i][1].reset();
+        }
+
+        self.previous_reverb = Reverb::default();
+
+        self.num_tail_frames_remaining = 0;
+    }
+
+    pub fn apply(
+        &mut self,
+        params: &ReverbEffectParams,
+        input: &AudioBuffer<1>,
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        // todo: input and output must have the same length.
+
+        // todo: Is this really necessary?
+        output.make_silent();
+
+        self.apply_float32x4(
+            params.reverb_times.as_slice(),
+            input[0].as_slice(),
+            output[0].as_mut_slice(),
+        );
+
+        self.previous_reverb.reverb_times = params.reverb_times;
+
+        let reverb_times = params.reverb_times;
+        let max_reverb_time = reverb_times[0].max(reverb_times[1]).max(reverb_times[2]);
+
+        // "fixme: why 2x?"
+        self.num_tail_frames_remaining = 2
+            * ((max_reverb_time * self.sampling_rate as f32) / self.frame_size as f32).ceil()
+                as i32;
+
+        if self.num_tail_frames_remaining > 0 {
+            AudioEffectState::TailRemaining
+        } else {
+            AudioEffectState::TailComplete
+        }
+    }
+
+    fn tail_apply(
+        &mut self,
+        input: &AudioBuffer<1>,
+        output: &mut AudioBuffer<1>,
+    ) -> AudioEffectState {
+        let prev_params = ReverbEffectParams(Reverb {
+            reverb_times: self.previous_reverb.reverb_times,
+        });
+
+        self.apply(&prev_params, input, output)
+    }
+
+    fn tail(&mut self, output: &mut AudioBuffer<1>) -> AudioEffectState {
+        output.make_silent();
+
+        self.tail_float32x4(output[0].as_mut_slice());
+
+        self.num_tail_frames_remaining -= 1;
+
+        if self.num_tail_frames_remaining > 0 {
+            AudioEffectState::TailRemaining
+        } else {
+            AudioEffectState::TailComplete
+        }
     }
 
     fn apply_float32x4(&mut self, reverb_times: &[f32], input: &[f32], output: &mut [f32]) {
-        // todo profile function
-
         let clamped_reverb_times =
             core::array::from_fn::<_, NUM_BANDS, _>(|i| reverb_times[i].max(0.1));
 
         output.fill(0.0);
 
-        const LOW_CUTOFF: [f32; NUM_BANDS] = [20.0, 500.0, 5000.0];
-        const HIGH_CUTOFF: [f32; NUM_BANDS] = [500.0, 5000.0, 22000.0];
+        const LOW_CUTOFF: [f32; NUM_BANDS] = [20.0, 500.0, 5_000.0];
+        const HIGH_CUTOFF: [f32; NUM_BANDS] = [500.0, 5_000.0, 22_000.0];
 
         for i in 0..NUM_DELAYS {
             let absorptive_gains = core::array::from_fn::<_, NUM_BANDS, _>(|j| {
@@ -127,11 +194,9 @@ impl ReverbEffect {
             ];
 
             for j in 0..NUM_BANDS {
-                self.absorptive[i][j][self.current] = IIRFilterer::new(iir[j]);
+                self.absorptive[i][j] = IIRFilterer::new(iir[j]);
             }
         }
-
-        // ----
 
         let mut tone_correction_gains = [0.0f32; NUM_BANDS];
         Self::calc_tone_correction_gains(&clamped_reverb_times, &mut tone_correction_gains);
@@ -148,32 +213,142 @@ impl ReverbEffect {
         ];
 
         for i in 0..NUM_BANDS {
-            self.tone_correction[i][self.current] = IIRFilterer::new(iir[i]);
+            self.tone_correction[i] = IIRFilterer::new(iir[i]);
         }
 
         for i in 0..NUM_DELAYS {
-            self.delay_lines[i].get(self.frame_size, self.x_old[i].as_mut_slice());
+            self.delay_lines[i].get(
+                self.frame_size,
+                self.x_old.row_mut(i).as_slice_mut().unwrap(),
+            );
         }
 
-        // todo: SIMD optimizations
-        let mut x_old = [0.0f32; NUM_DELAYS];
-        let mut x_new = [0.0f32; NUM_DELAYS];
-        for i in 0..self.frame_size {
+        let mut x_old = [f32x4::ZERO; NUM_DELAYS];
+        let mut x_new = [f32x4::ZERO; NUM_DELAYS];
+        for i in (0..self.frame_size).step_by(4) {
             for j in 0..NUM_DELAYS {
-                x_old[j] = self.x_old[j][i];
+                x_old[j] = f32x4::from(self.x_old.slice(s![j, i..(i + 4)]).as_slice().unwrap());
             }
 
             Self::multiply_hadamard_matrix(x_old.as_slice(), x_new.as_mut_slice());
 
             for j in 0..NUM_DELAYS {
-                self.x_new[j][i] = x_new[j];
+                self.x_new
+                    .slice_mut(s![j, i..(i + 4)])
+                    .as_slice_mut()
+                    .unwrap()
+                    .copy_from_slice(x_new[j].as_array_ref());
             }
         }
 
         for i in 0..NUM_DELAYS {
             for j in 0..NUM_BANDS {
-                //self.absorptive[i][j][self.current].apply();
+                // todo: perf?
+                let copy = self.x_new.row(i).to_owned();
+
+                self.absorptive[i][j].apply(
+                    self.frame_size,
+                    copy.as_slice().unwrap(),
+                    self.x_new.row_mut(i).as_slice_mut().unwrap(),
+                );
             }
+
+            // Element-wise addition the `input` of this function to self.x_new[i]
+            let mut view = self.x_new.slice_mut(s![i, ..]);
+            let input_view = ArrayView::from(input);
+            view += &input_view;
+
+            self.delay_lines[i].put(self.frame_size, self.x_new.row(i).as_slice().unwrap());
+        }
+
+        let mut sum = self.x_old.sum_axis(Axis(0)).to_owned();
+        sum = sum / NUM_DELAYS as f32;
+        self.x_old.row_mut(0).assign(&sum);
+
+        let mut x_m: f32x4;
+        let mut y_m: f32x4;
+        let g = f32x4::splat(0.25);
+        for i in (0..self.frame_size).step_by(4) {
+            let mut v = f32x4::from(self.x_old.slice(s![0, i..(i + 4)]).as_slice().unwrap());
+
+            for k in 0..2 {
+                let x = v;
+                x_m = self.allpass_x[0][k].get4();
+                y_m = self.allpass_y[1][k].get4();
+                let y = (x_m + (g * y_m)) - (g * x);
+                self.allpass_x[0][k].put4(&x);
+                self.allpass_y[1][k].put4(&y);
+                v = y;
+            }
+
+            output[i..i + 4].copy_from_slice(v.as_array_ref());
+        }
+
+        for band in 0..NUM_BANDS {
+            self.tone_correction[band].apply_self(output);
+        }
+    }
+
+    // todo: Get rid of code duplication (see apply_float32x4)
+    fn tail_float32x4(&mut self, output: &mut [f32]) {
+        for i in 0..NUM_DELAYS {
+            self.delay_lines[i].get(
+                self.frame_size,
+                self.x_old.row_mut(i).as_slice_mut().unwrap(),
+            );
+        }
+
+        let mut x_old = [f32x4::ZERO; NUM_DELAYS];
+        let mut x_new = [f32x4::ZERO; NUM_DELAYS];
+        for i in (0..self.frame_size).step_by(4) {
+            for j in 0..NUM_DELAYS {
+                x_old[j] = f32x4::from(self.x_old.slice(s![j, i..(i + 4)]).as_slice().unwrap());
+            }
+
+            Self::multiply_hadamard_matrix(x_old.as_slice(), x_new.as_mut_slice());
+
+            for j in 0..NUM_DELAYS {
+                self.x_new
+                    .slice_mut(s![j, i..(i + 4)])
+                    .as_slice_mut()
+                    .unwrap()
+                    .copy_from_slice(x_new[j].as_array_ref());
+            }
+        }
+
+        for i in 0..NUM_DELAYS {
+            for band in 0..NUM_BANDS {
+                self.absorptive[i][band].apply_self(self.x_new.row_mut(i).as_slice_mut().unwrap());
+            }
+
+            self.delay_lines[i].put(self.frame_size, self.x_new.row(i).as_slice().unwrap());
+        }
+
+        let mut sum = self.x_old.sum_axis(Axis(0)).to_owned();
+        sum = sum / NUM_DELAYS as f32;
+        self.x_old.row_mut(0).assign(&sum);
+
+        let mut x_m: f32x4;
+        let mut y_m: f32x4;
+        let g = f32x4::splat(0.25);
+        for i in (0..self.frame_size).step_by(4) {
+            let mut v = f32x4::from(self.x_old.slice(s![0, i..(i + 4)]).as_slice().unwrap());
+
+            for k in 0..2 {
+                let x = v;
+                x_m = self.allpass_x[0][k].get4();
+                y_m = self.allpass_y[1][k].get4();
+                let y = (x_m + (g * y_m)) - (g * x);
+                self.allpass_x[0][k].put4(&x);
+                self.allpass_y[1][k].put4(&y);
+                v = y;
+            }
+
+            output[i..i + 4].copy_from_slice(v.as_array_ref());
+        }
+
+        for band in 0..NUM_BANDS {
+            self.tone_correction[band].apply_self(output);
         }
     }
 
@@ -229,7 +404,7 @@ impl ReverbEffect {
     }
 
     #[rustfmt::skip]
-    fn multiply_hadamard_matrix(x: &[f32], y: &mut [f32]) {
+    fn multiply_hadamard_matrix(x: &[f32x4], y: &mut [f32x4]) {
         y[0]  = x[0] + x[1] + x[2] + x[3] + x[4] + x[5] + x[6] + x[7] + x[8] + x[9] + x[10] + x[11] + x[12] + x[13] + x[14] + x[15];
         y[1]  = x[0] - x[1] + x[2] - x[3] + x[4] - x[5] + x[6] - x[7] + x[8] - x[9] + x[10] - x[11] + x[12] - x[13] + x[14] - x[15];
         y[2]  = x[0] + x[1] - x[2] - x[3] + x[4] + x[5] - x[6] - x[7] + x[8] + x[9] - x[10] - x[11] + x[12] + x[13] - x[14] - x[15];
@@ -248,7 +423,7 @@ impl ReverbEffect {
         y[15] = x[0] - x[1] - x[2] + x[3] - x[4] + x[5] + x[6] - x[7] - x[8] + x[9] + x[10] - x[11] + x[12] - x[13] - x[14] + x[15];
 
         for i in 0..NUM_DELAYS {
-            y[i] *= 0.25;
+            y[i] = y[i] * 0.25;
         }
     }
 

@@ -15,19 +15,15 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
+use crate::bands::NUM_BANDS;
 
-#[test]
-fn iir_filter() {
-    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
-
-    let filter = IIR::new_from_coefficients(coefficients);
-    let mut filterer = IIRFilterer::new(filter);
-
-    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
-    let mut wet: [f32; 5] = [0.0; 5];
-
-    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
-
-    assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
+/// An acoustic material. The acoustic surface properties of an object are represented using multi-band absorption
+/// and transmission loss coefficients, and a single random-incidence scattering coefficient.
+/// All values are in the 0.0 to 1.0 range.
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug)]
+pub struct Material {
+    pub absorption: [f32; NUM_BANDS],
+    pub scattering: f32,
+    pub transmission: [f32; NUM_BANDS],
 }

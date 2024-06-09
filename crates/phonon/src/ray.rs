@@ -15,19 +15,25 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
+use glam::Vec3;
+use parry3d;
 
-#[test]
-fn iir_filter() {
-    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
+pub(crate) struct Ray(pub(crate) parry3d::query::Ray);
 
-    let filter = IIR::new_from_coefficients(coefficients);
-    let mut filterer = IIRFilterer::new(filter);
+impl Ray {
+    pub fn new(origin: Vec3, direction: Vec3) -> Self {
+        Self(parry3d::query::Ray::new(origin.into(), direction.into()))
+    }
 
-    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
-    let mut wet: [f32; 5] = [0.0; 5];
+    pub(crate) fn origin(&self) -> Vec3 {
+        self.0.origin.into()
+    }
 
-    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
+    pub(crate) fn direction(&self) -> Vec3 {
+        self.0.dir.into()
+    }
 
-    assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
+    pub(crate) fn point_at_distance(&self, distance: f32) -> Vec3 {
+        self.origin() + (distance * self.direction())
+    }
 }

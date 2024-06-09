@@ -15,19 +15,4 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
-
-#[test]
-fn iir_filter() {
-    let coefficients: [f32; 5] = [2.0, 3.0, 4.0, 5.0, 6.0];
-
-    let filter = IIR::new_from_coefficients(coefficients);
-    let mut filterer = IIRFilterer::new(filter);
-
-    let dry: [f32; 5] = [1.0, 2.0, 3.0, 4.0, 5.0];
-    let mut wet: [f32; 5] = [0.0; 5];
-
-    filterer.apply(dry.len(), dry.as_slice(), wet.as_mut_slice());
-
-    assert_eq!([4.0, 5.0, 6.0, 16.0, 8.0], wet);
-}
+pub(crate) const SPEED_OF_SOUND: f32 = 340.0;
