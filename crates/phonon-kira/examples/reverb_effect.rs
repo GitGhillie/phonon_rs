@@ -10,10 +10,12 @@ use phonon::reverb_estimator::Reverb;
 use phonon_kira::reverb_effect::builder::ReverbEffectBuilder;
 
 fn main() {
-    let mut reverb_params = ReverbEffectParams(Reverb::default());
+    let mut reverb_params = ReverbEffectParams(Reverb {
+        reverb_times: [2.0, 1.5, 1.0],
+    });
 
     let mut dry = false;
-    let mut wet = false;
+    let mut wet = true;
 
     let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
 
@@ -25,7 +27,7 @@ fn main() {
     });
     let track = manager.add_sub_track(track_builder).unwrap();
 
-    let sound_data = StaticSoundData::from_file("data/audio/windless_slopes.ogg")
+    let sound_data = StaticSoundData::from_file("data/audio/counting.wav")
         .unwrap()
         .loop_region(..)
         .output_destination(&track);
