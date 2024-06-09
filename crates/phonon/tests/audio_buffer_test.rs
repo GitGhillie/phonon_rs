@@ -50,7 +50,7 @@ fn deinterleave() {
 
     let mut deinterleaved: AudioBuffer<2> = AudioBuffer::new(3);
 
-    deinterleaved.write(&interleaved);
+    deinterleaved.read_interleaved(&interleaved);
 
     assert_eq!(1.0, deinterleaved[0][0]);
     assert_eq!(1.0, deinterleaved[0][1]);
@@ -71,7 +71,7 @@ fn interleave() {
 
     let mut interleaved: [f32; 4] = [0.0; 4];
 
-    deinterleaved.read(&mut interleaved);
+    deinterleaved.write_interleaved(&mut interleaved);
 
     assert_eq!(1.0, interleaved[0]);
     assert_eq!(2.0, interleaved[1]);
