@@ -8,7 +8,7 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 
 [features]
 default = []
-serde-serialize = ["serde", "parry3d/serde-serialize", "ndarray/serde"]
+serde-serialize = ["dep:serde", "parry3d/serde-serialize", "ndarray/serde"]
 
 [dependencies]
 derive_deref = "1"
@@ -19,6 +19,7 @@ ndarray = "0.15"
 parry3d = "0.13" # todo: Enable SIMD? Replace with glam-based parry?
 nalgebra = { version = "0.32", features = ["default", "convert-glam025"] } # todo: Replace with glam after replacing parry3d
 bitflags = "2"
+ultraviolet = "0.9"
 serde = {version = "1", optional = true}
 
 [dev-dependencies]

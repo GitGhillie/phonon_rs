@@ -20,7 +20,6 @@ use crate::instanced_mesh::InstancedMesh;
 use crate::ray::Ray;
 use crate::static_mesh::StaticMesh;
 use glam::Vec3;
-use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
 /// A 3D scene, which can contain geometry objects that can interact with acoustic rays.

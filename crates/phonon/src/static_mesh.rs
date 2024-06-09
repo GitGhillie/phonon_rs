@@ -23,8 +23,6 @@ use crate::triangle::Triangle;
 use glam::Vec3;
 use ndarray::Array1;
 use parry3d::query::RayCast;
-use std::cell::RefCell;
-use std::sync::Mutex;
 
 /// A static triangle mesh. The geometry of this mesh is assumed to never change at runtime. It is described in
 /// world-space coordinates. Materials are specified for each triangle.

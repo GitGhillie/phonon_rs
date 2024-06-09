@@ -271,7 +271,7 @@ impl DirectSimulator {
         for i in 0..num_transmission_rays {
             // Select the ray we want to trace for this iteration.
             let ray = &rays[current_ray_index];
-            let mut min_distance = &mut min_distances[current_ray_index];
+            let min_distance = &mut min_distances[current_ray_index];
 
             let hit = scene.closest_hit(ray, *min_distance, max_distance);
 
