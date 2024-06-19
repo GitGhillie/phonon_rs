@@ -48,6 +48,12 @@ impl InstancedMesh {
         })
     }
 
+    pub fn set_transform(&mut self, transform: Mat4) {
+        self.transform = transform;
+        self.inverse_transform = transform.inverse();
+        //self.has_changed = true; // if something is broken uncomment this (todo remove me)
+    }
+
     pub(crate) fn commit(&mut self) {
         self.sub_scene.lock().unwrap().commit();
 
