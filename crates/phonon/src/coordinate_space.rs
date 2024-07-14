@@ -20,6 +20,7 @@ use glam::Vec3;
 /// Template class that represents a Cartesian coordinate system in 3D, with
 /// coordinate axes and origin. The coordinate system is right-handed.
 // todo: Actually make it a template class? When needed.
+#[derive(Debug)]
 pub struct CoordinateSpace3f {
     pub right: Vec3,  // Unit vector pointing to the right of the origin, i.e., local +x.
     pub up: Vec3,     // Unit vector pointing upwards from the origin, i.e., local +y.
