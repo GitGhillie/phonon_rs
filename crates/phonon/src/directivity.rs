@@ -18,9 +18,10 @@
 use crate::coordinate_space::CoordinateSpace3f;
 use glam::Vec3;
 
+// todo: Describe what these do and what the limits are
 pub struct Directivity {
-    dipole_weight: f32,
-    dipole_power: f32,
+    pub dipole_weight: f32,
+    pub dipole_power: f32,
 }
 
 impl Default for Directivity {

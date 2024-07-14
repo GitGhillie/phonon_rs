@@ -96,8 +96,8 @@ impl DirectSimulator {
         &self,
         scene: &Scene,
         flags: DirectApplyFlags,
-        source: CoordinateSpace3f,
-        listener: CoordinateSpace3f,
+        source: &CoordinateSpace3f,
+        listener: &CoordinateSpace3f,
         distance_attenuation_model: &impl DistanceAttenuationModel,
         air_absorption_model: &impl AirAbsorptionModel,
         directivity: Directivity,
@@ -268,7 +268,7 @@ impl DirectSimulator {
         // Product of the transmission coefficients of all hit points.
         let mut accumulated_transmission: [f32; NUM_BANDS] = [1.0, 1.0, 1.0];
 
-        for i in 0..num_transmission_rays {
+        for _ in 0..num_transmission_rays {
             // Select the ray we want to trace for this iteration.
             let ray = &rays[current_ray_index];
             let min_distance = &mut min_distances[current_ray_index];

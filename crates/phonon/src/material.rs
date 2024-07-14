@@ -21,9 +21,19 @@ use crate::bands::NUM_BANDS;
 /// and transmission loss coefficients, and a single random-incidence scattering coefficient.
 /// All values are in the 0.0 to 1.0 range.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Material {
     pub absorption: [f32; NUM_BANDS],
     pub scattering: f32,
     pub transmission: [f32; NUM_BANDS],
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Material {
+            absorption: [0.5, 0.3, 0.1],
+            scattering: 0.05,
+            transmission: [0.1, 0.05, 0.01],
+        }
+    }
 }

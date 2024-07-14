@@ -185,8 +185,8 @@ fn update_direct_effect(
         phonon_res.simulator.simulate(
             &phonon_res.scene,
             flags,
-            source_position,
-            listener_position,
+            &source_position,
+            &listener_position,
             &DefaultDistanceAttenuationModel::default(),
             &DefaultAirAbsorptionModel::default(),
             Directivity::default(),
