@@ -48,15 +48,22 @@ impl StaticMesh {
         }
     }
 
-    pub fn new_static_mesh (
+    pub fn new_static_mesh(
         vertices: Vec<Vec3>,
         triangles: Vec<[u32; 3]>,
         material_indices: Vec<usize>,
         materials: Vec<Material>,
     ) -> Self {
-        let triangles = triangles.iter().map(|triangle| Triangle {
-            indices: [triangle[0] as usize, triangle[1] as usize, triangle[2] as usize],
-        }).collect();
+        let triangles = triangles
+            .iter()
+            .map(|triangle| Triangle {
+                indices: [
+                    triangle[0] as usize,
+                    triangle[1] as usize,
+                    triangle[2] as usize,
+                ],
+            })
+            .collect();
 
         Self {
             mesh: Mesh::new(vertices, triangles),
