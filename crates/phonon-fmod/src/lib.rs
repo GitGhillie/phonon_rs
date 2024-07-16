@@ -1,14 +1,74 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+//! FMOD Plugin
+
+// mod ffi {
+//     #![allow(non_snake_case)]
+//     #![allow(non_camel_case_types)]
+//     #![allow(non_upper_case_globals)]
+//
+//     include!(concat!(env!("OUT_DIR"), "/bindgen.rs"));
+// }
+
+use std::ffi::{c_char, CString};
+
+// todo remove file and use the generated bindings
+mod ffi;
+
+static mut DSP_DESCRIPTION: ffi::FMOD_DSP_DESCRIPTION = ffi::FMOD_DSP_DESCRIPTION {
+    pluginsdkversion: ffi::FMOD_PLUGIN_SDK_VERSION,
+    name: [0; 32],
+    version: 1,
+    numinputbuffers: 1,
+    numoutputbuffers: 1,
+    create: None,
+    release: None,
+    reset: None,
+    read: None,
+    process: None,
+    setposition: None,
+    numparameters: 0,
+    paramdesc: std::ptr::null_mut(),
+    setparameterfloat: None,
+    setparameterint: None,
+    setparameterbool: None,
+    setparameterdata: None,
+    getparameterfloat: None,
+    getparameterint: None,
+    getparameterbool: None,
+    getparameterdata: None,
+    shouldiprocess: None,
+    userdata: std::ptr::null_mut(),
+    sys_register: None,
+    sys_deregister: None,
+    sys_mix: None,
+};
+
+#[no_mangle]
+extern "C" fn FMODGetDSPDescription() -> *mut ffi::FMOD_DSP_DESCRIPTION {
+    unsafe{
+        DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
+
+        &mut DSP_DESCRIPTION
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+fn str_to_c_char_array(input: &str) -> [c_char; 32] {
+    let mut array: [c_char; 32] = [0; 32];
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    // Convert the input &str to a CString, adding a null terminator
+    let c_string = CString::new(input).expect("CString::new failed");
+
+    // Get the byte slice of the CString
+    let bytes = c_string.as_bytes();
+
+    // Ensure the byte slice fits within the array
+    if bytes.len() > 32 {
+        panic!("String is too long to fit in [c_char; 32]");
     }
+
+    // Copy the bytes into the array
+    for (i, &byte) in bytes.iter().enumerate() {
+        array[i] = byte as c_char;
+    }
+
+    array
 }
