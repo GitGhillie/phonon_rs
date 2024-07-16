@@ -44,7 +44,7 @@ static mut DSP_DESCRIPTION: ffi::FMOD_DSP_DESCRIPTION = ffi::FMOD_DSP_DESCRIPTIO
 
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut ffi::FMOD_DSP_DESCRIPTION {
-    unsafe{
+    unsafe {
         DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
 
         &mut DSP_DESCRIPTION
