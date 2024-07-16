@@ -10,8 +10,7 @@ fn main() {
 
     let builder = Builder::default()
         .header("headers/fmod_common.h")
-        .header("headers/fmod_dsp.h")
-        .header("headers/phonon_plugin.h");
+        .header("headers/fmod_dsp.h");
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_dir = env::var("OUT_DIR").unwrap();
