@@ -12,9 +12,9 @@ fn main() {
         .header("headers/fmod_common.h")
         .header("headers/fmod_dsp.h");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_dir = env::var("OUT_DIR").unwrap();
 
+    // todo give it a better name
     let dest_path = Path::new(&out_dir).join("bindgen.rs");
 
     let bindings = builder.generate().unwrap();

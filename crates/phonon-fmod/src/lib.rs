@@ -1,4 +1,11 @@
-//! FMOD Plugin
+//! FMOD Plugin for the phonon crate.
+//!
+//! On the FMOD Studio side the plugin needs to be built as a dynamic library
+//! and loaded by placing it in one of the folders indicated here:
+//! https://www.fmod.com/docs/2.02/studio/plugin-reference.html#loading-plug-ins
+//!
+//! On the application side the plugin can either be dynamically or statically linked.
+//! By default, this should be done statically.
 
 // mod ffi {
 //     #![allow(non_snake_case)]
@@ -42,6 +49,8 @@ static mut DSP_DESCRIPTION: ffi::FMOD_DSP_DESCRIPTION = ffi::FMOD_DSP_DESCRIPTIO
     sys_mix: None,
 };
 
+/// FMOD will call this function load the plugin defined by FMOD_DSP_DESCRIPTION.
+/// See https://fmod.com/docs/2.02/api/white-papers-dsp-plugin-api.html#building-a-plug-in
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut ffi::FMOD_DSP_DESCRIPTION {
     unsafe {
