@@ -22,9 +22,6 @@ use std::slice;
 
 use crate::ffi::*;
 
-// todo remove file and use the generated bindings
-//mod ffi;
-
 const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
 const FMOD_GAIN_PARAM_GAIN_MAX: f32 = 10.0;
 const FMOD_GAIN_PARAM_GAIN_DEFAULT: f32 = 0.0;
