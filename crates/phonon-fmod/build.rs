@@ -1,6 +1,6 @@
 extern crate bindgen;
 
-use bindgen::Builder;
+use bindgen::{Builder, EnumVariation};
 
 use std::env;
 use std::path::Path;
@@ -10,7 +10,10 @@ fn main() {
 
     let builder = Builder::default()
         .header("headers/fmod_common.h")
-        .header("headers/fmod_dsp.h");
+        .header("headers/fmod_dsp.h")
+        .default_enum_style(EnumVariation::Rust {
+            non_exhaustive: false,
+        });
 
     let out_dir = env::var("OUT_DIR").unwrap();
 

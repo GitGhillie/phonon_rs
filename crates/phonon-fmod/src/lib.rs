@@ -11,6 +11,7 @@
 //     #![allow(non_snake_case)]
 //     #![allow(non_camel_case_types)]
 //     #![allow(non_upper_case_globals)]
+//     #![allow(dead_code)]
 //
 //     include!(concat!(env!("OUT_DIR"), "/bindgen.rs"));
 // }
@@ -19,6 +20,32 @@ use std::ffi::{c_char, CString};
 
 // todo remove file and use the generated bindings
 mod ffi;
+
+/// Processing is done here. Invoked by FMOD mixer.
+/// See FMOD_DSP_READ_CALLBACK docs.
+unsafe extern "C" fn read_callback(
+    dsp_state: *mut ffi::FMOD_DSP_STATE,
+    inbuffer: *mut f32,
+    outbuffer: *mut f32,
+    length: std::os::raw::c_uint,
+    inchannels: std::os::raw::c_int,
+    outchannels: *mut std::os::raw::c_int,
+) -> ffi::FMOD_RESULT {
+    let total_len = length as usize * inchannels as usize;
+
+    // Copy input to output just as a test
+    if !inbuffer.is_null() && !outbuffer.is_null() {
+        for i in 0..total_len {
+            *outbuffer.add(i) = *inbuffer.add(i);
+        }
+    }
+
+    if !outchannels.is_null() {
+        *outchannels = inchannels;
+    }
+
+    ffi::FMOD_RESULT::FMOD_OK
+}
 
 static mut DSP_DESCRIPTION: ffi::FMOD_DSP_DESCRIPTION = ffi::FMOD_DSP_DESCRIPTION {
     pluginsdkversion: ffi::FMOD_PLUGIN_SDK_VERSION,
@@ -29,7 +56,7 @@ static mut DSP_DESCRIPTION: ffi::FMOD_DSP_DESCRIPTION = ffi::FMOD_DSP_DESCRIPTIO
     create: None,
     release: None,
     reset: None,
-    read: None,
+    read: Some(read_callback),
     process: None,
     setposition: None,
     numparameters: 0,
