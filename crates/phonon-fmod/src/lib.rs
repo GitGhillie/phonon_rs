@@ -190,6 +190,18 @@ unsafe extern "C" fn process_callback(
     FMOD_RESULT::FMOD_OK
 }
 
+static mut PARAM_GAIN: FMOD_DSP_PARAMETER_DESC = FMOD_DSP_PARAMETER_DESC {
+    type_: FMOD_DSP_PARAMETER_TYPE::FMOD_DSP_PARAMETER_TYPE_FLOAT,
+    name: [0; 16],
+    label: [0; 16],
+    description: std::ptr::null_mut(),
+    __bindgen_anon_1: unsafe { std::mem::zeroed() },
+};
+
+static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [
+    &mut unsafe { PARAM_GAIN },
+];
+
 static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
     name: [0; 32],
@@ -202,7 +214,7 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     read: None,
     process: Some(process_callback),
     setposition: None,
-    numparameters: 0,
+    numparameters: 1,
     paramdesc: std::ptr::null_mut(),
     setparameterfloat: None,
     setparameterint: None,
@@ -224,14 +236,23 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
     unsafe {
+        PARAM_GAIN.name = str_to_c_char_array("Gain");
+        PARAM_GAIN.label = str_to_c_char_array("dB");
+        static DESCRIPTION: &str = "Hello it's a description!\0";
+        PARAM_GAIN.description = DESCRIPTION.as_ptr() as *const c_char;
+
+        //todo remaining fields of PARAM_GAIN
+        //todo make function to fill in the parameter fields.
+
         DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
+        DSP_DESCRIPTION.paramdesc = PARAMETERS.as_mut_ptr();
 
         addr_of_mut!(DSP_DESCRIPTION)
     }
 }
 
-fn str_to_c_char_array(input: &str) -> [c_char; 32] {
-    let mut array: [c_char; 32] = [0; 32];
+fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
+    let mut array: [c_char; LEN] = [0; LEN];
 
     // Convert the input &str to a CString, adding a null terminator
     let c_string = CString::new(input).expect("CString::new failed");
@@ -240,8 +261,8 @@ fn str_to_c_char_array(input: &str) -> [c_char; 32] {
     let bytes = c_string.as_bytes();
 
     // Ensure the byte slice fits within the array
-    if bytes.len() > 32 {
-        panic!("String is too long to fit in [c_char; 32]");
+    if bytes.len() > LEN {
+        panic!("String is too long to fit in [c_char; LEN]");
     }
 
     // Copy the bytes into the array
