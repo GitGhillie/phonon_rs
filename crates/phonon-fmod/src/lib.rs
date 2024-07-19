@@ -7,22 +7,16 @@
 //! On the application side the plugin can either be dynamically or statically linked.
 //! By default, this should be done statically.
 
-// todo: Consider libfmod (MIT) or fmod-oxide (MPL2)
+// See example https://github.com/lebedec/libfmod/blob/main/libfmod/tests/examples/core.rs
+// todo remove this
 
-mod ffi {
-    #![allow(non_snake_case)]
-    #![allow(non_camel_case_types)]
-    #![allow(non_upper_case_globals)]
-    #![allow(dead_code)]
-
-    include!(concat!(env!("OUT_DIR"), "/bindgen.rs"));
-}
-
-use std::ffi::{c_char, CString};
+use std::ffi::CString;
+use libfmod::ffi::{FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_DESCRIPTION, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_TYPE, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_MEMORY, FMOD_OK, FMOD_PLUGIN_SDK_VERSION, FMOD_RESULT, FMOD_SPEAKERMODE};
+use std::os::raw::{c_char, c_float, c_int};
+use std::ptr::null_mut;
 use std::ptr::addr_of_mut;
 use std::slice;
-
-use crate::ffi::*;
+use libfmod::{DspDescription, DspParameterDesc};
 
 const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
 const FMOD_GAIN_PARAM_GAIN_MAX: f32 = 10.0;
@@ -121,21 +115,21 @@ unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RES
     (*dsp_state).plugindata = struct_ptr as *mut std::os::raw::c_void;
 
     if (*dsp_state).plugindata.is_null() {
-        return FMOD_RESULT::FMOD_ERR_MEMORY;
+        return FMOD_ERR_MEMORY;
     }
 
-    FMOD_RESULT::FMOD_OK
+    FMOD_OK
 }
 
 unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     (*dsp_state).plugindata = std::ptr::null_mut();
-    FMOD_RESULT::FMOD_OK
+    FMOD_OK
 }
 
 unsafe extern "C" fn reset_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
     (*state).reset();
-    FMOD_RESULT::FMOD_OK
+    FMOD_OK
 }
 
 unsafe extern "C" fn shouldiprocess_callback(
@@ -147,10 +141,10 @@ unsafe extern "C" fn shouldiprocess_callback(
     speaker_mode: FMOD_SPEAKERMODE,
 ) -> FMOD_RESULT {
     if inputs_idle != 0 {
-        return FMOD_RESULT::FMOD_ERR_DSP_DONTPROCESS;
+        return FMOD_ERR_DSP_DONTPROCESS;
     }
 
-    FMOD_RESULT::FMOD_OK
+    FMOD_OK
 }
 
 /// Processing is done here. Invoked by FMOD mixer.
@@ -165,14 +159,14 @@ unsafe extern "C" fn process_callback(
 ) -> FMOD_RESULT {
     let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
 
-    if op == FMOD_DSP_PROCESS_OPERATION::FMOD_DSP_PROCESS_QUERY {
+    if op == FMOD_DSP_PROCESS_QUERY {
         if !in_buffer_array.is_null() && !out_buffer_array.is_null() {
             *(*out_buffer_array).buffernumchannels = *(*in_buffer_array).buffernumchannels;
             (*out_buffer_array).speakermode = (*in_buffer_array).speakermode;
         }
 
         if inputs_idle != 0 {
-            return FMOD_RESULT::FMOD_ERR_DSP_DONTPROCESS;
+            return FMOD_ERR_DSP_DONTPROCESS;
         }
     } else {
         let num_channels = *(*in_buffer_array).buffernumchannels as usize;
@@ -189,18 +183,46 @@ unsafe extern "C" fn process_callback(
         );
     }
 
-    FMOD_RESULT::FMOD_OK
+    FMOD_OK
 }
 
 static mut PARAM_GAIN: FMOD_DSP_PARAMETER_DESC = FMOD_DSP_PARAMETER_DESC {
-    type_: FMOD_DSP_PARAMETER_TYPE::FMOD_DSP_PARAMETER_TYPE_FLOAT,
+    type_: FMOD_DSP_PARAMETER_TYPE_FLOAT,
     name: [0; 16],
     label: [0; 16],
-    description: std::ptr::null_mut(),
-    __bindgen_anon_1: unsafe { std::mem::zeroed() },
+    description: null_mut(),
+    union: unsafe { std::mem::zeroed() },
 };
 
 static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [&mut unsafe { PARAM_GAIN }];
+
+// static mut DSP_DESCRIPTION: DspDescription = DspDescription {
+//     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
+//     name: [0; 32],
+//     version: 0,
+//     numinputbuffers: 1,
+//     numoutputbuffers: 1,
+//     create: Some(create_callback),
+//     release: Some(release_callback),
+//     reset: Some(reset_callback),
+//     read: None,
+//     process: Some(process_callback),
+//     setposition: None,
+//     paramdesc: vec![],
+//     setparameterfloat: None,
+//     setparameterint: None,
+//     setparameterbool: None,
+//     setparameterdata: None,
+//     getparameterfloat: None,
+//     getparameterint: None,
+//     getparameterbool: None,
+//     getparameterdata: None,
+//     shouldiprocess: None,
+//     userdata: null_mut(),
+//     sys_register: None,
+//     sys_deregister: None,
+//     sys_mix: None,
+// };
 
 static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -215,7 +237,7 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     process: Some(process_callback),
     setposition: None,
     numparameters: 1,
-    paramdesc: std::ptr::null_mut(),
+    paramdesc: null_mut(),
     setparameterfloat: None,
     setparameterint: None,
     setparameterbool: None,
@@ -225,7 +247,7 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     getparameterbool: None,
     getparameterdata: None,
     shouldiprocess: Some(shouldiprocess_callback),
-    userdata: std::ptr::null_mut(),
+    userdata: null_mut(),
     sys_register: None,
     sys_deregister: None,
     sys_mix: None,
@@ -236,27 +258,36 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
     unsafe {
-        PARAM_GAIN.name = str_to_c_char_array("Gain");
-        PARAM_GAIN.label = str_to_c_char_array("dB");
-        static DESCRIPTION: &str = "Hello it's a description!\0";
-        PARAM_GAIN.description = DESCRIPTION.as_ptr() as *const c_char;
-        PARAM_GAIN.__bindgen_anon_1 = FMOD_DSP_PARAMETER_DESC__bindgen_ty_1 {
-            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
-                min: 0.0,
-                max: 0.0,
-                defaultval: 0.0,
-                mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING { type_: FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE::FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE_LINEAR, piecewiselinearmapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING_PIECEWISE_LINEAR {} },
-            },
-        };
-
-        //todo remaining fields of PARAM_GAIN
-        //todo make function to fill in the parameter fields.
-
+        // PARAM_GAIN.name = str_to_c_char_array("Gain");
+        // PARAM_GAIN.label = str_to_c_char_array("dB");
+        // static DESCRIPTION: &str = "Hello it's a description!\0";
+        // PARAM_GAIN.description = DESCRIPTION.as_ptr() as *const c_char;
+        // PARAM_GAIN.union = FMOD_DSP_PARAMETER_DESC_UNION {
+        //     floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
+        //         min: 0.0,
+        //         max: 0.0,
+        //         defaultval: 0.0,
+        //         mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING { type_: FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE::FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE_LINEAR, piecewiselinearmapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING_PIECEWISE_LINEAR {} },
+        //     },
+        // };
+        //
+        // //todo remaining fields of PARAM_GAIN
+        // //todo make function to fill in the parameter fields.
+        //
         DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
-        DSP_DESCRIPTION.paramdesc = PARAMETERS.as_mut_ptr();
+        // DSP_DESCRIPTION.paramdesc = PARAMETERS.as_mut_ptr();
 
+        //static mut desc: FMOD_DSP_DESCRIPTION = DSP_DESCRIPTION.into();
         addr_of_mut!(DSP_DESCRIPTION)
     }
+}
+
+fn name32(name: &str) -> [i8; 32] {
+    let mut output = [0; 32];
+    for (i, ch) in name.as_bytes().iter().enumerate() {
+        output[i] = *ch as i8;
+    }
+    output
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {

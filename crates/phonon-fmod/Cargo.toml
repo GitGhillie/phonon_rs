@@ -10,6 +10,4 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-
-[build-dependencies]
-bindgen = "0.69"
+libfmod = "~2.222"
