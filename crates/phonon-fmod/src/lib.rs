@@ -7,6 +7,8 @@
 //! On the application side the plugin can either be dynamically or statically linked.
 //! By default, this should be done statically.
 
+// todo: Consider libfmod (MIT) or fmod-oxide (MPL2)
+
 mod ffi {
     #![allow(non_snake_case)]
     #![allow(non_camel_case_types)]
@@ -198,9 +200,7 @@ static mut PARAM_GAIN: FMOD_DSP_PARAMETER_DESC = FMOD_DSP_PARAMETER_DESC {
     __bindgen_anon_1: unsafe { std::mem::zeroed() },
 };
 
-static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [
-    &mut unsafe { PARAM_GAIN },
-];
+static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [&mut unsafe { PARAM_GAIN }];
 
 static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -240,6 +240,14 @@ extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
         PARAM_GAIN.label = str_to_c_char_array("dB");
         static DESCRIPTION: &str = "Hello it's a description!\0";
         PARAM_GAIN.description = DESCRIPTION.as_ptr() as *const c_char;
+        PARAM_GAIN.__bindgen_anon_1 = FMOD_DSP_PARAMETER_DESC__bindgen_ty_1 {
+            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
+                min: 0.0,
+                max: 0.0,
+                defaultval: 0.0,
+                mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING { type_: FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE::FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE_LINEAR, piecewiselinearmapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING_PIECEWISE_LINEAR {} },
+            },
+        };
 
         //todo remaining fields of PARAM_GAIN
         //todo make function to fill in the parameter fields.
