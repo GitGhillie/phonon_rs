@@ -236,7 +236,7 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     read: None,
     process: Some(process_callback),
     setposition: None,
-    numparameters: 1,
+    numparameters: 0,
     paramdesc: null_mut(),
     setparameterfloat: None,
     setparameterint: None,
