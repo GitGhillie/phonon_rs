@@ -6,4 +6,9 @@ license = "Apache-2.0"
 description = "FMOD integration for the unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
+libfmod = "~2.222"
+#libfmod = { path = "../../../libfmod/libfmod" }
