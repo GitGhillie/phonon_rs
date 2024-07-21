@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
         if: runner.os == 'linux'
       - name: Build & run tests
-        run: cargo test -p phonon; cargo test -p phonon_kira # phonon_fmod not tested due to dynamic linking required
+        run: cargo test -p phonon; cargo test -p phonon-kira # phonon_fmod not tested due to dynamic linking required
   lint:
     runs-on: ubuntu-latest
     steps:
