@@ -10,5 +10,5 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-#libfmod = "~2.222"
-libfmod = { path = "../../../libfmod/libfmod" }
+libfmod = "~2.222"
+#libfmod = { path = "../../../libfmod/libfmod" }
