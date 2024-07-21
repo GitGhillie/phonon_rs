@@ -1,17 +1,18 @@
 //! FMOD Plugin for the phonon crate.
-//!
 
-
-// See example https://github.com/lebedec/libfmod/blob/main/libfmod/tests/examples/core.rs
-// todo remove this
-
+use libfmod::ffi::{
+    FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_DESCRIPTION,
+    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION,
+    FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_DSP_PROCESS_OPERATION,
+    FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_INVALID_PARAM,
+    FMOD_ERR_MEMORY, FMOD_OK, FMOD_PLUGIN_SDK_VERSION, FMOD_RESULT, FMOD_SPEAKERMODE,
+};
 use std::ffi::CString;
-use libfmod::ffi::{FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_DESCRIPTION, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_TYPE, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_MEMORY, FMOD_OK, FMOD_PLUGIN_SDK_VERSION, FMOD_RESULT, FMOD_SPEAKERMODE};
+use std::mem::MaybeUninit;
 use std::os::raw::{c_char, c_float, c_int};
-use std::ptr::null_mut;
 use std::ptr::addr_of_mut;
+use std::ptr::null_mut;
 use std::slice;
-use libfmod::{DspDescription, DspParameterDesc};
 
 const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
 const FMOD_GAIN_PARAM_GAIN_MAX: f32 = 10.0;
@@ -23,6 +24,14 @@ fn db_to_linear(db_value: f32) -> f32 {
         0.0
     } else {
         10.0_f32.powf(db_value / 20.0)
+    }
+}
+
+fn linear_to_db(lin_value: f32) -> f32 {
+    if lin_value <= 0.0 {
+        FMOD_GAIN_PARAM_GAIN_MIN
+    } else {
+        20.0 * lin_value.log10()
     }
 }
 
@@ -53,6 +62,10 @@ impl FmodGainState {
     fn set_gain(&mut self, gain: f32) {
         self.target_gain = db_to_linear(gain);
         self.ramp_samples_left = FMOD_GAIN_RAMP_COUNT;
+    }
+
+    fn get_gain(&self) -> f32 {
+        linear_to_db(self.target_gain)
     }
 
     fn process(
@@ -117,7 +130,7 @@ unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RES
 }
 
 unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    (*dsp_state).plugindata = std::ptr::null_mut();
+    (*dsp_state).plugindata = null_mut();
     FMOD_OK
 }
 
@@ -128,12 +141,12 @@ unsafe extern "C" fn reset_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESU
 }
 
 unsafe extern "C" fn shouldiprocess_callback(
-    dsp_state: *mut FMOD_DSP_STATE,
+    _dsp_state: *mut FMOD_DSP_STATE,
     inputs_idle: FMOD_BOOL,
-    length: std::os::raw::c_uint,
-    in_mask: FMOD_CHANNELMASK,
-    in_channels: std::os::raw::c_int,
-    speaker_mode: FMOD_SPEAKERMODE,
+    _length: std::os::raw::c_uint,
+    _in_mask: FMOD_CHANNELMASK,
+    _in_channels: c_int,
+    _speaker_mode: FMOD_SPEAKERMODE,
 ) -> FMOD_RESULT {
     if inputs_idle != 0 {
         return FMOD_ERR_DSP_DONTPROCESS;
@@ -181,15 +194,43 @@ unsafe extern "C" fn process_callback(
     FMOD_OK
 }
 
-static mut PARAM_GAIN: FMOD_DSP_PARAMETER_DESC = FMOD_DSP_PARAMETER_DESC {
-    type_: FMOD_DSP_PARAMETER_TYPE_FLOAT,
-    name: [0; 16],
-    label: [0; 16],
-    description: null_mut(),
-    union: unsafe { std::mem::zeroed() },
-};
+unsafe extern "C" fn set_float_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    value: c_float,
+) -> FMOD_RESULT {
+    let mut state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let mut state = state.as_mut().unwrap();
 
-static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [&mut unsafe { PARAM_GAIN }];
+    if index == 0 {
+        state.set_gain(value);
+        return FMOD_OK;
+    } else {
+        return FMOD_ERR_INVALID_PARAM;
+    }
+}
+
+unsafe extern "C" fn get_float_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    value: *mut c_float,
+    value_str: *mut c_char,
+) -> FMOD_RESULT {
+    let mut state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let mut state = state.as_mut().unwrap();
+
+    if index == 0 {
+        *value = state.get_gain();
+        // todo value str
+        return FMOD_OK;
+    } else {
+        return FMOD_ERR_INVALID_PARAM;
+    }
+}
+
+static mut PARAM_GAIN: MaybeUninit<FMOD_DSP_PARAMETER_DESC> = MaybeUninit::uninit();
+
+static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [null_mut()];
 
 static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -203,20 +244,20 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     read: None,
     process: Some(process_callback),
     setposition: None,
-    numparameters: 0,
+    numparameters: 1,
     paramdesc: null_mut(),
-    setparameterfloat: None,
+    setparameterfloat: Some(set_float_callback),
     setparameterint: None,
     setparameterbool: None,
     setparameterdata: None,
-    getparameterfloat: None,
+    getparameterfloat: Some(get_float_callback),
     getparameterint: None,
     getparameterbool: None,
     getparameterdata: None,
     shouldiprocess: Some(shouldiprocess_callback),
     userdata: null_mut(),
-    sys_register: None,
-    sys_deregister: None,
+    sys_register: Some(sys_register_callback),
+    sys_deregister: Some(sys_deregister_callback),
     sys_mix: None,
 };
 
@@ -225,36 +266,29 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
     unsafe {
-        // PARAM_GAIN.name = str_to_c_char_array("Gain");
-        // PARAM_GAIN.label = str_to_c_char_array("dB");
-        // static DESCRIPTION: &str = "Hello it's a description!\0";
-        // PARAM_GAIN.description = DESCRIPTION.as_ptr() as *const c_char;
-        // PARAM_GAIN.union = FMOD_DSP_PARAMETER_DESC_UNION {
-        //     floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
-        //         min: 0.0,
-        //         max: 0.0,
-        //         defaultval: 0.0,
-        //         mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING { type_: FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE::FMOD_DSP_PARAMETER_FLOAT_MAPPING_TYPE_LINEAR, piecewiselinearmapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING_PIECEWISE_LINEAR {} },
-        //     },
-        // };
-        //
-        // //todo remaining fields of PARAM_GAIN
-        // //todo make function to fill in the parameter fields.
-        //
-        DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
-        // DSP_DESCRIPTION.paramdesc = PARAMETERS.as_mut_ptr();
+        let mut param_gain = PARAM_GAIN.as_mut_ptr();
+        //todo make function to fill in the parameter fields.
+        (*param_gain).type_ = FMOD_DSP_PARAMETER_TYPE_FLOAT;
+        (*param_gain).name = str_to_c_char_array("Gain");
+        (*param_gain).label = str_to_c_char_array("dB");
+        static DESCRIPTION: &str = "Hello it's a description!\0";
+        (*param_gain).description = DESCRIPTION.as_ptr() as *const c_char;
+        (*param_gain).union = FMOD_DSP_PARAMETER_DESC_UNION {
+            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
+                min: FMOD_GAIN_PARAM_GAIN_MIN,
+                max: FMOD_GAIN_PARAM_GAIN_MAX,
+                defaultval: FMOD_GAIN_PARAM_GAIN_DEFAULT,
+                mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING::default(),
+            },
+        };
 
-        //static mut desc: FMOD_DSP_DESCRIPTION = DSP_DESCRIPTION.into();
+        DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
+        DSP_DESCRIPTION.paramdesc = PARAMETERS.as_mut_ptr();
+
+        PARAMETERS[0] = param_gain;
+
         addr_of_mut!(DSP_DESCRIPTION)
     }
-}
-
-fn name32(name: &str) -> [i8; 32] {
-    let mut output = [0; 32];
-    for (i, ch) in name.as_bytes().iter().enumerate() {
-        output[i] = *ch as i8;
-    }
-    output
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
@@ -277,4 +311,12 @@ fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
     }
 
     array
+}
+
+unsafe extern "C" fn sys_register_callback(_dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
+    FMOD_OK
+}
+
+unsafe extern "C" fn sys_deregister_callback(_dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
+    FMOD_OK
 }
