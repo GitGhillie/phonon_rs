@@ -1,11 +1,6 @@
 //! FMOD Plugin for the phonon crate.
 //!
-//! On the FMOD Studio side the plugin needs to be built as a dynamic library
-//! and loaded by placing it in one of the folders indicated here:
-//! https://www.fmod.com/docs/2.02/studio/plugin-reference.html#loading-plug-ins
-//!
-//! On the application side the plugin can either be dynamically or statically linked.
-//! By default, this should be done statically.
+
 
 // See example https://github.com/lebedec/libfmod/blob/main/libfmod/tests/examples/core.rs
 // todo remove this
@@ -195,34 +190,6 @@ static mut PARAM_GAIN: FMOD_DSP_PARAMETER_DESC = FMOD_DSP_PARAMETER_DESC {
 };
 
 static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [&mut unsafe { PARAM_GAIN }];
-
-// static mut DSP_DESCRIPTION: DspDescription = DspDescription {
-//     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
-//     name: [0; 32],
-//     version: 0,
-//     numinputbuffers: 1,
-//     numoutputbuffers: 1,
-//     create: Some(create_callback),
-//     release: Some(release_callback),
-//     reset: Some(reset_callback),
-//     read: None,
-//     process: Some(process_callback),
-//     setposition: None,
-//     paramdesc: vec![],
-//     setparameterfloat: None,
-//     setparameterint: None,
-//     setparameterbool: None,
-//     setparameterdata: None,
-//     getparameterfloat: None,
-//     getparameterint: None,
-//     getparameterbool: None,
-//     getparameterdata: None,
-//     shouldiprocess: None,
-//     userdata: null_mut(),
-//     sys_register: None,
-//     sys_deregister: None,
-//     sys_mix: None,
-// };
 
 static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
