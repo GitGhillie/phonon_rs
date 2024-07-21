@@ -43,17 +43,6 @@ struct FmodGainState {
 }
 
 impl FmodGainState {
-    fn new() -> Self {
-        let gain = db_to_linear(FMOD_GAIN_PARAM_GAIN_DEFAULT);
-
-        Self {
-            target_gain: gain,
-            current_gain: gain,
-            ramp_samples_left: 0,
-            //invert: false,
-        }
-    }
-
     fn reset(&mut self) {
         self.current_gain = self.target_gain;
         self.ramp_samples_left = 0;
@@ -199,14 +188,14 @@ unsafe extern "C" fn set_float_callback(
     index: c_int,
     value: c_float,
 ) -> FMOD_RESULT {
-    let mut state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
-    let mut state = state.as_mut().unwrap();
+    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state = state.as_mut().unwrap();
 
     if index == 0 {
         state.set_gain(value);
-        return FMOD_OK;
+        FMOD_OK
     } else {
-        return FMOD_ERR_INVALID_PARAM;
+        FMOD_ERR_INVALID_PARAM
     }
 }
 
@@ -214,17 +203,16 @@ unsafe extern "C" fn get_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     index: c_int,
     value: *mut c_float,
-    value_str: *mut c_char,
+    _value_str: *mut c_char,
 ) -> FMOD_RESULT {
-    let mut state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
-    let mut state = state.as_mut().unwrap();
+    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state = state.as_mut().unwrap();
 
     if index == 0 {
         *value = state.get_gain();
-        // todo value str
-        return FMOD_OK;
+        FMOD_OK
     } else {
-        return FMOD_ERR_INVALID_PARAM;
+        FMOD_ERR_INVALID_PARAM
     }
 }
 
@@ -232,6 +220,7 @@ static mut PARAM_GAIN: MaybeUninit<FMOD_DSP_PARAMETER_DESC> = MaybeUninit::unini
 
 static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [null_mut()];
 
+// Fields that are empty/null will be assigned in FMODGetDSPDescription() if necessary.
 static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
     pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
     name: [0; 32],
@@ -266,7 +255,7 @@ static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
     unsafe {
-        let mut param_gain = PARAM_GAIN.as_mut_ptr();
+        let param_gain = PARAM_GAIN.as_mut_ptr();
         //todo make function to fill in the parameter fields.
         (*param_gain).type_ = FMOD_DSP_PARAMETER_TYPE_FLOAT;
         (*param_gain).name = str_to_c_char_array("Gain");
