@@ -1,12 +1,32 @@
+//
+// Copyright 2017-2023 Valve Corporation.
+// Copyright 2024 phonon_rs contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 //! FMOD Plugin for the phonon crate.
 
 use libfmod::ffi::{
     FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_DESCRIPTION,
-    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION,
-    FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_DSP_PROCESS_OPERATION,
-    FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_INVALID_PARAM,
-    FMOD_ERR_MEMORY, FMOD_OK, FMOD_PLUGIN_SDK_VERSION, FMOD_RESULT, FMOD_SPEAKERMODE,
+    FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_DESC,
+    FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING,
+    FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_DSP_PROCESS_OPERATION,
+    FMOD_DSP_PROCESS_PERFORM, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS,
+    FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_PLUGIN_SDK_VERSION, FMOD_RESULT,
+    FMOD_SPEAKERMODE,
 };
+use phonon::direct_effect::TransmissionType;
 use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::os::raw::{c_char, c_float, c_int};
@@ -14,101 +34,46 @@ use std::ptr::addr_of_mut;
 use std::ptr::null_mut;
 use std::slice;
 
-const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
-const FMOD_GAIN_PARAM_GAIN_MAX: f32 = 10.0;
-const FMOD_GAIN_PARAM_GAIN_DEFAULT: f32 = 0.0;
-const FMOD_GAIN_RAMP_COUNT: i32 = 256;
-
-fn db_to_linear(db_value: f32) -> f32 {
-    if db_value <= FMOD_GAIN_PARAM_GAIN_MIN {
-        0.0
-    } else {
-        10.0_f32.powf(db_value / 20.0)
-    }
+enum ParameterApplyType {
+    Disable,
+    SimulationDefined,
+    UserDefine,
 }
 
-fn linear_to_db(lin_value: f32) -> f32 {
-    if lin_value <= 0.0 {
-        FMOD_GAIN_PARAM_GAIN_MIN
-    } else {
-        20.0 * lin_value.log10()
-    }
+struct EffectState {
+    source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
+    overall_gain: FMOD_DSP_PARAMETER_OVERALLGAIN,
+
+    apply_distance_attenuation: ParameterApplyType,
+    apply_air_absorption: ParameterApplyType,
+    apply_directivity: ParameterApplyType,
+    apply_occlusion: ParameterApplyType,
+    apply_transmission: ParameterApplyType,
+
+    // todo some missing fields in between here
+
+    distance_attenuation: f32,
+    distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_TYPE,
+    distance_attenuation_min_distance: f32,
+    distance_attenuation_max_distance: f32,
+
+    air_absorption: [f32; 3],
+    directivity: f32,
+    dipole_weight: f32, // See Directivity docs
+    dipole_power: f32,  // See Directivity docs
+    occlusion: f32,
+    transmission_type: TransmissionType,
+    transmission: [f32; 3],
+
+    // todo remaining fields
 }
 
-struct FmodGainState {
-    target_gain: f32,
-    current_gain: f32,
-    ramp_samples_left: i32,
-    //invert: bool,
-}
+impl EffectState {}
 
-impl FmodGainState {
-    fn reset(&mut self) {
-        self.current_gain = self.target_gain;
-        self.ramp_samples_left = 0;
-    }
-
-    fn set_gain(&mut self, gain: f32) {
-        self.target_gain = db_to_linear(gain);
-        self.ramp_samples_left = FMOD_GAIN_RAMP_COUNT;
-    }
-
-    fn get_gain(&self) -> f32 {
-        linear_to_db(self.target_gain)
-    }
-
-    fn process(
-        &mut self,
-        in_buffer: &[f32],
-        out_buffer: &mut [f32],
-        length: usize,
-        channels: usize,
-    ) {
-        let mut gain = self.current_gain;
-        let mut len = length;
-
-        let mut i = 0;
-
-        if self.ramp_samples_left > 0 {
-            let target = self.target_gain;
-            let delta = (target - gain) / self.ramp_samples_left as f32;
-
-            while len > 0 {
-                if self.ramp_samples_left > 0 {
-                    self.ramp_samples_left -= 1;
-                    gain += delta;
-                    for _ in 0..channels {
-                        out_buffer[i] = in_buffer[i] * gain;
-                        i += 1;
-                    }
-                } else {
-                    gain = target;
-                    break;
-                }
-
-                len -= 1;
-            }
-        }
-
-        let mut samples = len * channels;
-        while samples > 0 {
-            samples -= 1;
-            out_buffer[i] = in_buffer[i] * gain;
-            i += 1;
-        }
-
-        self.current_gain = gain;
-    }
-}
-
-static mut FMOD_GAIN_STATE: FmodGainState = FmodGainState {
-    target_gain: 1.0,
-    current_gain: 1.0,
-    ramp_samples_left: 0,
-};
+static mut FMOD_GAIN_STATE: EffectState = EffectState {};
 
 unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let struct_ptr: *mut FmodGainState = addr_of_mut!(FMOD_GAIN_STATE);
+    let struct_ptr: *mut EffectState = addr_of_mut!(FMOD_GAIN_STATE);
     (*dsp_state).plugindata = struct_ptr as *mut std::os::raw::c_void;
 
     if (*dsp_state).plugindata.is_null() {
@@ -124,7 +89,7 @@ unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RE
 }
 
 unsafe extern "C" fn reset_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     (*state).reset();
     FMOD_OK
 }
@@ -154,7 +119,11 @@ unsafe extern "C" fn process_callback(
     inputs_idle: FMOD_BOOL,
     op: FMOD_DSP_PROCESS_OPERATION,
 ) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
+
+    // todo list:
+    // Calculate source coordinates
+    // Calculate listener coordinates
 
     if op == FMOD_DSP_PROCESS_QUERY {
         if !in_buffer_array.is_null() && !out_buffer_array.is_null() {
@@ -163,9 +132,15 @@ unsafe extern "C" fn process_callback(
         }
 
         if inputs_idle != 0 {
+            // If the sound is idle, we still need to check the expected overall gain to help manage
+            // channel counts. updateOverallGain won't do any processing - just determine how loud
+            // the sound would be (according to attenuation, etc.) if it were playing.
+            // todo: updateOverallGain(...)
             return FMOD_ERR_DSP_DONTPROCESS;
         }
-    } else {
+    } else if op == FMOD_DSP_PROCESS_PERFORM {
+        // updateOverallGain(...)
+
         let num_channels = *(*in_buffer_array).buffernumchannels as usize;
         let num_samples = num_channels * length as usize;
 
@@ -188,7 +163,7 @@ unsafe extern "C" fn set_float_callback(
     index: c_int,
     value: c_float,
 ) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
     if index == 0 {
@@ -205,7 +180,7 @@ unsafe extern "C" fn get_float_callback(
     value: *mut c_float,
     _value_str: *mut c_char,
 ) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
     if index == 0 {
