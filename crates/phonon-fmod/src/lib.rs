@@ -19,14 +19,17 @@
 
 use libfmod::ffi::{
     FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_DESCRIPTION,
-    FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_DESC,
-    FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING,
+    FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
+    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT,
+    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING,
     FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_DSP_PROCESS_OPERATION,
     FMOD_DSP_PROCESS_PERFORM, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS,
     FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_PLUGIN_SDK_VERSION, FMOD_RESULT,
     FMOD_SPEAKERMODE,
 };
-use phonon::direct_effect::TransmissionType;
+use phonon::audio_buffer::AudioBuffer;
+use phonon::direct_effect::{DirectEffect, TransmissionType};
+use phonon::panning_effect::PanningEffect;
 use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::os::raw::{c_char, c_float, c_int};
@@ -50,8 +53,6 @@ struct EffectState {
     apply_occlusion: ParameterApplyType,
     apply_transmission: ParameterApplyType,
 
-    // todo some missing fields in between here
-
     distance_attenuation: f32,
     distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_TYPE,
     distance_attenuation_min_distance: f32,
@@ -65,12 +66,24 @@ struct EffectState {
     transmission_type: TransmissionType,
     transmission: [f32; 3],
 
-    // todo remaining fields
+    attenuation_range: FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
+    attenuation_range_set: bool, // todo: Original is atomic
+
+    in_buffer_stereo: AudioBuffer<2>,
+    in_buffer_mono: AudioBuffer<1>,
+    out_buffer: AudioBuffer<2>,
+    direct_buffer: AudioBuffer<1>,
+    mono_buffer: AudioBuffer<1>,
+
+    panning_effect: PanningEffect,
+    direct_effect: DirectEffect,
 }
+
+
 
 impl EffectState {}
 
-static mut FMOD_GAIN_STATE: EffectState = EffectState {};
+static mut FMOD_GAIN_STATE: EffectState = ;
 
 unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     let struct_ptr: *mut EffectState = addr_of_mut!(FMOD_GAIN_STATE);
