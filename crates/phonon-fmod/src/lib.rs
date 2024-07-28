@@ -101,14 +101,16 @@ impl FmodGainState {
     }
 }
 
-static mut FMOD_GAIN_STATE: FmodGainState = FmodGainState {
-    target_gain: 1.0,
-    current_gain: 1.0,
-    ramp_samples_left: 0,
-};
+
 
 unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let struct_ptr: *mut FmodGainState = addr_of_mut!(FMOD_GAIN_STATE);
+    let fmod_gain_state = Box::new(FmodGainState {
+        target_gain: 1.0,
+        current_gain: 1.0,
+        ramp_samples_left: 0,
+    });
+
+    let struct_ptr: *mut FmodGainState = Box::into_raw(fmod_gain_state);
     (*dsp_state).plugindata = struct_ptr as *mut std::os::raw::c_void;
 
     if (*dsp_state).plugindata.is_null() {
@@ -119,6 +121,8 @@ unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RES
 }
 
 unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
+    let struct_ptr: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    drop(Box::from_raw(struct_ptr));
     (*dsp_state).plugindata = null_mut();
     FMOD_OK
 }
