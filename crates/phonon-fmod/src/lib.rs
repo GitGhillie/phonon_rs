@@ -12,9 +12,7 @@ use libfmod::ffi::{
     FMOD_PLUGIN_SDK_VERSION,
 };
 use std::ffi::CString;
-use std::mem::MaybeUninit;
 use std::os::raw::c_char;
-use std::ptr::addr_of_mut;
 use std::ptr::null_mut;
 
 const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
@@ -103,68 +101,65 @@ impl FmodGainState {
     }
 }
 
-static mut PARAM_GAIN: MaybeUninit<FMOD_DSP_PARAMETER_DESC> = MaybeUninit::uninit();
+pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
+    //todo make function to fill in the parameter fields.
 
-static mut PARAMETERS: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [null_mut()];
-
-// Fields that are empty/null will be assigned in FMODGetDSPDescription() if necessary.
-static mut DSP_DESCRIPTION: FMOD_DSP_DESCRIPTION = FMOD_DSP_DESCRIPTION {
-    pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
-    name: [0; 32],
-    version: 1,
-    numinputbuffers: 1,
-    numoutputbuffers: 1,
-    create: Some(create_callback),
-    release: Some(release_callback),
-    reset: Some(reset_callback),
-    read: None,
-    process: Some(process_callback),
-    setposition: None,
-    numparameters: 1,
-    paramdesc: null_mut(),
-    setparameterfloat: Some(set_float_callback),
-    setparameterint: None,
-    setparameterbool: None,
-    setparameterdata: None,
-    getparameterfloat: Some(get_float_callback),
-    getparameterint: None,
-    getparameterbool: None,
-    getparameterdata: None,
-    shouldiprocess: Some(shouldiprocess_callback),
-    userdata: null_mut(),
-    sys_register: Some(sys_register_callback),
-    sys_deregister: Some(sys_deregister_callback),
-    sys_mix: None,
-};
-
-/// FMOD will call this function load the plugin defined by FMOD_DSP_DESCRIPTION.
-/// See https://fmod.com/docs/2.02/api/white-papers-dsp-plugin-api.html#building-a-plug-in
-#[no_mangle]
-extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
-    unsafe {
-        let param_gain = PARAM_GAIN.as_mut_ptr();
-        //todo make function to fill in the parameter fields.
-        (*param_gain).type_ = FMOD_DSP_PARAMETER_TYPE_FLOAT;
-        (*param_gain).name = str_to_c_char_array("Gain");
-        (*param_gain).label = str_to_c_char_array("dB");
-        static DESCRIPTION: &str = "Hello it's a description!\0";
-        (*param_gain).description = DESCRIPTION.as_ptr() as *const c_char;
-        (*param_gain).union = FMOD_DSP_PARAMETER_DESC_UNION {
+    static DESCRIPTION: &str = "Hello it's a description!\0"; // todo check if this is the correct way
+    let param_gain = Box::new(FMOD_DSP_PARAMETER_DESC {
+        type_: FMOD_DSP_PARAMETER_TYPE_FLOAT,
+        name: str_to_c_char_array("Gain"),
+        label: str_to_c_char_array("dB"),
+        description: DESCRIPTION.as_ptr() as *const c_char, // todo check if this is the correct way
+        union: FMOD_DSP_PARAMETER_DESC_UNION {
             floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
                 min: FMOD_GAIN_PARAM_GAIN_MIN,
                 max: FMOD_GAIN_PARAM_GAIN_MAX,
                 defaultval: FMOD_GAIN_PARAM_GAIN_DEFAULT,
                 mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING::default(),
             },
-        };
+        },
+    });
 
-        DSP_DESCRIPTION.name = str_to_c_char_array("Phonon Spatializer");
-        DSP_DESCRIPTION.paramdesc = PARAMETERS.as_mut_ptr();
+    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_gain)];
 
-        PARAMETERS[0] = param_gain;
+    let dsp_description = FMOD_DSP_DESCRIPTION {
+        pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
+        name: str_to_c_char_array("Phonon Spatializer"),
+        version: 1,
+        numinputbuffers: 1,
+        numoutputbuffers: 1,
+        create: Some(create_callback),
+        release: Some(release_callback),
+        reset: Some(reset_callback),
+        read: None,
+        process: Some(process_callback),
+        setposition: None,
+        numparameters: 1,
+        paramdesc: parameters.as_mut_ptr(),
+        setparameterfloat: Some(set_float_callback),
+        setparameterint: None,
+        setparameterbool: None,
+        setparameterdata: None,
+        getparameterfloat: Some(get_float_callback),
+        getparameterint: None,
+        getparameterbool: None,
+        getparameterdata: None,
+        shouldiprocess: Some(shouldiprocess_callback),
+        userdata: null_mut(),
+        sys_register: Some(sys_register_callback),
+        sys_deregister: Some(sys_deregister_callback),
+        sys_mix: None,
+    };
 
-        addr_of_mut!(DSP_DESCRIPTION)
-    }
+    dsp_description
+}
+
+/// FMOD will call this function load the plugin defined by FMOD_DSP_DESCRIPTION.
+/// See https://fmod.com/docs/2.02/api/white-papers-dsp-plugin-api.html#building-a-plug-in
+#[no_mangle]
+extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
+    let desc = Box::new(create_dsp_description());
+    Box::into_raw(desc) //todo: Is this deallocated somewhere?
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {

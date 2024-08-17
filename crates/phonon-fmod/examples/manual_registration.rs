@@ -2,17 +2,13 @@
 
 use std::io;
 use std::io::BufRead;
-use std::ptr::null_mut;
 
 use libfmod::ffi::{
     FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_INIT_NORMAL,
     FMOD_LOOP_NORMAL,
 };
 use libfmod::{DspDescription, DspParameterDesc, DspParameterType, Error, System};
-use phonon_fmod::callbacks::{
-    create_callback, get_float_callback, process_callback, release_callback, reset_callback,
-    set_float_callback, shouldiprocess_callback, sys_deregister_callback, sys_register_callback,
-};
+use phonon_fmod::create_dsp_description;
 
 fn main() -> Result<(), Error> {
     let system = System::create()?;
@@ -36,38 +32,10 @@ fn main() -> Result<(), Error> {
         },
     };
 
-    // todo move outside of example
-    let dspdesc = DspDescription {
-        pluginsdkversion: 0,
-        name: name32("My first DSP unit"),
-        version: 0x00010000,
-        numinputbuffers: 1,
-        numoutputbuffers: 1,
-        create: Some(create_callback),
-        release: Some(release_callback),
-        reset: Some(reset_callback),
-        read: None,
-        process: Some(process_callback),
-        setposition: None,
-        paramdesc: vec![volume_desc],
-        setparameterfloat: Some(set_float_callback),
-        setparameterint: None,
-        setparameterbool: None,
-        setparameterdata: None,
-        getparameterfloat: Some(get_float_callback),
-        getparameterint: None,
-        getparameterbool: None,
-        getparameterdata: None,
-        shouldiprocess: Some(shouldiprocess_callback),
-        userdata: null_mut(),
-        sys_register: Some(sys_register_callback),
-        sys_deregister: Some(sys_deregister_callback),
-        sys_mix: None,
-    };
-
     // todo : move create_dsp and add_dsp to a different example.
     // This example should be minimal.
-    let mydsp = system.create_dsp(dspdesc)?;
+    let desc = DspDescription::try_from(unsafe { create_dsp_description() })?;
+    let mydsp = system.create_dsp(desc)?;
     let mastergroup = system.get_master_channel_group()?;
     mastergroup.add_dsp(0, mydsp)?;
 
