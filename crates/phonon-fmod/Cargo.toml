@@ -7,8 +7,14 @@ description = "FMOD integration for the unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "lib"]
 
 [dependencies]
-libfmod = "~2.222"
+libfmod = "~2.222.3"
 #libfmod = { path = "../../../libfmod/libfmod" }
+
+[[example]]
+name = "manual_registration"
+
+[[example]]
+name = "create_dsp"
