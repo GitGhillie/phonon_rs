@@ -1,6 +1,6 @@
 //! FMOD Plugin for the phonon crate.
 
-pub mod callbacks; // todo should probably not be pub
+pub(crate) mod callbacks;
 
 use crate::callbacks::{
     create_callback, get_float_callback, process_callback, release_callback, reset_callback,
@@ -122,7 +122,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
 
     let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_gain)];
 
-    let dsp_description = FMOD_DSP_DESCRIPTION {
+    FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
         version: 1,
@@ -149,9 +149,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         sys_register: Some(sys_register_callback),
         sys_deregister: Some(sys_deregister_callback),
         sys_mix: None,
-    };
-
-    dsp_description
+    }
 }
 
 /// FMOD will call this function load the plugin defined by FMOD_DSP_DESCRIPTION.
@@ -159,7 +157,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
     let desc = Box::new(create_dsp_description());
-    Box::into_raw(desc) //todo: Is this deallocated somewhere?
+    Box::into_raw(desc)
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
