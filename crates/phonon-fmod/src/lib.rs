@@ -1,3 +1,20 @@
+//
+// Copyright 2017-2023 Valve Corporation.
+// Copyright 2024 phonon_rs contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 //! FMOD Plugin for the phonon crate.
 
 pub(crate) mod callbacks;
@@ -6,121 +23,79 @@ use crate::callbacks::{
     create_callback, get_float_callback, process_callback, release_callback, reset_callback,
     set_float_callback, shouldiprocess_callback, sys_deregister_callback, sys_register_callback,
 };
-use libfmod::ffi::{
-    FMOD_DSP_DESCRIPTION, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT,
-    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_TYPE_FLOAT,
-    FMOD_PLUGIN_SDK_VERSION,
-};
+use libfmod::ffi::{FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_BOOL, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_BOOL, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_PLUGIN_SDK_VERSION};
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr::null_mut;
+use phonon::audio_buffer::AudioBuffer;
+use phonon::direct_effect::{DirectEffect, TransmissionType};
+use phonon::panning_effect::PanningEffect;
 
-const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
-const FMOD_GAIN_PARAM_GAIN_MAX: f32 = 10.0;
-const FMOD_GAIN_PARAM_GAIN_DEFAULT: f32 = 0.0;
-const FMOD_GAIN_RAMP_COUNT: i32 = 256;
-
-fn db_to_linear(db_value: f32) -> f32 {
-    if db_value <= FMOD_GAIN_PARAM_GAIN_MIN {
-        0.0
-    } else {
-        10.0_f32.powf(db_value / 20.0)
-    }
+enum ParameterApplyType {
+    Disable,
+    SimulationDefined,
+    UserDefine,
 }
 
-fn linear_to_db(lin_value: f32) -> f32 {
-    if lin_value <= 0.0 {
-        FMOD_GAIN_PARAM_GAIN_MIN
-    } else {
-        20.0 * lin_value.log10()
-    }
+pub(crate) struct EffectState {
+    source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
+    overall_gain: FMOD_DSP_PARAMETER_OVERALLGAIN,
+
+    apply_distance_attenuation: ParameterApplyType,
+    apply_air_absorption: ParameterApplyType,
+    apply_directivity: ParameterApplyType,
+    apply_occlusion: ParameterApplyType,
+    apply_transmission: ParameterApplyType,
+
+    distance_attenuation: f32,
+    distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_TYPE,
+    distance_attenuation_min_distance: f32,
+    distance_attenuation_max_distance: f32,
+
+    air_absorption: [f32; 3],
+    directivity: f32,
+    dipole_weight: f32, // See Directivity docs
+    dipole_power: f32,  // See Directivity docs
+    occlusion: f32,
+    transmission_type: TransmissionType,
+    transmission: [f32; 3],
+
+    attenuation_range: FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
+    attenuation_range_set: bool, // todo: Original is atomic
+
+    in_buffer_stereo: AudioBuffer<2>,
+    in_buffer_mono: AudioBuffer<1>,
+    out_buffer: AudioBuffer<2>,
+    direct_buffer: AudioBuffer<1>,
+    mono_buffer: AudioBuffer<1>,
+
+    panning_effect: PanningEffect,
+    direct_effect: DirectEffect,
 }
 
-pub struct FmodGainState {
-    target_gain: f32,
-    current_gain: f32,
-    ramp_samples_left: i32,
-}
 
-impl FmodGainState {
-    fn reset(&mut self) {
-        self.current_gain = self.target_gain;
-        self.ramp_samples_left = 0;
-    }
+impl EffectState {
 
-    fn set_gain(&mut self, gain: f32) {
-        self.target_gain = db_to_linear(gain);
-        self.ramp_samples_left = FMOD_GAIN_RAMP_COUNT;
-    }
-
-    fn get_gain(&self) -> f32 {
-        linear_to_db(self.target_gain)
-    }
-
-    fn process(
-        &mut self,
-        in_buffer: &[f32],
-        out_buffer: &mut [f32],
-        length: usize,
-        channels: usize,
-    ) {
-        let mut gain = self.current_gain;
-        let mut len = length;
-
-        let mut i = 0;
-
-        if self.ramp_samples_left > 0 {
-            let target = self.target_gain;
-            let delta = (target - gain) / self.ramp_samples_left as f32;
-
-            while len > 0 {
-                if self.ramp_samples_left > 0 {
-                    self.ramp_samples_left -= 1;
-                    gain += delta;
-                    for _ in 0..channels {
-                        out_buffer[i] = in_buffer[i] * gain;
-                        i += 1;
-                    }
-                } else {
-                    gain = target;
-                    break;
-                }
-
-                len -= 1;
-            }
-        }
-
-        let mut samples = len * channels;
-        while samples > 0 {
-            samples -= 1;
-            out_buffer[i] = in_buffer[i] * gain;
-            i += 1;
-        }
-
-        self.current_gain = gain;
-    }
 }
 
 pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
     //todo make function to fill in the parameter fields.
 
     static DESCRIPTION: &str = "Hello it's a description!\0"; // todo check if this is the correct way
-    let param_gain = Box::new(FMOD_DSP_PARAMETER_DESC {
-        type_: FMOD_DSP_PARAMETER_TYPE_FLOAT,
-        name: str_to_c_char_array("Gain"),
-        label: str_to_c_char_array("dB"),
+    let param_enable = Box::new(FMOD_DSP_PARAMETER_DESC {
+        type_: FMOD_DSP_PARAMETER_TYPE_BOOL,
+        name: str_to_c_char_array("Enable"),
+        label: str_to_c_char_array("Yes"),
         description: DESCRIPTION.as_ptr() as *const c_char, // todo check if this is the correct way
         union: FMOD_DSP_PARAMETER_DESC_UNION {
-            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
-                min: FMOD_GAIN_PARAM_GAIN_MIN,
-                max: FMOD_GAIN_PARAM_GAIN_MAX,
-                defaultval: FMOD_GAIN_PARAM_GAIN_DEFAULT,
-                mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING::default(),
+            booldesc: FMOD_DSP_PARAMETER_DESC_BOOL {
+                defaultval: 0,
+                valuenames: null_mut(), // todo
             },
         },
     });
 
-    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_gain)];
+    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_enable)];
 
     FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -138,11 +113,11 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         paramdesc: parameters.as_mut_ptr(),
         setparameterfloat: Some(set_float_callback),
         setparameterint: None,
-        setparameterbool: None,
+        setparameterbool: None, //todo
         setparameterdata: None,
         getparameterfloat: Some(get_float_callback),
         getparameterint: None,
-        getparameterbool: None,
+        getparameterbool: None, // todo
         getparameterdata: None,
         shouldiprocess: Some(shouldiprocess_callback),
         userdata: null_mut(),

@@ -1,4 +1,4 @@
-use crate::FmodGainState;
+use crate::{EffectState, ParameterApplyType};
 use libfmod::ffi::{
     FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PROCESS_OPERATION,
     FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_INVALID_PARAM,
@@ -7,17 +7,45 @@ use libfmod::ffi::{
 use std::os::raw::{c_char, c_float, c_int};
 use std::ptr::null_mut;
 use std::slice;
-
+use phonon::audio_buffer::AudioBuffer;
+use phonon::direct_effect::{DirectEffect, TransmissionType};
+use phonon::panning_effect::PanningEffect;
 // Todo: These callbacks should probably not be pub like this
 
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let fmod_gain_state = Box::new(FmodGainState {
-        target_gain: 1.0,
-        current_gain: 1.0,
-        ramp_samples_left: 0,
+    let num_samples = 1024; //todo
+
+    let fmod_gain_state = Box::new(EffectState {
+        source: Default::default(),
+        overall_gain: Default::default(),
+        apply_distance_attenuation: ParameterApplyType::SimulationDefined,
+        apply_air_absorption: ParameterApplyType::Disable,
+        apply_directivity: ParameterApplyType::Disable,
+        apply_occlusion: ParameterApplyType::Disable,
+        apply_transmission: ParameterApplyType::Disable,
+        distance_attenuation: 0.0,
+        distance_attenuation_rolloff_type: 0,
+        distance_attenuation_min_distance: 0.0,
+        distance_attenuation_max_distance: 0.0,
+        air_absorption: [0.0, 0.0, 0.0],
+        directivity: 0.0,
+        dipole_weight: 0.0,
+        dipole_power: 0.0,
+        occlusion: 0.0,
+        transmission_type: TransmissionType::FrequencyIndependent,
+        transmission: [0.0, 0.0, 0.0],
+        attenuation_range: Default::default(),
+        attenuation_range_set: false,
+        in_buffer_stereo: AudioBuffer::new(num_samples),
+        in_buffer_mono: AudioBuffer::new(num_samples),
+        out_buffer: AudioBuffer::new(num_samples),
+        direct_buffer: AudioBuffer::new(num_samples),
+        mono_buffer: AudioBuffer::new(num_samples),
+        panning_effect: PanningEffect,
+        direct_effect: DirectEffect,
     });
 
-    let struct_ptr: *mut FmodGainState = Box::into_raw(fmod_gain_state);
+    let struct_ptr: *mut EffectState = Box::into_raw(fmod_gain_state);
     (*dsp_state).plugindata = struct_ptr as *mut std::os::raw::c_void;
 
     if (*dsp_state).plugindata.is_null() {
@@ -28,14 +56,14 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
 }
 
 pub(crate) unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let struct_ptr: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let struct_ptr: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     drop(Box::from_raw(struct_ptr));
     (*dsp_state).plugindata = null_mut();
     FMOD_OK
 }
 
 pub(crate) unsafe extern "C" fn reset_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     (*state).reset();
     FMOD_OK
 }
@@ -65,7 +93,7 @@ pub(crate) unsafe extern "C" fn process_callback(
     inputs_idle: FMOD_BOOL,
     op: FMOD_DSP_PROCESS_OPERATION,
 ) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
 
     if op == FMOD_DSP_PROCESS_QUERY {
         if !in_buffer_array.is_null() && !out_buffer_array.is_null() {
@@ -99,7 +127,7 @@ pub(crate) unsafe extern "C" fn set_float_callback(
     index: c_int,
     value: c_float,
 ) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
     if index == 0 {
@@ -116,7 +144,7 @@ pub(crate) unsafe extern "C" fn get_float_callback(
     value: *mut c_float,
     _value_str: *mut c_char,
 ) -> FMOD_RESULT {
-    let state: *mut FmodGainState = (*dsp_state).plugindata as *mut FmodGainState;
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
     if index == 0 {
