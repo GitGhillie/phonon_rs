@@ -1,48 +1,69 @@
 use crate::{EffectState, ParameterApplyType};
 use libfmod::ffi::{
-    FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PROCESS_OPERATION,
-    FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_INVALID_PARAM,
-    FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT, FMOD_SPEAKERMODE,
+    FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
+    FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
+    FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS,
+    FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT, FMOD_SPEAKERMODE,
 };
-use std::os::raw::{c_char, c_float, c_int};
-use std::ptr::null_mut;
-use std::slice;
-use phonon::audio_buffer::AudioBuffer;
+use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::PanningEffect;
-// Todo: These callbacks should probably not be pub like this
+use phonon::speaker_layout::SpeakerLayoutType;
+use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
+use std::ptr::{null_mut, slice_from_raw_parts_mut};
+use std::slice;
+
+// todo: This should be somewhere else. And there might be a rustier way to do this
+enum Params {
+    SourcePosition = 1,
+    OverallGain,
+    ApplyDistanceAttenuation,
+}
 
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let num_samples = 1024; //todo
+    // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
+    // any time in the other callbacks.
+    let frame_size = 1024; //todo
+    let sampling_rate = 48_000; //todo
 
+    //println!("TODO remove this");
+
+    let audio_settings = AudioSettings::new(sampling_rate, frame_size);
+
+    let speaker_layout = SpeakerLayoutType::Stereo; // todo, support mono as well
+
+    // why does distance attenuation range seem to exist twice?
     let fmod_gain_state = Box::new(EffectState {
         source: Default::default(),
         overall_gain: Default::default(),
-        apply_distance_attenuation: ParameterApplyType::SimulationDefined,
+        apply_distance_attenuation: ParameterApplyType::UserDefine,
         apply_air_absorption: ParameterApplyType::Disable,
         apply_directivity: ParameterApplyType::Disable,
         apply_occlusion: ParameterApplyType::Disable,
         apply_transmission: ParameterApplyType::Disable,
-        distance_attenuation: 0.0,
-        distance_attenuation_rolloff_type: 0,
-        distance_attenuation_min_distance: 0.0,
-        distance_attenuation_max_distance: 0.0,
-        air_absorption: [0.0, 0.0, 0.0],
-        directivity: 0.0,
+        distance_attenuation: 1.0,
+        distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
+        distance_attenuation_min_distance: 1.0,
+        distance_attenuation_max_distance: 20.0,
+        air_absorption: [1.0, 1.0, 1.0],
+        directivity: 1.0,
         dipole_weight: 0.0,
-        dipole_power: 0.0,
-        occlusion: 0.0,
+        dipole_power: 1.0,
+        occlusion: 1.0,
         transmission_type: TransmissionType::FrequencyIndependent,
-        transmission: [0.0, 0.0, 0.0],
-        attenuation_range: Default::default(),
+        transmission: [1.0, 1.0, 1.0],
+        attenuation_range: FMOD_DSP_PARAMETER_ATTENUATION_RANGE {
+            min: 1.0,
+            max: 20.0,
+        },
         attenuation_range_set: false,
-        in_buffer_stereo: AudioBuffer::new(num_samples),
-        in_buffer_mono: AudioBuffer::new(num_samples),
-        out_buffer: AudioBuffer::new(num_samples),
-        direct_buffer: AudioBuffer::new(num_samples),
-        mono_buffer: AudioBuffer::new(num_samples),
-        panning_effect: PanningEffect,
-        direct_effect: DirectEffect,
+        in_buffer_stereo: AudioBuffer::new(frame_size),
+        in_buffer_mono: AudioBuffer::new(frame_size),
+        out_buffer: AudioBuffer::new(frame_size),
+        direct_buffer: AudioBuffer::new(frame_size),
+        mono_buffer: AudioBuffer::new(frame_size),
+        panning_effect: PanningEffect::new(speaker_layout),
+        direct_effect: DirectEffect::new(audio_settings),
     });
 
     let struct_ptr: *mut EffectState = Box::into_raw(fmod_gain_state);
@@ -59,12 +80,6 @@ pub(crate) unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE)
     let struct_ptr: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     drop(Box::from_raw(struct_ptr));
     (*dsp_state).plugindata = null_mut();
-    FMOD_OK
-}
-
-pub(crate) unsafe extern "C" fn reset_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
-    (*state).reset();
     FMOD_OK
 }
 
@@ -110,7 +125,6 @@ pub(crate) unsafe extern "C" fn process_callback(
 
         let inbuf = slice::from_raw_parts(*(*in_buffer_array).buffers, num_samples);
         let outbuf = slice::from_raw_parts_mut(*(*out_buffer_array).buffers, num_samples);
-
         (*state).process(
             inbuf,
             outbuf,
@@ -130,12 +144,7 @@ pub(crate) unsafe extern "C" fn set_float_callback(
     let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
-    if index == 0 {
-        state.set_gain(value);
-        FMOD_OK
-    } else {
-        FMOD_ERR_INVALID_PARAM
-    }
+    FMOD_OK
 }
 
 pub(crate) unsafe extern "C" fn get_float_callback(
@@ -147,12 +156,43 @@ pub(crate) unsafe extern "C" fn get_float_callback(
     let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
-    if index == 0 {
-        *value = state.get_gain();
-        FMOD_OK
-    } else {
-        FMOD_ERR_INVALID_PARAM
+    FMOD_OK
+}
+
+pub(crate) unsafe extern "C" fn set_data_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    data: *mut c_void,
+    length: c_uint,
+) -> FMOD_RESULT {
+    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
+    let state = state.as_mut().unwrap();
+
+    // todo replace hardcoded match values
+    match index {
+        0 => {
+            // SOURCE_POSITION
+            let source_ptr = (&mut state.source) as *mut FMOD_DSP_PARAMETER_3DATTRIBUTES as *mut u8;
+
+            let data_slice = slice::from_raw_parts(data as *const u8, length as usize);
+            let mut dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
+
+            dest_slice.as_mut().unwrap().copy_from_slice(data_slice);
+        }
+        _ => return FMOD_ERR_INVALID_PARAM,
     }
+
+    FMOD_OK
+}
+
+pub(crate) unsafe extern "C" fn get_data_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    data: *mut *mut c_void,
+    length: *mut c_uint,
+    valuestr: *mut c_char,
+) -> FMOD_RESULT {
+    FMOD_OK
 }
 
 pub(crate) unsafe extern "C" fn sys_register_callback(

@@ -33,6 +33,7 @@ struct PanningData {
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct PanningEffectParameters {
+    /// Direction relative to the listener. Will be normalized by the PanningEffect.
     pub direction: Vec3,
 }
 

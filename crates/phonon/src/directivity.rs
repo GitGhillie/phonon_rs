@@ -28,7 +28,7 @@ impl Default for Directivity {
     fn default() -> Self {
         Self {
             dipole_weight: 0.0,
-            dipole_power: 0.0,
+            dipole_power: 1.0,
         }
     }
 }

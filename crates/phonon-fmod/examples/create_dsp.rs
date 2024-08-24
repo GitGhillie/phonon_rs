@@ -4,12 +4,15 @@
 
 // Mostly copied from libfmod's examples
 
-use std::io;
-use std::io::BufRead;
-
-use libfmod::ffi::{FMOD_INIT_NORMAL, FMOD_LOOP_NORMAL};
+use libfmod::ffi::{
+    FMOD_3D_ATTRIBUTES, FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_INIT_NORMAL, FMOD_LOOP_NORMAL,
+    FMOD_VECTOR,
+};
 use libfmod::{DspDescription, Error, System};
 use phonon_fmod::create_dsp_description;
+use std::io;
+use std::io::BufRead;
+use std::os::raw::c_void;
 
 fn main() -> Result<(), Error> {
     let system = System::create()?;
@@ -32,17 +35,33 @@ fn main() -> Result<(), Error> {
                 mydsp.set_bypass(false)?;
             }
             3 => {
-                mydsp.set_parameter_float(0, 0.2)?;
+                //mydsp.set_parameter_float(0, 0.2)?;
+                let mut attributes = FMOD_DSP_PARAMETER_3DATTRIBUTES {
+                    relative: FMOD_3D_ATTRIBUTES {
+                        position: FMOD_VECTOR {
+                            x: -3.0,
+                            y: 0.0,
+                            z: 0.0,
+                        },
+                        velocity: Default::default(),
+                        forward: Default::default(),
+                        up: Default::default(),
+                    },
+                    absolute: Default::default(),
+                };
+                let attributes_ptr = &mut attributes as *mut _ as *mut c_void;
+                let attributes_size = std::mem::size_of::<FMOD_DSP_PARAMETER_3DATTRIBUTES>();
+                mydsp.set_parameter_data(0, attributes_ptr, attributes_size as u32)?
             }
             4 => {
-                let (value, _) = mydsp.get_parameter_float(0, 0)?;
-                println!("volume: {}", value);
+                //let (value, _) = mydsp.get_parameter_float(0, 0)?;
+                //println!("volume: {}", value);
             }
             _ => {}
         }
     }
     let info = mydsp.get_parameter_info(0)?;
-    println!("default: {}", unsafe { info.union.floatdesc.defaultval });
+    //println!("default: {}", unsafe { info.union.floatdesc.defaultval });
 
     println!("Press Enter to exit.");
     let stdin = io::stdin();

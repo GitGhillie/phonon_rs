@@ -20,16 +20,24 @@
 pub(crate) mod callbacks;
 
 use crate::callbacks::{
-    create_callback, get_float_callback, process_callback, release_callback, reset_callback,
-    set_float_callback, shouldiprocess_callback, sys_deregister_callback, sys_register_callback,
+    create_callback, get_data_callback, get_float_callback, process_callback, release_callback,
+    set_data_callback, set_float_callback, shouldiprocess_callback, sys_deregister_callback,
+    sys_register_callback,
 };
-use libfmod::ffi::{FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_BOOL, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_BOOL, FMOD_DSP_PARAMETER_TYPE_FLOAT, FMOD_PLUGIN_SDK_VERSION};
+use glam::Vec3;
+use libfmod::ffi::{
+    FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
+    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_BOOL, FMOD_DSP_PARAMETER_DESC_DATA,
+    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_BOOL,
+    FMOD_DSP_PARAMETER_TYPE_DATA, FMOD_PLUGIN_SDK_VERSION,
+};
+use phonon::audio_buffer::AudioBuffer;
+use phonon::direct_effect::{DirectEffect, TransmissionType};
+use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr::null_mut;
-use phonon::audio_buffer::AudioBuffer;
-use phonon::direct_effect::{DirectEffect, TransmissionType};
-use phonon::panning_effect::PanningEffect;
 
 enum ParameterApplyType {
     Disable,
@@ -73,13 +81,48 @@ pub(crate) struct EffectState {
     direct_effect: DirectEffect,
 }
 
-
 impl EffectState {
+    fn process(
+        &mut self,
+        in_buffer: &[f32],
+        out_buffer: &mut [f32],
+        length: usize,
+        channels: usize,
+    ) {
+        let mut num_samples = length * channels;
 
+        // update parameters
+        let position = self.source.relative.position;
+        let direction = Vec3::new(position.x, position.y, position.z);
+        let panning_params = PanningEffectParameters { direction };
+
+        // do the actual processing
+        self.in_buffer_stereo.read_interleaved(in_buffer);
+        self.in_buffer_stereo.downmix(&mut self.in_buffer_mono);
+        self.in_buffer_mono.scale(1.0);
+
+        self.panning_effect
+            .apply(panning_params, &self.in_buffer_mono, &mut self.out_buffer);
+
+        self.out_buffer.write_interleaved(out_buffer);
+    }
 }
 
 pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
     //todo make function to fill in the parameter fields.
+
+    static DESCRIPTION_SOURCE: &str = "Position of the source.\0"; // todo check if this is the correct way
+    let param_source = Box::new(FMOD_DSP_PARAMETER_DESC {
+        type_: FMOD_DSP_PARAMETER_TYPE_DATA,
+        name: str_to_c_char_array("Enable"),
+        label: str_to_c_char_array(""),
+        description: DESCRIPTION_SOURCE.as_ptr() as *const c_char,
+        union: FMOD_DSP_PARAMETER_DESC_UNION {
+            datadesc: FMOD_DSP_PARAMETER_DESC_DATA {
+                datatype: FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+            },
+        },
+    });
 
     static DESCRIPTION: &str = "Hello it's a description!\0"; // todo check if this is the correct way
     let param_enable = Box::new(FMOD_DSP_PARAMETER_DESC {
@@ -95,7 +138,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         },
     });
 
-    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_enable)];
+    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_source)];
 
     FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -105,7 +148,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         numoutputbuffers: 1,
         create: Some(create_callback),
         release: Some(release_callback),
-        reset: Some(reset_callback),
+        reset: None,
         read: None,
         process: Some(process_callback),
         setposition: None,
@@ -114,11 +157,11 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         setparameterfloat: Some(set_float_callback),
         setparameterint: None,
         setparameterbool: None, //todo
-        setparameterdata: None,
+        setparameterdata: Some(set_data_callback),
         getparameterfloat: Some(get_float_callback),
         getparameterint: None,
         getparameterbool: None, // todo
-        getparameterdata: None,
+        getparameterdata: Some(get_data_callback),
         shouldiprocess: Some(shouldiprocess_callback),
         userdata: null_mut(),
         sys_register: Some(sys_register_callback),
