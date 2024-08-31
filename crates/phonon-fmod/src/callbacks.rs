@@ -118,8 +118,6 @@ pub(crate) unsafe extern "C" fn process_callback(
     let dsp_state = FmodDspState::new(dsp_state);
     let effect_state = dsp_state.get_effect_state();
 
-    return FMOD_ERR_DSP_SILENCE;
-
     if op == FMOD_DSP_PROCESS_QUERY {
         if !out_buffer_array.is_null() {
             (*out_buffer_array).speakermode = FMOD_SPEAKERMODE_STEREO;

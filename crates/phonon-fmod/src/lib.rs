@@ -116,25 +116,11 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
     let param_source = Box::new(FMOD_DSP_PARAMETER_DESC {
         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
         name: str_to_c_char_array("Enable"),
-        label: str_to_c_char_array(""),
+        label: str_to_c_char_array("Yes"),
         description: DESCRIPTION_SOURCE.as_ptr() as *const c_char,
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             datadesc: FMOD_DSP_PARAMETER_DESC_DATA {
                 datatype: FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-            },
-        },
-    });
-
-    static DESCRIPTION: &str = "Hello it's a description!\0"; // todo check if this is the correct way
-    let param_enable = Box::new(FMOD_DSP_PARAMETER_DESC {
-        type_: FMOD_DSP_PARAMETER_TYPE_BOOL,
-        name: str_to_c_char_array("Enable"),
-        label: str_to_c_char_array("Yes"),
-        description: DESCRIPTION.as_ptr() as *const c_char, // todo check if this is the correct way
-        union: FMOD_DSP_PARAMETER_DESC_UNION {
-            booldesc: FMOD_DSP_PARAMETER_DESC_BOOL {
-                defaultval: 0,
-                valuenames: null_mut(), // todo
             },
         },
     });
@@ -155,11 +141,11 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         setposition: None,
         numparameters: 1,
         paramdesc: parameters.as_mut_ptr(),
-        setparameterfloat: Some(set_float_callback),
+        setparameterfloat: None,
         setparameterint: None,
         setparameterbool: None, //todo
         setparameterdata: Some(set_data_callback),
-        getparameterfloat: Some(get_float_callback),
+        getparameterfloat: None,
         getparameterint: None,
         getparameterbool: None, // todo
         getparameterdata: Some(get_data_callback),
