@@ -18,6 +18,7 @@
 //! FMOD Plugin for the phonon crate.
 
 pub(crate) mod callbacks;
+mod fmod_state;
 
 use crate::callbacks::{
     create_callback, get_data_callback, get_float_callback, process_callback, release_callback,
@@ -162,10 +163,10 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         getparameterint: None,
         getparameterbool: None, // todo
         getparameterdata: Some(get_data_callback),
-        shouldiprocess: Some(shouldiprocess_callback),
+        shouldiprocess: None,
         userdata: null_mut(),
-        sys_register: Some(sys_register_callback),
-        sys_deregister: Some(sys_deregister_callback),
+        sys_register: None,
+        sys_deregister: None,
         sys_mix: None,
     }
 }

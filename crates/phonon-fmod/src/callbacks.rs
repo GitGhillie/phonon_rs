@@ -1,9 +1,11 @@
+use crate::fmod_state::FmodDspState;
 use crate::{EffectState, ParameterApplyType};
 use libfmod::ffi::{
     FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
     FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
     FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS,
-    FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT, FMOD_SPEAKERMODE,
+    FMOD_ERR_DSP_SILENCE, FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT,
+    FMOD_SPEAKERMODE, FMOD_SPEAKERMODE_STEREO,
 };
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, TransmissionType};
@@ -23,10 +25,15 @@ enum Params {
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
     // any time in the other callbacks.
-    let frame_size = 1024; //todo
-    let sampling_rate = 48_000; //todo
+    //let frame_size = 1024; //todo
+    //let sampling_rate = 48_000; //todo
 
-    //println!("TODO remove this");
+    let dsp_state_wrapped = FmodDspState::new(dsp_state);
+    dsp_state_wrapped.log_message("testMessage");
+    let frame_size = dsp_state_wrapped.get_block_size().unwrap() as usize;
+    let sampling_rate = dsp_state_wrapped.get_sample_rate().unwrap();
+
+    //println!("{} and {}", frame_size, sampling_rate);
 
     let audio_settings = AudioSettings::new(sampling_rate, frame_size);
 
@@ -108,24 +115,33 @@ pub(crate) unsafe extern "C" fn process_callback(
     inputs_idle: FMOD_BOOL,
     op: FMOD_DSP_PROCESS_OPERATION,
 ) -> FMOD_RESULT {
-    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
+    let dsp_state = FmodDspState::new(dsp_state);
+    let effect_state = dsp_state.get_effect_state();
+
+    return FMOD_ERR_DSP_SILENCE;
 
     if op == FMOD_DSP_PROCESS_QUERY {
-        if !in_buffer_array.is_null() && !out_buffer_array.is_null() {
-            *(*out_buffer_array).buffernumchannels = *(*in_buffer_array).buffernumchannels;
-            (*out_buffer_array).speakermode = (*in_buffer_array).speakermode;
+        if !out_buffer_array.is_null() {
+            (*out_buffer_array).speakermode = FMOD_SPEAKERMODE_STEREO;
+            *(*out_buffer_array).buffernumchannels = 2;
+            *(*out_buffer_array).bufferchannelmask = 0;
         }
 
         if inputs_idle != 0 {
+            // todo updateOverallGain
             return FMOD_ERR_DSP_DONTPROCESS;
         }
     } else {
+        // todo updateOverallGain
         let num_channels = *(*in_buffer_array).buffernumchannels as usize;
         let num_samples = num_channels * length as usize;
 
+        let block_size = dsp_state.get_block_size().unwrap();
+        let sample_rate = dsp_state.get_sample_rate().unwrap();
+
         let inbuf = slice::from_raw_parts(*(*in_buffer_array).buffers, num_samples);
         let outbuf = slice::from_raw_parts_mut(*(*out_buffer_array).buffers, num_samples);
-        (*state).process(
+        (*effect_state).process(
             inbuf,
             outbuf,
             length as usize,
