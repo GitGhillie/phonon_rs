@@ -1,7 +1,7 @@
 use crate::EffectState;
 use libfmod::ffi::{FMOD_DEBUG_LEVEL_LOG, FMOD_DSP_STATE, FMOD_OK, FMOD_RESULT};
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_int, c_uint};
 
 pub(crate) struct FmodDspState(*mut FMOD_DSP_STATE);
 

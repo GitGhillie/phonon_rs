@@ -21,17 +21,15 @@ pub(crate) mod callbacks;
 mod fmod_state;
 
 use crate::callbacks::{
-    create_callback, get_data_callback, get_float_callback, process_callback, release_callback,
-    set_data_callback, set_float_callback, shouldiprocess_callback, sys_deregister_callback,
-    sys_register_callback,
+    create_callback, get_data_callback, process_callback, release_callback, set_data_callback,
+    sys_deregister_callback, sys_register_callback,
 };
 use glam::Vec3;
 use libfmod::ffi::{
     FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_BOOL, FMOD_DSP_PARAMETER_DESC_DATA,
-    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_BOOL,
-    FMOD_DSP_PARAMETER_TYPE_DATA, FMOD_PLUGIN_SDK_VERSION,
+    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_UNION,
+    FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_DATA, FMOD_PLUGIN_SDK_VERSION,
 };
 use phonon::audio_buffer::AudioBuffer;
 use phonon::direct_effect::{DirectEffect, TransmissionType};
@@ -90,7 +88,7 @@ impl EffectState {
         length: usize,
         channels: usize,
     ) {
-        let mut num_samples = length * channels;
+        let num_samples = length * channels;
 
         // update parameters
         let position = self.source.relative.position;
@@ -109,23 +107,25 @@ impl EffectState {
     }
 }
 
-pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
-    //todo make function to fill in the parameter fields.
-
-    static DESCRIPTION_SOURCE: &str = "Position of the source.\0"; // todo check if this is the correct way
-    let param_source = Box::new(FMOD_DSP_PARAMETER_DESC {
+fn create_param_data(description: &'static str) -> Box<FMOD_DSP_PARAMETER_DESC> {
+    Box::new(FMOD_DSP_PARAMETER_DESC {
         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
         name: str_to_c_char_array("SourcePos"),
         label: str_to_c_char_array(""),
-        description: DESCRIPTION_SOURCE.as_ptr() as *const c_char,
+        description: description.as_ptr() as *const c_char,
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             datadesc: FMOD_DSP_PARAMETER_DESC_DATA {
                 datatype: FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
             },
         },
-    });
+    })
+}
 
-    let parameters: Box<[*mut FMOD_DSP_PARAMETER_DESC; 1]> = Box::new([Box::into_raw(param_source)]);
+pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
+    let param_source = create_param_data("Position of the source.\0");
+
+    let parameters: Box<[*mut FMOD_DSP_PARAMETER_DESC; 1]> =
+        Box::new([Box::into_raw(param_source)]);
 
     FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -151,8 +151,8 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         getparameterdata: Some(get_data_callback),
         shouldiprocess: None,
         userdata: null_mut(),
-        sys_register: None,
-        sys_deregister: None,
+        sys_register: Some(sys_register_callback),
+        sys_deregister: Some(sys_deregister_callback),
         sys_mix: None,
     }
 }

@@ -1,11 +1,10 @@
 use crate::fmod_state::FmodDspState;
 use crate::{EffectState, ParameterApplyType};
 use libfmod::ffi::{
-    FMOD_BOOL, FMOD_CHANNELMASK, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
+    FMOD_BOOL, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
     FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
     FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS,
-    FMOD_ERR_DSP_SILENCE, FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT,
-    FMOD_SPEAKERMODE, FMOD_SPEAKERMODE_STEREO,
+    FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT, FMOD_SPEAKERMODE_STEREO,
 };
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, TransmissionType};
@@ -25,18 +24,13 @@ enum Params {
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
     // any time in the other callbacks.
-    //let frame_size = 1024; //todo
-    //let sampling_rate = 48_000; //todo
 
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
-    dsp_state_wrapped.log_message("testMessage");
+    //dsp_state_wrapped.log_message("testMessage");
     let frame_size = dsp_state_wrapped.get_block_size().unwrap() as usize;
     let sampling_rate = dsp_state_wrapped.get_sample_rate().unwrap();
 
-    //println!("{} and {}", frame_size, sampling_rate);
-
     let audio_settings = AudioSettings::new(sampling_rate, frame_size);
-
     let speaker_layout = SpeakerLayoutType::Stereo; // todo, support mono as well
 
     // why does distance attenuation range seem to exist twice?
@@ -74,7 +68,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
     });
 
     let struct_ptr: *mut EffectState = Box::into_raw(fmod_gain_state);
-    (*dsp_state).plugindata = struct_ptr as *mut std::os::raw::c_void;
+    (*dsp_state).plugindata = struct_ptr as *mut c_void;
 
     if (*dsp_state).plugindata.is_null() {
         return FMOD_ERR_MEMORY;
@@ -87,21 +81,6 @@ pub(crate) unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE)
     let struct_ptr: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     drop(Box::from_raw(struct_ptr));
     (*dsp_state).plugindata = null_mut();
-    FMOD_OK
-}
-
-pub(crate) unsafe extern "C" fn shouldiprocess_callback(
-    _dsp_state: *mut FMOD_DSP_STATE,
-    inputs_idle: FMOD_BOOL,
-    _length: std::os::raw::c_uint,
-    _in_mask: FMOD_CHANNELMASK,
-    _in_channels: c_int,
-    _speaker_mode: FMOD_SPEAKERMODE,
-) -> FMOD_RESULT {
-    if inputs_idle != 0 {
-        return FMOD_ERR_DSP_DONTPROCESS;
-    }
-
     FMOD_OK
 }
 
@@ -163,8 +142,8 @@ pub(crate) unsafe extern "C" fn set_float_callback(
 
 pub(crate) unsafe extern "C" fn get_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
-    index: c_int,
-    value: *mut c_float,
+    _index: c_int,
+    _value: *mut c_float,
     _value_str: *mut c_char,
 ) -> FMOD_RESULT {
     let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
@@ -189,7 +168,7 @@ pub(crate) unsafe extern "C" fn set_data_callback(
             let source_ptr = (&mut state.source) as *mut FMOD_DSP_PARAMETER_3DATTRIBUTES as *mut u8;
 
             let data_slice = slice::from_raw_parts(data as *const u8, length as usize);
-            let mut dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
+            let dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
 
             dest_slice.as_mut().unwrap().copy_from_slice(data_slice);
         }
@@ -200,11 +179,11 @@ pub(crate) unsafe extern "C" fn set_data_callback(
 }
 
 pub(crate) unsafe extern "C" fn get_data_callback(
-    dsp_state: *mut FMOD_DSP_STATE,
-    index: c_int,
-    data: *mut *mut c_void,
-    length: *mut c_uint,
-    valuestr: *mut c_char,
+    _dsp_state: *mut FMOD_DSP_STATE,
+    _index: c_int,
+    _data: *mut *mut c_void,
+    _length: *mut c_uint,
+    _valuestr: *mut c_char,
 ) -> FMOD_RESULT {
     FMOD_OK
 }
