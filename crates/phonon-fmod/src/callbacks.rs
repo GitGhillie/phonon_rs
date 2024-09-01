@@ -3,13 +3,15 @@ use crate::{EffectState, ParameterApplyType};
 use libfmod::ffi::{
     FMOD_BOOL, FMOD_DSP_BUFFER_ARRAY, FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
     FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
-    FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY, FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS,
-    FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK, FMOD_RESULT, FMOD_SPEAKERMODE_STEREO,
+    FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PROCESS_OPERATION, FMOD_DSP_PROCESS_QUERY,
+    FMOD_DSP_STATE, FMOD_ERR_DSP_DONTPROCESS, FMOD_ERR_INVALID_PARAM, FMOD_ERR_MEMORY, FMOD_OK,
+    FMOD_RESULT, FMOD_SPEAKERMODE_STEREO,
 };
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::PanningEffect;
 use phonon::speaker_layout::SpeakerLayoutType;
+use std::mem::size_of;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
 use std::ptr::{null_mut, slice_from_raw_parts_mut};
 use std::slice;
@@ -37,7 +39,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
     let fmod_gain_state = Box::new(EffectState {
         source: Default::default(),
         overall_gain: Default::default(),
-        apply_distance_attenuation: ParameterApplyType::UserDefine,
+        apply_distance_attenuation: ParameterApplyType::UserDefined,
         apply_air_absorption: ParameterApplyType::Disable,
         apply_directivity: ParameterApplyType::Disable,
         apply_occlusion: ParameterApplyType::Disable,
@@ -129,6 +131,8 @@ pub(crate) unsafe extern "C" fn process_callback(
     FMOD_OK
 }
 
+// todo: Check if all set and get callbacks return FMOD_ERR_INVALID_PARAM when the index is unknown
+
 pub(crate) unsafe extern "C" fn set_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     index: c_int,
@@ -179,14 +183,56 @@ pub(crate) unsafe extern "C" fn set_data_callback(
 }
 
 pub(crate) unsafe extern "C" fn get_data_callback(
-    _dsp_state: *mut FMOD_DSP_STATE,
-    _index: c_int,
-    _data: *mut *mut c_void,
-    _length: *mut c_uint,
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    data: *mut *mut c_void,
+    length: *mut c_uint,
     _valuestr: *mut c_char,
 ) -> FMOD_RESULT {
+    let dsp_state_wrapped = FmodDspState::new(dsp_state);
+    let effect = dsp_state_wrapped.get_effect_state();
+
+    // OVERALL_GAIN: todo replacce hardcoded numbers
+    if index == 1 {
+        *data = &mut (*effect).overall_gain as *mut FMOD_DSP_PARAMETER_OVERALLGAIN as *mut c_void;
+        *length = size_of::<FMOD_DSP_PARAMETER_OVERALLGAIN>() as c_uint;
+    }
+
     FMOD_OK
 }
+
+// pub(crate) unsafe extern "C" fn set_int_callback(
+//     dsp_state: *mut FMOD_DSP_STATE,
+//     index: c_int,
+//     value: c_int,
+// ) -> FMOD_RESULT {
+//     let dsp_state_wrapped = FmodDspState::new(dsp_state);
+//     let effect = dsp_state_wrapped.get_effect_state();
+//
+//     // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
+//     if index == 2 {
+//         (*effect).apply_distance_attenuation = value.into();
+//     }
+//
+//     FMOD_OK
+// }
+//
+// pub(crate) unsafe extern "C" fn get_int_callback(
+//     dsp_state: *mut FMOD_DSP_STATE,
+//     index: c_int,
+//     value: *mut c_int,
+//     valuestr: *mut c_char,
+// ) -> FMOD_RESULT {
+//     let dsp_state_wrapped = FmodDspState::new(dsp_state);
+//     let effect = dsp_state_wrapped.get_effect_state();
+//     let apply_da: c_int = (*effect).apply_distance_attenuation.into();
+//
+//     // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
+//     if index == 2 {
+//         *value = apply_da;
+//     }
+//     FMOD_OK
+// }
 
 pub(crate) unsafe extern "C" fn sys_register_callback(
     _dsp_state: *mut FMOD_DSP_STATE,

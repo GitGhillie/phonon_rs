@@ -27,22 +27,46 @@ use crate::callbacks::{
 use glam::Vec3;
 use libfmod::ffi::{
     FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
-    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_UNION,
-    FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_DATA, FMOD_PLUGIN_SDK_VERSION,
+    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE,
+    FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES, FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
+    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_INT,
+    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_DATA,
+    FMOD_DSP_PARAMETER_TYPE_INT, FMOD_PLUGIN_SDK_VERSION,
 };
 use phonon::audio_buffer::AudioBuffer;
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use std::ffi::CString;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
 
+#[derive(Copy, Clone)]
 enum ParameterApplyType {
     Disable,
     SimulationDefined,
-    UserDefine,
+    UserDefined,
 }
+//
+// impl From<c_int> for ParameterApplyType {
+//     fn from(value: c_int) -> Self {
+//         match value {
+//             0 => ParameterApplyType::Disable,
+//             1 => ParameterApplyType::SimulationDefined,
+//             2 => ParameterApplyType::UserDefined,
+//             _ => ParameterApplyType::Disable,
+//         }
+//     }
+// }
+//
+// impl Into<c_int> for ParameterApplyType {
+//     fn into(self) -> c_int {
+//         match self {
+//             ParameterApplyType::Disable => 0,
+//             ParameterApplyType::SimulationDefined => 1,
+//             ParameterApplyType::UserDefined => 2,
+//         }
+//     }
+// }
 
 pub(crate) struct EffectState {
     source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
@@ -107,25 +131,67 @@ impl EffectState {
     }
 }
 
-fn create_param_data(description: &'static str) -> Box<FMOD_DSP_PARAMETER_DESC> {
+fn create_param_data(
+    name: &str,
+    description: &'static str,
+    datatype: FMOD_DSP_PARAMETER_DATA_TYPE,
+) -> Box<FMOD_DSP_PARAMETER_DESC> {
     Box::new(FMOD_DSP_PARAMETER_DESC {
         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
-        name: str_to_c_char_array("SourcePos"),
+        name: str_to_c_char_array(name),
         label: str_to_c_char_array(""),
         description: description.as_ptr() as *const c_char,
         union: FMOD_DSP_PARAMETER_DESC_UNION {
-            datadesc: FMOD_DSP_PARAMETER_DESC_DATA {
-                datatype: FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+            datadesc: FMOD_DSP_PARAMETER_DESC_DATA { datatype },
+        },
+    })
+}
+
+fn create_param_int(
+    name: &str,
+    description: &'static str,
+    value_names: &'static [&'static str; 3],
+) -> Box<FMOD_DSP_PARAMETER_DESC> {
+    Box::new(FMOD_DSP_PARAMETER_DESC {
+        type_: FMOD_DSP_PARAMETER_TYPE_INT,
+        name: str_to_c_char_array(name),
+        label: str_to_c_char_array("aa"),
+        description: description.as_ptr() as *const c_char,
+        union: FMOD_DSP_PARAMETER_DESC_UNION {
+            intdesc: FMOD_DSP_PARAMETER_DESC_INT {
+                min: 0,
+                max: 2,
+                defaultval: 0,
+                goestoinf: 0,
+                valuenames: null_mut(), //value_names.as_ptr() as *const *const c_char,
             },
         },
     })
 }
 
 pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
-    let param_source = create_param_data("Position of the source.\0");
+    let param_source = create_param_data(
+        "SourcePos",
+        "Position of the source.\0",
+        FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+    );
+    let param_overall_gain = create_param_data(
+        "OverallGain",
+        "Overall gain.\0",
+        FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
+    );
+    // let param_apply_da = create_param_int(
+    //     "ApplyDA",
+    //     "Apply distance attenuation.\0",
+    //     &["Off", "Physics-Based", "Curve-Driven"],
+    // );
 
-    let parameters: Box<[*mut FMOD_DSP_PARAMETER_DESC; 1]> =
-        Box::new([Box::into_raw(param_source)]);
+    const NUM_PARAMETERS: usize = 2;
+    let parameters: Box<[*mut FMOD_DSP_PARAMETER_DESC; NUM_PARAMETERS]> = Box::new([
+        Box::into_raw(param_source),
+        Box::into_raw(param_overall_gain),
+        //Box::into_raw(param_apply_da),
+    ]);
 
     FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -139,7 +205,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         read: None,
         process: Some(process_callback),
         setposition: None,
-        numparameters: 1,
+        numparameters: NUM_PARAMETERS as c_int,
         paramdesc: Box::into_raw(parameters) as *mut *mut FMOD_DSP_PARAMETER_DESC,
         setparameterfloat: None,
         setparameterint: None,
