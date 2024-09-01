@@ -23,6 +23,10 @@ enum Params {
     ApplyDistanceAttenuation,
 }
 
+const PARAM_SOURCE_IDX: i32 = 0;
+const PARAM_APPLY_DA_IDX: i32 = 1;
+const PARAM_OVERALL_GAIN_IDX: i32 = 2;
+
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
     // any time in the other callbacks.
@@ -38,7 +42,10 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
     // why does distance attenuation range seem to exist twice?
     let fmod_gain_state = Box::new(EffectState {
         source: Default::default(),
-        overall_gain: Default::default(),
+        overall_gain: FMOD_DSP_PARAMETER_OVERALLGAIN {
+            linear_gain: 1.0,
+            linear_gain_additive: 0.0,
+        },
         apply_distance_attenuation: ParameterApplyType::UserDefined,
         apply_air_absorption: ParameterApplyType::Disable,
         apply_directivity: ParameterApplyType::Disable,
@@ -167,7 +174,7 @@ pub(crate) unsafe extern "C" fn set_data_callback(
 
     // todo replace hardcoded match values
     match index {
-        0 => {
+        PARAM_SOURCE_IDX => {
             // SOURCE_POSITION
             let source_ptr = (&mut state.source) as *mut FMOD_DSP_PARAMETER_3DATTRIBUTES as *mut u8;
 
@@ -192,47 +199,41 @@ pub(crate) unsafe extern "C" fn get_data_callback(
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
     let effect = dsp_state_wrapped.get_effect_state();
 
-    // OVERALL_GAIN: todo replacce hardcoded numbers
-    if index == 1 {
-        *data = &mut (*effect).overall_gain as *mut FMOD_DSP_PARAMETER_OVERALLGAIN as *mut c_void;
-        *length = size_of::<FMOD_DSP_PARAMETER_OVERALLGAIN>() as c_uint;
+    FMOD_OK
+}
+
+pub(crate) unsafe extern "C" fn set_int_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    value: c_int,
+) -> FMOD_RESULT {
+    let dsp_state_wrapped = FmodDspState::new(dsp_state);
+    let effect = dsp_state_wrapped.get_effect_state();
+
+    // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
+    if index == PARAM_APPLY_DA_IDX {
+        (*effect).apply_distance_attenuation = value.into();
     }
 
     FMOD_OK
 }
 
-// pub(crate) unsafe extern "C" fn set_int_callback(
-//     dsp_state: *mut FMOD_DSP_STATE,
-//     index: c_int,
-//     value: c_int,
-// ) -> FMOD_RESULT {
-//     let dsp_state_wrapped = FmodDspState::new(dsp_state);
-//     let effect = dsp_state_wrapped.get_effect_state();
-//
-//     // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
-//     if index == 2 {
-//         (*effect).apply_distance_attenuation = value.into();
-//     }
-//
-//     FMOD_OK
-// }
-//
-// pub(crate) unsafe extern "C" fn get_int_callback(
-//     dsp_state: *mut FMOD_DSP_STATE,
-//     index: c_int,
-//     value: *mut c_int,
-//     valuestr: *mut c_char,
-// ) -> FMOD_RESULT {
-//     let dsp_state_wrapped = FmodDspState::new(dsp_state);
-//     let effect = dsp_state_wrapped.get_effect_state();
-//     let apply_da: c_int = (*effect).apply_distance_attenuation.into();
-//
-//     // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
-//     if index == 2 {
-//         *value = apply_da;
-//     }
-//     FMOD_OK
-// }
+pub(crate) unsafe extern "C" fn get_int_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    value: *mut c_int,
+    valuestr: *mut c_char,
+) -> FMOD_RESULT {
+    let dsp_state_wrapped = FmodDspState::new(dsp_state);
+    let effect = dsp_state_wrapped.get_effect_state();
+    let apply_da: c_int = (*effect).apply_distance_attenuation.into();
+
+    // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
+    if index == PARAM_APPLY_DA_IDX {
+        *value = apply_da;
+    }
+    FMOD_OK
+}
 
 pub(crate) unsafe extern "C" fn sys_register_callback(
     _dsp_state: *mut FMOD_DSP_STATE,

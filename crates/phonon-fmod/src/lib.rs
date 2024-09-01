@@ -21,10 +21,11 @@ pub(crate) mod callbacks;
 mod fmod_state;
 
 use crate::callbacks::{
-    create_callback, get_data_callback, process_callback, release_callback, set_data_callback,
-    sys_deregister_callback, sys_register_callback,
+    create_callback, get_data_callback, get_int_callback, process_callback, release_callback,
+    set_data_callback, set_int_callback, sys_deregister_callback, sys_register_callback,
 };
 use glam::Vec3;
+use lazy_static::lazy_static;
 use libfmod::ffi::{
     FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE,
@@ -36,6 +37,7 @@ use libfmod::ffi::{
 use phonon::audio_buffer::AudioBuffer;
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
+use std::cell::UnsafeCell;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
@@ -46,27 +48,27 @@ enum ParameterApplyType {
     SimulationDefined,
     UserDefined,
 }
-//
-// impl From<c_int> for ParameterApplyType {
-//     fn from(value: c_int) -> Self {
-//         match value {
-//             0 => ParameterApplyType::Disable,
-//             1 => ParameterApplyType::SimulationDefined,
-//             2 => ParameterApplyType::UserDefined,
-//             _ => ParameterApplyType::Disable,
-//         }
-//     }
-// }
-//
-// impl Into<c_int> for ParameterApplyType {
-//     fn into(self) -> c_int {
-//         match self {
-//             ParameterApplyType::Disable => 0,
-//             ParameterApplyType::SimulationDefined => 1,
-//             ParameterApplyType::UserDefined => 2,
-//         }
-//     }
-// }
+
+impl From<c_int> for ParameterApplyType {
+    fn from(value: c_int) -> Self {
+        match value {
+            0 => ParameterApplyType::Disable,
+            1 => ParameterApplyType::SimulationDefined,
+            2 => ParameterApplyType::UserDefined,
+            _ => ParameterApplyType::Disable,
+        }
+    }
+}
+
+impl Into<c_int> for ParameterApplyType {
+    fn into(self) -> c_int {
+        match self {
+            ParameterApplyType::Disable => 0,
+            ParameterApplyType::SimulationDefined => 1,
+            ParameterApplyType::UserDefined => 2,
+        }
+    }
+}
 
 pub(crate) struct EffectState {
     source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
@@ -135,8 +137,8 @@ fn create_param_data(
     name: &str,
     description: &'static str,
     datatype: FMOD_DSP_PARAMETER_DATA_TYPE,
-) -> Box<FMOD_DSP_PARAMETER_DESC> {
-    Box::new(FMOD_DSP_PARAMETER_DESC {
+) -> FMOD_DSP_PARAMETER_DESC {
+    FMOD_DSP_PARAMETER_DESC {
         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
         name: str_to_c_char_array(name),
         label: str_to_c_char_array(""),
@@ -144,15 +146,15 @@ fn create_param_data(
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             datadesc: FMOD_DSP_PARAMETER_DESC_DATA { datatype },
         },
-    })
+    }
 }
 
 fn create_param_int(
     name: &str,
     description: &'static str,
     value_names: &'static [&'static str; 3],
-) -> Box<FMOD_DSP_PARAMETER_DESC> {
-    Box::new(FMOD_DSP_PARAMETER_DESC {
+) -> FMOD_DSP_PARAMETER_DESC {
+    FMOD_DSP_PARAMETER_DESC {
         type_: FMOD_DSP_PARAMETER_TYPE_INT,
         name: str_to_c_char_array(name),
         label: str_to_c_char_array("aa"),
@@ -163,35 +165,47 @@ fn create_param_int(
                 max: 2,
                 defaultval: 0,
                 goestoinf: 0,
-                valuenames: null_mut(), //value_names.as_ptr() as *const *const c_char,
+                valuenames: value_names.as_ptr() as *const *const c_char,
             },
         },
-    })
+    }
+}
+
+struct MyStatic {
+    parameters: UnsafeCell<[*mut FMOD_DSP_PARAMETER_DESC; 2]>,
+    source: UnsafeCell<FMOD_DSP_PARAMETER_DESC>,
+    apply_da: UnsafeCell<FMOD_DSP_PARAMETER_DESC>,
+}
+unsafe impl Sync for MyStatic {}
+
+lazy_static! {
+    static ref PARAMETERS: MyStatic = MyStatic {
+        parameters: UnsafeCell::new([null_mut(), null_mut()]),
+        source: UnsafeCell::new(FMOD_DSP_PARAMETER_DESC::default()),
+        apply_da: UnsafeCell::new(FMOD_DSP_PARAMETER_DESC::default()),
+    };
+}
+
+fn init_my_static() {
+    unsafe {
+        *PARAMETERS.source.get() = create_param_data(
+            "SourcePos",
+            "Position of the source.\0",
+            FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+        );
+
+        *PARAMETERS.apply_da.get() = create_param_int(
+            "ApplyDA",
+            "Apply distance attenuation.\0",
+            &["Off", "Physics-Based", "Curve-Driven"],
+        );
+
+        *PARAMETERS.parameters.get() = [PARAMETERS.source.get(), PARAMETERS.apply_da.get()];
+    }
 }
 
 pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
-    let param_source = create_param_data(
-        "SourcePos",
-        "Position of the source.\0",
-        FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-    );
-    let param_overall_gain = create_param_data(
-        "OverallGain",
-        "Overall gain.\0",
-        FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
-    );
-    // let param_apply_da = create_param_int(
-    //     "ApplyDA",
-    //     "Apply distance attenuation.\0",
-    //     &["Off", "Physics-Based", "Curve-Driven"],
-    // );
-
-    const NUM_PARAMETERS: usize = 2;
-    let parameters: Box<[*mut FMOD_DSP_PARAMETER_DESC; NUM_PARAMETERS]> = Box::new([
-        Box::into_raw(param_source),
-        Box::into_raw(param_overall_gain),
-        //Box::into_raw(param_apply_da),
-    ]);
+    init_my_static();
 
     FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -205,14 +219,14 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         read: None,
         process: Some(process_callback),
         setposition: None,
-        numparameters: NUM_PARAMETERS as c_int,
-        paramdesc: Box::into_raw(parameters) as *mut *mut FMOD_DSP_PARAMETER_DESC,
+        numparameters: 2,
+        paramdesc: PARAMETERS.parameters.get() as *mut *mut FMOD_DSP_PARAMETER_DESC,
         setparameterfloat: None,
-        setparameterint: None,
+        setparameterint: Some(set_int_callback),
         setparameterbool: None, //todo
         setparameterdata: Some(set_data_callback),
         getparameterfloat: None,
-        getparameterint: None,
+        getparameterint: Some(get_int_callback),
         getparameterbool: None, // todo
         getparameterdata: Some(get_data_callback),
         shouldiprocess: None,
@@ -227,8 +241,10 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
 /// See https://fmod.com/docs/2.02/api/white-papers-dsp-plugin-api.html#building-a-plug-in
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
-    let desc = Box::new(create_dsp_description());
-    Box::into_raw(desc)
+    unsafe {
+        let desc = Box::new(create_dsp_description());
+        Box::into_raw(desc)
+    }
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
