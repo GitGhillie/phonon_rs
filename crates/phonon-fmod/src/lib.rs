@@ -115,8 +115,8 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
     static DESCRIPTION_SOURCE: &str = "Position of the source.\0"; // todo check if this is the correct way
     let param_source = Box::new(FMOD_DSP_PARAMETER_DESC {
         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
-        name: str_to_c_char_array("Enable"),
-        label: str_to_c_char_array("Yes"),
+        name: str_to_c_char_array("SourcePos"),
+        label: str_to_c_char_array(""),
         description: DESCRIPTION_SOURCE.as_ptr() as *const c_char,
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             datadesc: FMOD_DSP_PARAMETER_DESC_DATA {
@@ -125,7 +125,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         },
     });
 
-    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_source)];
+    let parameters: Box<[*mut FMOD_DSP_PARAMETER_DESC; 1]> = Box::new([Box::into_raw(param_source)]);
 
     FMOD_DSP_DESCRIPTION {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
@@ -140,7 +140,7 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         process: Some(process_callback),
         setposition: None,
         numparameters: 1,
-        paramdesc: parameters.as_mut_ptr(),
+        paramdesc: Box::into_raw(parameters) as *mut *mut FMOD_DSP_PARAMETER_DESC,
         setparameterfloat: None,
         setparameterint: None,
         setparameterbool: None, //todo
