@@ -8,7 +8,7 @@ use libfmod::ffi::{
     FMOD_3D_ATTRIBUTES, FMOD_DSP_PARAMETER_3DATTRIBUTES, FMOD_INIT_NORMAL, FMOD_LOOP_NORMAL,
     FMOD_VECTOR,
 };
-use libfmod::{DspDescription, Error, System};
+use libfmod::{Error, System};
 use phonon_fmod::create_dsp_description;
 use std::io;
 use std::io::BufRead;

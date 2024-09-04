@@ -11,7 +11,6 @@ use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::PanningEffect;
 use phonon::speaker_layout::SpeakerLayoutType;
-use std::mem::size_of;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
 use std::ptr::{null_mut, slice_from_raw_parts_mut};
 use std::slice;

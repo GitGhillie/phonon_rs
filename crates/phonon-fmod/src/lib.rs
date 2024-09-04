@@ -25,24 +25,20 @@ use crate::callbacks::{
     set_data_callback, set_int_callback, sys_deregister_callback, sys_register_callback,
 };
 use glam::Vec3;
-use lazy_static::lazy_static;
 use libfmod::ffi::{
     FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE,
-    FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES, FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
-    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_FLOAT,
-    FMOD_DSP_PARAMETER_DESC_INT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN,
-    FMOD_DSP_PARAMETER_TYPE_DATA, FMOD_DSP_PARAMETER_TYPE_INT, FMOD_PLUGIN_SDK_VERSION,
+    FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES, FMOD_DSP_PARAMETER_DESC_DATA,
+    FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_INT, FMOD_DSP_PARAMETER_DESC_UNION,
+    FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
 };
 use libfmod::{DspDescription, DspParameterDesc, DspParameterType};
 use phonon::audio_buffer::AudioBuffer;
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
-use std::cell::UnsafeCell;
 use std::ffi::CString;
-use std::mem;
 use std::os::raw::{c_char, c_int};
-use std::ptr::{addr_of_mut, null_mut};
+use std::ptr::null_mut;
 
 #[derive(Copy, Clone)]
 enum ParameterApplyType {
@@ -199,44 +195,6 @@ fn create_param_int(
     }
 }
 
-// fn create_param_data(
-//     name: &str,
-//     description: &'static str,
-//     datatype: FMOD_DSP_PARAMETER_DATA_TYPE,
-// ) -> FMOD_DSP_PARAMETER_DESC {
-//     FMOD_DSP_PARAMETER_DESC {
-//         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
-//         name: str_to_c_char_array(name),
-//         label: str_to_c_char_array(""),
-//         description: description.as_ptr() as *const c_char,
-//         union: FMOD_DSP_PARAMETER_DESC_UNION {
-//             datadesc: FMOD_DSP_PARAMETER_DESC_DATA { datatype },
-//         },
-//     }
-// }
-//
-// fn create_param_int(
-//     name: &str,
-//     description: &'static str,
-//     value_names: &'static [&'static str; 3],
-// ) -> FMOD_DSP_PARAMETER_DESC {
-//     FMOD_DSP_PARAMETER_DESC {
-//         type_: FMOD_DSP_PARAMETER_TYPE_INT,
-//         name: str_to_c_char_array(name),
-//         label: str_to_c_char_array("aa"),
-//         description: description.as_ptr() as *const c_char,
-//         union: FMOD_DSP_PARAMETER_DESC_UNION {
-//             intdesc: FMOD_DSP_PARAMETER_DESC_INT {
-//                 min: 0,
-//                 max: 2,
-//                 defaultval: 0,
-//                 goestoinf: 0,
-//                 valuenames: value_names.as_ptr() as *const *const c_char,
-//             },
-//         },
-//     }
-// }
-
 pub fn create_dsp_description() -> DspDescription {
     let param_source = create_param_data(
         "SourcePos",
@@ -250,15 +208,6 @@ pub fn create_dsp_description() -> DspDescription {
         vec!["Off", "Physics-Based", "Curve-Driven"],
     );
 
-    let param_float = create_param_float("volume", "Linear volume.");
-    let param_float2 = create_param_float("volumee", "Linear volume.");
-
-    // let paramdesc: Box<[FMOD_DSP_PARAMETER_DESC]> =
-    //     Box::new([param_source.into(), param_da.into()]);
-    // let paramdesc: Box<[FMOD_DSP_PARAMETER_DESC]> = Box::new([param_source]);
-    // let paramdesc: *mut [FMOD_DSP_PARAMETER_DESC] = Box::into_raw(paramdesc);
-    // mem::forget(paramdesc);
-
     DspDescription {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
@@ -271,8 +220,7 @@ pub fn create_dsp_description() -> DspDescription {
         read: None,
         process: Some(process_callback),
         setposition: None,
-        //numparameters: 1,
-        paramdesc: vec![param_source, param_da, param_float, param_float2],
+        paramdesc: vec![param_source, param_da],
         setparameterfloat: None,
         setparameterint: Some(set_int_callback),
         setparameterbool: None, //todo
