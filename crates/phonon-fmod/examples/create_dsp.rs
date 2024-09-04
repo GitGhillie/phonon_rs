@@ -21,7 +21,7 @@ fn main() -> Result<(), Error> {
     let sound = system.create_sound("./data/audio/windless_slopes.ogg", FMOD_LOOP_NORMAL, None)?;
     system.play_sound(sound, None, false)?;
 
-    let desc = DspDescription::try_from(create_dsp_description())?;
+    let desc = create_dsp_description();
     let mydsp = system.create_dsp(desc)?;
     let mastergroup = system.get_master_channel_group()?;
     mastergroup.add_dsp(0, mydsp)?;
@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
                 let mut attributes = FMOD_DSP_PARAMETER_3DATTRIBUTES {
                     relative: FMOD_3D_ATTRIBUTES {
                         position: FMOD_VECTOR {
-                            x: -3.0,
+                            x: -20.0,
                             y: 0.0,
                             z: 0.0,
                         },

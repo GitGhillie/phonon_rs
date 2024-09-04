@@ -11,7 +11,7 @@ crate-type = ["cdylib", "lib"]
 
 [dependencies]
 phonon = { path = "../phonon" }
-libfmod = "~2.222.3"
+libfmod = "~2.222.4"
 glam = "0.25" # todo how do we ensure the same version is used accross the different crates in the workspace?
 lazy_static = "1.5"
 #libfmod = { path = "../../../libfmod/libfmod" }
@@ -21,3 +21,6 @@ name = "manual_registration"
 
 [[example]]
 name = "create_dsp"
+
+[[example]]
+name = "playground"

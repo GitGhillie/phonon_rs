@@ -30,17 +30,19 @@ use libfmod::ffi::{
     FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE,
     FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES, FMOD_DSP_PARAMETER_DATA_TYPE_OVERALLGAIN,
-    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_INT,
-    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_DSP_PARAMETER_TYPE_DATA,
-    FMOD_DSP_PARAMETER_TYPE_INT, FMOD_PLUGIN_SDK_VERSION,
+    FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_FLOAT,
+    FMOD_DSP_PARAMETER_DESC_INT, FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN,
+    FMOD_DSP_PARAMETER_TYPE_DATA, FMOD_DSP_PARAMETER_TYPE_INT, FMOD_PLUGIN_SDK_VERSION,
 };
+use libfmod::{DspDescription, DspParameterDesc, DspParameterType};
 use phonon::audio_buffer::AudioBuffer;
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use std::cell::UnsafeCell;
 use std::ffi::CString;
+use std::mem;
 use std::os::raw::{c_char, c_int};
-use std::ptr::null_mut;
+use std::ptr::{addr_of_mut, null_mut};
 
 #[derive(Copy, Clone)]
 enum ParameterApplyType {
@@ -137,14 +139,31 @@ fn create_param_data(
     name: &str,
     description: &'static str,
     datatype: FMOD_DSP_PARAMETER_DATA_TYPE,
-) -> FMOD_DSP_PARAMETER_DESC {
-    FMOD_DSP_PARAMETER_DESC {
-        type_: FMOD_DSP_PARAMETER_TYPE_DATA,
+) -> DspParameterDesc {
+    DspParameterDesc {
+        type_: DspParameterType::Data,
         name: str_to_c_char_array(name),
         label: str_to_c_char_array(""),
-        description: description.as_ptr() as *const c_char,
+        description: description.to_string(),
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             datadesc: FMOD_DSP_PARAMETER_DESC_DATA { datatype },
+        },
+    }
+}
+
+fn create_param_float(name: &str, description: &'static str) -> DspParameterDesc {
+    DspParameterDesc {
+        type_: DspParameterType::Float,
+        name: str_to_c_char_array(name),
+        label: str_to_c_char_array("%"),
+        description: description.to_string(),
+        union: FMOD_DSP_PARAMETER_DESC_UNION {
+            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
+                min: 0.0,
+                max: 1.0,
+                defaultval: 0.42,
+                mapping: Default::default(),
+            },
         },
     }
 }
@@ -152,62 +171,95 @@ fn create_param_data(
 fn create_param_int(
     name: &str,
     description: &'static str,
-    value_names: &'static [&'static str; 3],
-) -> FMOD_DSP_PARAMETER_DESC {
-    FMOD_DSP_PARAMETER_DESC {
-        type_: FMOD_DSP_PARAMETER_TYPE_INT,
+    value_names: Vec<&'static str>,
+) -> DspParameterDesc {
+    let value_names_c: Vec<*mut c_char> = value_names
+        .into_iter()
+        .map(|value_name| {
+            CString::new(value_name)
+                .unwrap_or(CString::from(c"err!"))
+                .into_raw()
+        })
+        .collect();
+
+    DspParameterDesc {
+        type_: DspParameterType::Int,
         name: str_to_c_char_array(name),
-        label: str_to_c_char_array("aa"),
-        description: description.as_ptr() as *const c_char,
+        label: str_to_c_char_array(""),
+        description: description.to_string(),
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             intdesc: FMOD_DSP_PARAMETER_DESC_INT {
                 min: 0,
                 max: 2,
                 defaultval: 0,
                 goestoinf: 0,
-                valuenames: value_names.as_ptr() as *const *const c_char,
+                valuenames: Box::into_raw(value_names_c.into_boxed_slice()) as *const *const c_char,
             },
         },
     }
 }
 
-struct MyStatic {
-    parameters: UnsafeCell<[*mut FMOD_DSP_PARAMETER_DESC; 2]>,
-    source: UnsafeCell<FMOD_DSP_PARAMETER_DESC>,
-    apply_da: UnsafeCell<FMOD_DSP_PARAMETER_DESC>,
-}
-unsafe impl Sync for MyStatic {}
+// fn create_param_data(
+//     name: &str,
+//     description: &'static str,
+//     datatype: FMOD_DSP_PARAMETER_DATA_TYPE,
+// ) -> FMOD_DSP_PARAMETER_DESC {
+//     FMOD_DSP_PARAMETER_DESC {
+//         type_: FMOD_DSP_PARAMETER_TYPE_DATA,
+//         name: str_to_c_char_array(name),
+//         label: str_to_c_char_array(""),
+//         description: description.as_ptr() as *const c_char,
+//         union: FMOD_DSP_PARAMETER_DESC_UNION {
+//             datadesc: FMOD_DSP_PARAMETER_DESC_DATA { datatype },
+//         },
+//     }
+// }
+//
+// fn create_param_int(
+//     name: &str,
+//     description: &'static str,
+//     value_names: &'static [&'static str; 3],
+// ) -> FMOD_DSP_PARAMETER_DESC {
+//     FMOD_DSP_PARAMETER_DESC {
+//         type_: FMOD_DSP_PARAMETER_TYPE_INT,
+//         name: str_to_c_char_array(name),
+//         label: str_to_c_char_array("aa"),
+//         description: description.as_ptr() as *const c_char,
+//         union: FMOD_DSP_PARAMETER_DESC_UNION {
+//             intdesc: FMOD_DSP_PARAMETER_DESC_INT {
+//                 min: 0,
+//                 max: 2,
+//                 defaultval: 0,
+//                 goestoinf: 0,
+//                 valuenames: value_names.as_ptr() as *const *const c_char,
+//             },
+//         },
+//     }
+// }
 
-lazy_static! {
-    static ref PARAMETERS: MyStatic = MyStatic {
-        parameters: UnsafeCell::new([null_mut(), null_mut()]),
-        source: UnsafeCell::new(FMOD_DSP_PARAMETER_DESC::default()),
-        apply_da: UnsafeCell::new(FMOD_DSP_PARAMETER_DESC::default()),
-    };
-}
+pub fn create_dsp_description() -> DspDescription {
+    let param_source = create_param_data(
+        "SourcePos",
+        "Position of the source.",
+        FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
+    );
 
-fn init_my_static() {
-    unsafe {
-        *PARAMETERS.source.get() = create_param_data(
-            "SourcePos",
-            "Position of the source.\0",
-            FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-        );
+    let param_da = create_param_int(
+        "ApplyDA",
+        "Apply distance attenuation.",
+        vec!["Off", "Physics-Based", "Curve-Driven"],
+    );
 
-        *PARAMETERS.apply_da.get() = create_param_int(
-            "ApplyDA",
-            "Apply distance attenuation.\0",
-            &["Off", "Physics-Based", "Curve-Driven"],
-        );
+    let param_float = create_param_float("volume", "Linear volume.");
+    let param_float2 = create_param_float("volumee", "Linear volume.");
 
-        *PARAMETERS.parameters.get() = [PARAMETERS.source.get(), PARAMETERS.apply_da.get()];
-    }
-}
+    // let paramdesc: Box<[FMOD_DSP_PARAMETER_DESC]> =
+    //     Box::new([param_source.into(), param_da.into()]);
+    // let paramdesc: Box<[FMOD_DSP_PARAMETER_DESC]> = Box::new([param_source]);
+    // let paramdesc: *mut [FMOD_DSP_PARAMETER_DESC] = Box::into_raw(paramdesc);
+    // mem::forget(paramdesc);
 
-pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
-    init_my_static();
-
-    FMOD_DSP_DESCRIPTION {
+    DspDescription {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
         version: 1,
@@ -219,8 +271,8 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         read: None,
         process: Some(process_callback),
         setposition: None,
-        numparameters: 2,
-        paramdesc: PARAMETERS.parameters.get() as *mut *mut FMOD_DSP_PARAMETER_DESC,
+        //numparameters: 1,
+        paramdesc: vec![param_source, param_da, param_float, param_float2],
         setparameterfloat: None,
         setparameterint: Some(set_int_callback),
         setparameterbool: None, //todo
@@ -241,10 +293,9 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
 /// See https://fmod.com/docs/2.02/api/white-papers-dsp-plugin-api.html#building-a-plug-in
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
-    unsafe {
-        let desc = Box::new(create_dsp_description());
-        Box::into_raw(desc)
-    }
+    let description: FMOD_DSP_DESCRIPTION = create_dsp_description().into();
+    let boxed = Box::new(description);
+    Box::into_raw(boxed)
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
