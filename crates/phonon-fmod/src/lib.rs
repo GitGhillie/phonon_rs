@@ -214,7 +214,7 @@ fn create_param_int(
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             intdesc: FMOD_DSP_PARAMETER_DESC_INT {
                 min: 0,
-                max: value_names_c.len() as c_int,
+                max: (value_names_c.len() - 1) as c_int,
                 defaultval: 0,
                 goestoinf: 0,
                 valuenames: Box::into_raw(value_names_c.into_boxed_slice()) as *const *const c_char,

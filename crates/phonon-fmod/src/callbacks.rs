@@ -374,8 +374,8 @@ enum Params {
 }
 
 const PARAM_SOURCE_IDX: i32 = 0;
-const PARAM_APPLY_DA_IDX: i32 = 1;
-const PARAM_OVERALL_GAIN_IDX: i32 = 2;
+const PARAM_OVERALL_GAIN_IDX: i32 = 1;
+const PARAM_APPLY_DA_IDX: i32 = 2;
 
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
