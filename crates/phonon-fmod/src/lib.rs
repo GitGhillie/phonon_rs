@@ -267,7 +267,7 @@ pub fn create_dsp_description() -> DspDescription {
     DspDescription {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
-        version: 1,
+        version: 2,
         numinputbuffers: 1,
         numoutputbuffers: 1,
         create: Some(create_callback),

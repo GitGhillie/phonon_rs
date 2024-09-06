@@ -14,22 +14,25 @@ use phonon::speaker_layout::SpeakerLayoutType;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
 use std::ptr::{null_mut, slice_from_raw_parts_mut};
 use std::slice;
+use strum::FromRepr;
 
 // todo: This should be somewhere else. And there might be a rustier way to do this
+#[derive(FromRepr, Debug, PartialEq)]
+#[repr(i32)]
 enum Params {
     /**
      *  **Type**: `FMOD_DSP_PARAMETER_TYPE_DATA`
      *
      *  World-space position of the source. Automatically written by FMOD Studio.
      */
-    SourcePosition = 1,
+    SourcePosition = 0,
 
     /**
      *  **Type**: `FMOD_DSP_PARAMETER_TYPE_DATA`
      *
      *  Overall linear gain of this effect. Automatically read by FMOD Studio.
      */
-    OverallGain,
+    OverallGain = 1,
 
     /**
      *  **Type**: `FMOD_DSP_PARAMETER_TYPE_INT`
@@ -42,7 +45,7 @@ enum Params {
      *  -   `1`: Use a distance attenuation value calculated using the default physics-based model.
      *  -   `2`: Use a distance attenuation value calculated using the curve specified in the FMOD Studio UI.
      */
-    ApplyDistanceAttenuation,
+    ApplyDistanceAttenuation = 2,
 
     /**
      *  **Type**: `FMOD_DSP_PARAMETER_TYPE_INT`
@@ -373,10 +376,6 @@ enum Params {
     OutputFormat,
 }
 
-const PARAM_SOURCE_IDX: i32 = 0;
-const PARAM_OVERALL_GAIN_IDX: i32 = 1;
-const PARAM_APPLY_DA_IDX: i32 = 2;
-
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
     // any time in the other callbacks.
@@ -522,18 +521,21 @@ pub(crate) unsafe extern "C" fn set_data_callback(
     let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
     let state = state.as_mut().unwrap();
 
-    // todo replace hardcoded match values
-    match index {
-        PARAM_SOURCE_IDX => {
-            // SOURCE_POSITION
-            let source_ptr = (&mut state.source) as *mut FMOD_DSP_PARAMETER_3DATTRIBUTES as *mut u8;
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::SourcePosition => {
+                let source_ptr =
+                    (&mut state.source) as *mut FMOD_DSP_PARAMETER_3DATTRIBUTES as *mut u8;
 
-            let data_slice = slice::from_raw_parts(data as *const u8, length as usize);
-            let dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
+                let data_slice = slice::from_raw_parts(data as *const u8, length as usize);
+                let dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
 
-            dest_slice.as_mut().unwrap().copy_from_slice(data_slice);
+                dest_slice.as_mut().unwrap().copy_from_slice(data_slice);
+            }
+            _ => return FMOD_ERR_INVALID_PARAM,
         }
-        _ => return FMOD_ERR_INVALID_PARAM,
+    } else {
+        return FMOD_OK;
     }
 
     FMOD_OK
@@ -560,9 +562,15 @@ pub(crate) unsafe extern "C" fn set_int_callback(
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
     let effect = dsp_state_wrapped.get_effect_state();
 
-    // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
-    if index == PARAM_APPLY_DA_IDX {
-        (*effect).apply_distance_attenuation = value.into();
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::ApplyDistanceAttenuation => {
+                (*effect).apply_distance_attenuation = value.into();
+            }
+            _ => return FMOD_ERR_INVALID_PARAM,
+        }
+    } else {
+        return FMOD_OK;
     }
 
     FMOD_OK
@@ -578,10 +586,17 @@ pub(crate) unsafe extern "C" fn get_int_callback(
     let effect = dsp_state_wrapped.get_effect_state();
     let apply_da: c_int = (*effect).apply_distance_attenuation.into();
 
-    // Apply Distance Attenuation toggle. Todo get rid of hardcoded numbers
-    if index == PARAM_APPLY_DA_IDX {
-        *value = apply_da;
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::ApplyDistanceAttenuation => {
+                *value = apply_da;
+            }
+            _ => return FMOD_ERR_INVALID_PARAM,
+        }
+    } else {
+        return FMOD_OK;
     }
+
     FMOD_OK
 }
 
