@@ -18,8 +18,8 @@
 use crate::str_to_c_char_array;
 use libfmod::ffi::{
     FMOD_DSP_PARAMETER_DATA_TYPE, FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-    FMOD_DSP_PARAMETER_DESC_BOOL, FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_FLOAT,
-    FMOD_DSP_PARAMETER_DESC_INT, FMOD_DSP_PARAMETER_DESC_UNION,
+    FMOD_DSP_PARAMETER_DATA_TYPE_USER, FMOD_DSP_PARAMETER_DESC_BOOL, FMOD_DSP_PARAMETER_DESC_DATA,
+    FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_INT, FMOD_DSP_PARAMETER_DESC_UNION,
 };
 use libfmod::{DspParameterDesc, DspParameterType};
 use std::ffi::CString;
@@ -158,6 +158,12 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
         vec!["Nearest", "Bilinear"],
     );
 
+    let param_direct_sound_path = create_param_data(
+        "DirectSoundPath",
+        "DirectSoundPath simulation output.",
+        FMOD_DSP_PARAMETER_DATA_TYPE_USER,
+    );
+
     vec![
         param_source,
         param_overall_gain,
@@ -169,5 +175,6 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
         param_apply_reflections,
         param_apply_pathing,
         param_hrtf_interpolation,
+        param_direct_sound_path,
     ]
 }

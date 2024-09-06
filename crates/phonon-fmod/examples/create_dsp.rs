@@ -9,6 +9,7 @@ use libfmod::ffi::{
     FMOD_VECTOR,
 };
 use libfmod::{Error, System};
+use phonon::direct_simulator::DirectSoundPath;
 use phonon_fmod::create_dsp_description;
 use std::io;
 use std::io::BufRead;
@@ -51,7 +52,24 @@ fn main() -> Result<(), Error> {
                 };
                 let attributes_ptr = &mut attributes as *mut _ as *mut c_void;
                 let attributes_size = std::mem::size_of::<FMOD_DSP_PARAMETER_3DATTRIBUTES>();
-                mydsp.set_parameter_data(0, attributes_ptr, attributes_size as u32)?
+
+                let mut direct_sound_path = DirectSoundPath {
+                    distance_attenuation: 0.5,
+                    air_absorption: [1.0, 1.0, 1.0],
+                    delay: 0.0,
+                    occlusion: 1.0,
+                    transmission: [1.0, 1.0, 1.0],
+                    directivity: 0.0,
+                };
+                let sound_path_ptr = &mut direct_sound_path as *mut _ as *mut c_void;
+                let sound_path_size = std::mem::size_of::<DirectSoundPath>();
+
+                // set 3d attributes
+                mydsp.set_parameter_data(0, attributes_ptr, attributes_size as u32)?;
+                // enable/disable distance attenuation
+                mydsp.set_parameter_int(2, 1)?;
+                // set direct sound path
+                mydsp.set_parameter_data(10, sound_path_ptr, sound_path_size as u32)?
             }
             4 => {
                 //let (value, _) = mydsp.get_parameter_float(0, 0)?;

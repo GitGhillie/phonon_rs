@@ -34,7 +34,10 @@ use libfmod::ffi::{
 };
 use libfmod::DspDescription;
 use phonon::audio_buffer::AudioBuffer;
-use phonon::direct_effect::{DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType};
+use phonon::direct_effect::{
+    DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
+};
+use phonon::direct_simulator::DirectSoundPath;
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
@@ -83,6 +86,9 @@ pub(crate) struct EffectState {
     distance_attenuation_min_distance: f32,
     distance_attenuation_max_distance: f32,
 
+    // todo: I added this one. Consider another one for user settings and then remove all the individual params below.
+    direct_sound_path: DirectSoundPath,
+
     air_absorption: [f32; 3],
     directivity: f32,
     dipole_weight: f32, // See Directivity docs
@@ -119,9 +125,20 @@ impl EffectState {
         let direction = Vec3::new(position.x, position.y, position.z);
         let panning_params = PanningEffectParameters { direction };
 
+        let mut flags = DirectApplyFlags::AirAbsorption;
+        match self.apply_distance_attenuation {
+            ParameterApplyType::Disable => flags.set(DirectApplyFlags::DistanceAttenuation, false),
+            ParameterApplyType::SimulationDefined => {
+                flags.set(DirectApplyFlags::DistanceAttenuation, true)
+            }
+            ParameterApplyType::UserDefined => {
+                flags.set(DirectApplyFlags::DistanceAttenuation, true)
+            } // todo
+        }
+
         let direct_params = DirectEffectParameters {
-            direct_sound_path: Default::default(),
-            flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::AirAbsorption,
+            direct_sound_path: self.direct_sound_path,
+            flags,
             transmission_type: TransmissionType::FrequencyDependent,
         };
 
@@ -129,7 +146,8 @@ impl EffectState {
         self.in_buffer_stereo.read_interleaved(in_buffer);
         self.in_buffer_stereo.downmix(&mut self.in_buffer_mono);
 
-        self.direct_effect.apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
+        self.direct_effect
+            .apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
 
         self.panning_effect
             .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);

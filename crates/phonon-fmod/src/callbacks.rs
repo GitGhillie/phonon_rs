@@ -10,6 +10,7 @@ use libfmod::ffi::{
 };
 use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{DirectEffect, TransmissionType};
+use phonon::direct_simulator::DirectSoundPath;
 use phonon::panning_effect::PanningEffect;
 use phonon::speaker_layout::SpeakerLayoutType;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
@@ -44,6 +45,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
         distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
         distance_attenuation_min_distance: 1.0,
         distance_attenuation_max_distance: 20.0,
+        direct_sound_path: Default::default(),
         air_absorption: [1.0, 1.0, 1.0],
         directivity: 1.0,
         dipole_weight: 0.0,
@@ -163,9 +165,18 @@ pub(crate) unsafe extern "C" fn set_data_callback(
 
     if let Some(param) = Params::from_repr(index) {
         match param {
+            // todo get rid of duplicated code
             Params::SourcePosition => {
                 let source_ptr =
                     (&mut state.source) as *mut FMOD_DSP_PARAMETER_3DATTRIBUTES as *mut u8;
+
+                let data_slice = slice::from_raw_parts(data as *const u8, length as usize);
+                let dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
+
+                dest_slice.as_mut().unwrap().copy_from_slice(data_slice);
+            }
+            Params::DirectSoundPath => {
+                let source_ptr = (&mut state.direct_sound_path) as *mut DirectSoundPath as *mut u8;
 
                 let data_slice = slice::from_raw_parts(data as *const u8, length as usize);
                 let dest_slice = slice_from_raw_parts_mut(source_ptr, length as usize);
@@ -199,13 +210,12 @@ pub(crate) unsafe extern "C" fn set_int_callback(
     index: c_int,
     value: c_int,
 ) -> FMOD_RESULT {
-    let dsp_state_wrapped = FmodDspState::new(dsp_state);
-    let effect = dsp_state_wrapped.get_effect_state();
+    let data = &mut *((*dsp_state).plugindata as *mut EffectState);
 
     if let Some(param) = Params::from_repr(index) {
         match param {
             Params::ApplyDistanceAttenuation => {
-                (*effect).apply_distance_attenuation = value.into();
+                data.apply_distance_attenuation = value.into();
             }
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM,
         }
@@ -220,16 +230,16 @@ pub(crate) unsafe extern "C" fn get_int_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     index: c_int,
     value: *mut c_int,
-    valuestr: *mut c_char,
+    _valuestr: *mut c_char,
 ) -> FMOD_RESULT {
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
     let effect = dsp_state_wrapped.get_effect_state();
-    let apply_da: c_int = (*effect).apply_distance_attenuation.into();
 
     if let Some(param) = Params::from_repr(index) {
         match param {
             Params::ApplyDistanceAttenuation => {
-                *value = apply_da;
+                let apply_da: c_int = (*effect).apply_distance_attenuation.into();
+                value.write(apply_da);
             }
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
         }
