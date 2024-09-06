@@ -19,20 +19,20 @@
 
 pub(crate) mod callbacks;
 mod fmod_state;
+mod parameter_init;
+mod parameter_spec;
 
 use crate::callbacks::{
     create_callback, get_data_callback, get_int_callback, process_callback, release_callback,
     set_data_callback, set_int_callback, sys_deregister_callback, sys_register_callback,
 };
+use crate::parameter_init::init_parameters;
 use glam::Vec3;
 use libfmod::ffi::{
     FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
-    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_DATA_TYPE,
-    FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES, FMOD_DSP_PARAMETER_DESC_BOOL,
-    FMOD_DSP_PARAMETER_DESC_DATA, FMOD_DSP_PARAMETER_DESC_FLOAT, FMOD_DSP_PARAMETER_DESC_INT,
-    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
+    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
 };
-use libfmod::{DspDescription, DspParameterDesc, DspParameterType};
+use libfmod::DspDescription;
 use phonon::audio_buffer::AudioBuffer;
 use phonon::direct_effect::{DirectEffect, TransmissionType};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
@@ -131,139 +131,7 @@ impl EffectState {
     }
 }
 
-fn create_param_data(
-    name: &str,
-    description: &'static str,
-    datatype: FMOD_DSP_PARAMETER_DATA_TYPE,
-) -> DspParameterDesc {
-    DspParameterDesc {
-        type_: DspParameterType::Data,
-        name: str_to_c_char_array(name),
-        label: str_to_c_char_array(""),
-        description: description.to_string(),
-        union: FMOD_DSP_PARAMETER_DESC_UNION {
-            datadesc: FMOD_DSP_PARAMETER_DESC_DATA { datatype },
-        },
-    }
-}
-
-fn create_param_float(name: &str, description: &'static str) -> DspParameterDesc {
-    DspParameterDesc {
-        type_: DspParameterType::Float,
-        name: str_to_c_char_array(name),
-        label: str_to_c_char_array("%"),
-        description: description.to_string(),
-        union: FMOD_DSP_PARAMETER_DESC_UNION {
-            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
-                min: 0.0,
-                max: 1.0,
-                defaultval: 0.42,
-                mapping: Default::default(),
-            },
-        },
-    }
-}
-
-fn create_param_bool(
-    name: &str,
-    description: &'static str,
-    value_names: [&'static str; 2],
-) -> DspParameterDesc {
-    let value_names_c: Vec<*mut c_char> = value_names
-        .into_iter()
-        .map(|value_name| {
-            CString::new(value_name)
-                .unwrap_or(CString::from(c"err!"))
-                .into_raw()
-        })
-        .collect();
-
-    DspParameterDesc {
-        type_: DspParameterType::Bool,
-        name: str_to_c_char_array(name),
-        label: str_to_c_char_array(""),
-        description: description.to_string(),
-        union: FMOD_DSP_PARAMETER_DESC_UNION {
-            booldesc: FMOD_DSP_PARAMETER_DESC_BOOL {
-                defaultval: 0,
-                valuenames: Box::into_raw(value_names_c.into_boxed_slice()) as *const *const c_char,
-            },
-        },
-    }
-}
-
-fn create_param_int(
-    name: &str,
-    description: &'static str,
-    value_names: Vec<&'static str>,
-) -> DspParameterDesc {
-    let value_names_c: Vec<*mut c_char> = value_names
-        .into_iter()
-        .map(|value_name| {
-            CString::new(value_name)
-                .unwrap_or(CString::from(c"err!"))
-                .into_raw()
-        })
-        .collect();
-
-    DspParameterDesc {
-        type_: DspParameterType::Int,
-        name: str_to_c_char_array(name),
-        label: str_to_c_char_array(""),
-        description: description.to_string(),
-        union: FMOD_DSP_PARAMETER_DESC_UNION {
-            intdesc: FMOD_DSP_PARAMETER_DESC_INT {
-                min: 0,
-                max: (value_names_c.len() - 1) as c_int,
-                defaultval: 0,
-                goestoinf: 0,
-                valuenames: Box::into_raw(value_names_c.into_boxed_slice()) as *const *const c_char,
-            },
-        },
-    }
-}
-
-fn create_param_apply(name: &str, description: &'static str) -> DspParameterDesc {
-    let param_str_off = "Off";
-    let param_str_physics = "Physics-Based";
-    let param_str_curve = "Curve-Driven";
-
-    create_param_int(
-        name,
-        description,
-        vec![param_str_off, param_str_physics, param_str_curve],
-    )
-}
-
 pub fn create_dsp_description() -> DspDescription {
-    let param_source = create_param_data(
-        "SourcePos",
-        "Position of the source.",
-        FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-    );
-
-    let param_overall_gain = create_param_data(
-        "OverallGain",
-        "Overall gain.",
-        FMOD_DSP_PARAMETER_DATA_TYPE_3DATTRIBUTES,
-    );
-
-    let param_apply_distance_attenuation =
-        create_param_apply("ApplyDA", "Apply distance attenuation.");
-    let param_apply_air_absorption = create_param_apply("ApplyAA", "Apply air absorption.");
-    let param_apply_directivity = create_param_apply("ApplyDir", "Apply directivity.");
-    let param_apply_occlusion = create_param_apply("ApplyOc", "Apply occlusion.");
-    let param_apply_transmission = create_param_apply("ApplyTrans", "Apply transmission.");
-    let param_apply_reflections =
-        create_param_bool("ApplyReflections", "Apply reflections.", ["Off", "On"]);
-    let param_apply_pathing = create_param_bool("ApplyPathing", "Apply pathing.", ["Off", "On"]);
-
-    let param_hrtf_interpolation = create_param_int(
-        "HrtfInterp",
-        "HRTF Interpolation.",
-        vec!["Nearest", "Bilinear"],
-    );
-
     DspDescription {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
@@ -276,18 +144,7 @@ pub fn create_dsp_description() -> DspDescription {
         read: None,
         process: Some(process_callback),
         setposition: None,
-        paramdesc: vec![
-            param_source,
-            param_overall_gain,
-            param_apply_distance_attenuation,
-            param_apply_air_absorption,
-            param_apply_directivity,
-            param_apply_occlusion,
-            param_apply_transmission,
-            param_apply_reflections,
-            param_apply_pathing,
-            param_hrtf_interpolation,
-        ],
+        paramdesc: init_parameters(),
         setparameterfloat: None,
         setparameterint: Some(set_int_callback),
         setparameterbool: None, //todo
