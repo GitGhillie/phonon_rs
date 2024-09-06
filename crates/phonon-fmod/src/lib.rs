@@ -34,7 +34,7 @@ use libfmod::ffi::{
 };
 use libfmod::DspDescription;
 use phonon::audio_buffer::AudioBuffer;
-use phonon::direct_effect::{DirectEffect, TransmissionType};
+use phonon::direct_effect::{DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType};
 use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
@@ -119,13 +119,20 @@ impl EffectState {
         let direction = Vec3::new(position.x, position.y, position.z);
         let panning_params = PanningEffectParameters { direction };
 
+        let direct_params = DirectEffectParameters {
+            direct_sound_path: Default::default(),
+            flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::AirAbsorption,
+            transmission_type: TransmissionType::FrequencyDependent,
+        };
+
         // do the actual processing
         self.in_buffer_stereo.read_interleaved(in_buffer);
         self.in_buffer_stereo.downmix(&mut self.in_buffer_mono);
-        self.in_buffer_mono.scale(1.0);
+
+        self.direct_effect.apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
 
         self.panning_effect
-            .apply(panning_params, &self.in_buffer_mono, &mut self.out_buffer);
+            .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
 
         self.out_buffer.write_interleaved(out_buffer);
     }
