@@ -567,7 +567,7 @@ pub(crate) unsafe extern "C" fn set_int_callback(
             Params::ApplyDistanceAttenuation => {
                 (*effect).apply_distance_attenuation = value.into();
             }
-            _ => return FMOD_ERR_INVALID_PARAM,
+            _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM,
         }
     } else {
         return FMOD_OK;
@@ -591,7 +591,7 @@ pub(crate) unsafe extern "C" fn get_int_callback(
             Params::ApplyDistanceAttenuation => {
                 *value = apply_da;
             }
-            _ => return FMOD_ERR_INVALID_PARAM,
+            _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
         }
     } else {
         return FMOD_OK;
