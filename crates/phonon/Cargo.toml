@@ -12,12 +12,12 @@ serde-serialize = ["dep:serde", "parry3d/serde-serialize", "ndarray/serde"]
 
 [dependencies]
 derive_deref = "1"
-glam = "0.25"
+glam = "0.27"
 biquad = "0.4"
 rand = "0.8"
 ndarray = "0.15"
 parry3d = "0.13" # todo: Enable SIMD? Replace with glam-based parry?
-nalgebra = { version = "0.32", features = ["default", "convert-glam025"] } # todo: Replace with glam after replacing parry3d
+nalgebra = { version = "0.32", features = ["default", "convert-glam027"] } # todo: Replace with glam after replacing parry3d
 bitflags = "2"
 ultraviolet = "0.9"
 serde = {version = "1", optional = true}

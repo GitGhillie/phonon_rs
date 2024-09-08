@@ -45,6 +45,7 @@ pub enum OcclusionType {
 
 /// Describes the properties of a direct sound path.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(C)]
 pub struct DirectSoundPath {
     pub distance_attenuation: f32,
     pub air_absorption: [f32; NUM_BANDS],

@@ -10,14 +10,14 @@ use std::io;
 use std::io::BufRead;
 
 use libfmod::ffi::FMOD_INIT_NORMAL;
-use libfmod::{DspDescription, Error, System};
+use libfmod::{Error, System};
 use phonon_fmod::create_dsp_description;
 
 fn main() -> Result<(), Error> {
     let system = System::create()?;
     system.init(32, FMOD_INIT_NORMAL, None)?;
 
-    let desc = DspDescription::try_from(create_dsp_description())?;
+    let desc = create_dsp_description();
     system.register_dsp(desc)?;
 
     println!("Press Enter to exit.");

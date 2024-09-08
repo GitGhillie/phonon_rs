@@ -12,7 +12,3 @@ kira = { version = "0.9", features = ["serde"] }
 
 [dev-dependencies]
 eframe = "0.27"
-bevy = "0.13"
-parry3d = "0.13" # todo: get rid of this
-bevy_flycam = "0.13"
-bevy-kira-components = { git = "https://github.com/GitGhillie/bevy-kira-components.git", rev = "e179aba" }

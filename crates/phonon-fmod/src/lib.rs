@@ -1,62 +1,116 @@
+//
+// Copyright 2017-2023 Valve Corporation.
+// Copyright 2024 phonon_rs contributors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 //! FMOD Plugin for the phonon crate.
 
 pub(crate) mod callbacks;
+mod fmod_state;
+mod parameter_init;
+pub mod parameter_spec;
 
 use crate::callbacks::{
-    create_callback, get_float_callback, process_callback, release_callback, reset_callback,
-    set_float_callback, shouldiprocess_callback, sys_deregister_callback, sys_register_callback,
+    create_callback, get_data_callback, get_int_callback, process_callback, release_callback,
+    set_data_callback, set_int_callback, sys_deregister_callback, sys_register_callback,
 };
+use crate::parameter_init::init_parameters;
+use glam::Vec3;
 use libfmod::ffi::{
-    FMOD_DSP_DESCRIPTION, FMOD_DSP_PARAMETER_DESC, FMOD_DSP_PARAMETER_DESC_FLOAT,
-    FMOD_DSP_PARAMETER_DESC_UNION, FMOD_DSP_PARAMETER_FLOAT_MAPPING, FMOD_DSP_PARAMETER_TYPE_FLOAT,
-    FMOD_PLUGIN_SDK_VERSION,
+    FMOD_DSP_DESCRIPTION, FMOD_DSP_PAN_3D_ROLLOFF_TYPE, FMOD_DSP_PARAMETER_3DATTRIBUTES,
+    FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
 };
+use libfmod::DspDescription;
+use phonon::audio_buffer::AudioBuffer;
+use phonon::direct_effect::{
+    DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
+};
+use phonon::direct_simulator::DirectSoundPath;
+use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
 use std::ffi::CString;
-use std::os::raw::c_char;
+use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
 
-const FMOD_GAIN_PARAM_GAIN_MIN: f32 = -80.0;
-const FMOD_GAIN_PARAM_GAIN_MAX: f32 = 10.0;
-const FMOD_GAIN_PARAM_GAIN_DEFAULT: f32 = 0.0;
-const FMOD_GAIN_RAMP_COUNT: i32 = 256;
+#[derive(Copy, Clone)]
+enum ParameterApplyType {
+    Disable,
+    SimulationDefined,
+    UserDefined,
+}
 
-fn db_to_linear(db_value: f32) -> f32 {
-    if db_value <= FMOD_GAIN_PARAM_GAIN_MIN {
-        0.0
-    } else {
-        10.0_f32.powf(db_value / 20.0)
+impl From<c_int> for ParameterApplyType {
+    fn from(value: c_int) -> Self {
+        match value {
+            0 => ParameterApplyType::Disable,
+            1 => ParameterApplyType::SimulationDefined,
+            2 => ParameterApplyType::UserDefined,
+            _ => ParameterApplyType::Disable,
+        }
     }
 }
 
-fn linear_to_db(lin_value: f32) -> f32 {
-    if lin_value <= 0.0 {
-        FMOD_GAIN_PARAM_GAIN_MIN
-    } else {
-        20.0 * lin_value.log10()
+impl Into<c_int> for ParameterApplyType {
+    fn into(self) -> c_int {
+        match self {
+            ParameterApplyType::Disable => 0,
+            ParameterApplyType::SimulationDefined => 1,
+            ParameterApplyType::UserDefined => 2,
+        }
     }
 }
 
-pub struct FmodGainState {
-    target_gain: f32,
-    current_gain: f32,
-    ramp_samples_left: i32,
+pub(crate) struct EffectState {
+    source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
+    overall_gain: FMOD_DSP_PARAMETER_OVERALLGAIN,
+
+    apply_distance_attenuation: ParameterApplyType,
+    apply_air_absorption: ParameterApplyType,
+    apply_directivity: ParameterApplyType,
+    apply_occlusion: ParameterApplyType,
+    apply_transmission: ParameterApplyType,
+
+    distance_attenuation: f32,
+    distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_TYPE,
+    distance_attenuation_min_distance: f32,
+    distance_attenuation_max_distance: f32,
+
+    // todo: I added this one. Consider another one for user settings and then remove all the individual params below.
+    direct_sound_path: DirectSoundPath,
+
+    air_absorption: [f32; 3],
+    directivity: f32,
+    dipole_weight: f32, // See Directivity docs
+    dipole_power: f32,  // See Directivity docs
+    occlusion: f32,
+    transmission_type: TransmissionType,
+    transmission: [f32; 3],
+
+    attenuation_range: FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
+    attenuation_range_set: bool, // todo: Original is atomic
+
+    in_buffer_stereo: AudioBuffer<2>,
+    in_buffer_mono: AudioBuffer<1>,
+    out_buffer: AudioBuffer<2>,
+    direct_buffer: AudioBuffer<1>,
+    mono_buffer: AudioBuffer<1>,
+
+    panning_effect: PanningEffect,
+    direct_effect: DirectEffect,
 }
 
-impl FmodGainState {
-    fn reset(&mut self) {
-        self.current_gain = self.target_gain;
-        self.ramp_samples_left = 0;
-    }
-
-    fn set_gain(&mut self, gain: f32) {
-        self.target_gain = db_to_linear(gain);
-        self.ramp_samples_left = FMOD_GAIN_RAMP_COUNT;
-    }
-
-    fn get_gain(&self) -> f32 {
-        linear_to_db(self.target_gain)
-    }
-
+impl EffectState {
     fn process(
         &mut self,
         in_buffer: &[f32],
@@ -64,65 +118,50 @@ impl FmodGainState {
         length: usize,
         channels: usize,
     ) {
-        let mut gain = self.current_gain;
-        let mut len = length;
+        let _num_samples = length * channels;
 
-        let mut i = 0;
+        // update parameters
+        let position = self.source.relative.position;
+        let direction = Vec3::new(position.x, position.y, position.z);
+        let panning_params = PanningEffectParameters { direction };
 
-        if self.ramp_samples_left > 0 {
-            let target = self.target_gain;
-            let delta = (target - gain) / self.ramp_samples_left as f32;
+        let mut flags = DirectApplyFlags::AirAbsorption
+            | DirectApplyFlags::Occlusion
+            | DirectApplyFlags::Transmission;
 
-            while len > 0 {
-                if self.ramp_samples_left > 0 {
-                    self.ramp_samples_left -= 1;
-                    gain += delta;
-                    for _ in 0..channels {
-                        out_buffer[i] = in_buffer[i] * gain;
-                        i += 1;
-                    }
-                } else {
-                    gain = target;
-                    break;
-                }
-
-                len -= 1;
+        match self.apply_distance_attenuation {
+            ParameterApplyType::Disable => flags.set(DirectApplyFlags::DistanceAttenuation, false),
+            ParameterApplyType::SimulationDefined => {
+                flags.set(DirectApplyFlags::DistanceAttenuation, true)
+            }
+            ParameterApplyType::UserDefined => {
+                // todo
+                flags.set(DirectApplyFlags::DistanceAttenuation, true)
             }
         }
 
-        let mut samples = len * channels;
-        while samples > 0 {
-            samples -= 1;
-            out_buffer[i] = in_buffer[i] * gain;
-            i += 1;
-        }
+        let direct_params = DirectEffectParameters {
+            direct_sound_path: self.direct_sound_path,
+            flags,
+            transmission_type: TransmissionType::FrequencyDependent,
+        };
 
-        self.current_gain = gain;
+        // do the actual processing
+        self.in_buffer_stereo.read_interleaved(in_buffer);
+        self.in_buffer_stereo.downmix(&mut self.in_buffer_mono);
+
+        self.direct_effect
+            .apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
+
+        self.panning_effect
+            .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
+
+        self.out_buffer.write_interleaved(out_buffer);
     }
 }
 
-pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
-    //todo make function to fill in the parameter fields.
-
-    static DESCRIPTION: &str = "Hello it's a description!\0"; // todo check if this is the correct way
-    let param_gain = Box::new(FMOD_DSP_PARAMETER_DESC {
-        type_: FMOD_DSP_PARAMETER_TYPE_FLOAT,
-        name: str_to_c_char_array("Gain"),
-        label: str_to_c_char_array("dB"),
-        description: DESCRIPTION.as_ptr() as *const c_char, // todo check if this is the correct way
-        union: FMOD_DSP_PARAMETER_DESC_UNION {
-            floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
-                min: FMOD_GAIN_PARAM_GAIN_MIN,
-                max: FMOD_GAIN_PARAM_GAIN_MAX,
-                defaultval: FMOD_GAIN_PARAM_GAIN_DEFAULT,
-                mapping: FMOD_DSP_PARAMETER_FLOAT_MAPPING::default(),
-            },
-        },
-    });
-
-    let mut parameters: [*mut FMOD_DSP_PARAMETER_DESC; 1] = [Box::into_raw(param_gain)];
-
-    FMOD_DSP_DESCRIPTION {
+pub fn create_dsp_description() -> DspDescription {
+    DspDescription {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
         version: 1,
@@ -130,21 +169,20 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
         numoutputbuffers: 1,
         create: Some(create_callback),
         release: Some(release_callback),
-        reset: Some(reset_callback),
+        reset: None,
         read: None,
         process: Some(process_callback),
         setposition: None,
-        numparameters: 1,
-        paramdesc: parameters.as_mut_ptr(),
-        setparameterfloat: Some(set_float_callback),
-        setparameterint: None,
-        setparameterbool: None,
-        setparameterdata: None,
-        getparameterfloat: Some(get_float_callback),
-        getparameterint: None,
-        getparameterbool: None,
-        getparameterdata: None,
-        shouldiprocess: Some(shouldiprocess_callback),
+        paramdesc: init_parameters(),
+        setparameterfloat: None,
+        setparameterint: Some(set_int_callback),
+        setparameterbool: None, //todo
+        setparameterdata: Some(set_data_callback),
+        getparameterfloat: None,
+        getparameterint: Some(get_int_callback),
+        getparameterbool: None, // todo
+        getparameterdata: Some(get_data_callback),
+        shouldiprocess: None,
         userdata: null_mut(),
         sys_register: Some(sys_register_callback),
         sys_deregister: Some(sys_deregister_callback),
@@ -156,8 +194,9 @@ pub fn create_dsp_description() -> FMOD_DSP_DESCRIPTION {
 /// See https://fmod.com/docs/2.02/api/white-papers-dsp-plugin-api.html#building-a-plug-in
 #[no_mangle]
 extern "C" fn FMODGetDSPDescription() -> *mut FMOD_DSP_DESCRIPTION {
-    let desc = Box::new(create_dsp_description());
-    Box::into_raw(desc)
+    let description: FMOD_DSP_DESCRIPTION = create_dsp_description().into();
+    let boxed = Box::new(description);
+    Box::into_raw(boxed)
 }
 
 fn str_to_c_char_array<const LEN: usize>(input: &str) -> [c_char; LEN] {
