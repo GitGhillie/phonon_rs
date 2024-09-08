@@ -22,7 +22,6 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
     // any time in the other callbacks.
 
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
-    //dsp_state_wrapped.log_message("testMessage");
     let frame_size = dsp_state_wrapped.get_block_size().unwrap() as usize;
     let sampling_rate = dsp_state_wrapped.get_sample_rate().unwrap();
 
@@ -88,7 +87,7 @@ pub(crate) unsafe extern "C" fn release_callback(dsp_state: *mut FMOD_DSP_STATE)
 /// See FMOD_DSP_PROCESS_CALLBACK docs.
 pub(crate) unsafe extern "C" fn process_callback(
     dsp_state: *mut FMOD_DSP_STATE,
-    length: std::os::raw::c_uint,
+    length: c_uint,
     in_buffer_array: *const FMOD_DSP_BUFFER_ARRAY,
     out_buffer_array: *mut FMOD_DSP_BUFFER_ARRAY,
     inputs_idle: FMOD_BOOL,
@@ -113,6 +112,8 @@ pub(crate) unsafe extern "C" fn process_callback(
         let num_channels = *(*in_buffer_array).buffernumchannels as usize;
         let num_samples = num_channels * length as usize;
 
+        // todo I think these can technically change at any time and that is currently
+        // not taken into account
         let block_size = dsp_state.get_block_size().unwrap();
         let sample_rate = dsp_state.get_sample_rate().unwrap();
 
@@ -133,11 +134,11 @@ pub(crate) unsafe extern "C" fn process_callback(
 
 pub(crate) unsafe extern "C" fn set_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
-    index: c_int,
-    value: c_float,
+    _index: c_int,
+    _value: c_float,
 ) -> FMOD_RESULT {
     let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
-    let state = state.as_mut().unwrap();
+    let _state = state.as_mut().unwrap();
 
     FMOD_OK
 }
@@ -149,7 +150,7 @@ pub(crate) unsafe extern "C" fn get_float_callback(
     _value_str: *mut c_char,
 ) -> FMOD_RESULT {
     let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
-    let state = state.as_mut().unwrap();
+    let _state = state.as_mut().unwrap();
 
     FMOD_OK
 }
@@ -194,13 +195,13 @@ pub(crate) unsafe extern "C" fn set_data_callback(
 
 pub(crate) unsafe extern "C" fn get_data_callback(
     dsp_state: *mut FMOD_DSP_STATE,
-    index: c_int,
-    data: *mut *mut c_void,
-    length: *mut c_uint,
+    _index: c_int,
+    _data: *mut *mut c_void,
+    _length: *mut c_uint,
     _valuestr: *mut c_char,
 ) -> FMOD_RESULT {
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
-    let effect = dsp_state_wrapped.get_effect_state();
+    let _effect = dsp_state_wrapped.get_effect_state();
 
     FMOD_OK
 }

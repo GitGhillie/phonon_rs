@@ -12,7 +12,7 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 phonon = { path = "../phonon" }
 libfmod = "~2.222.4"
-glam = "0.25" # todo how do we ensure the same version is used accross the different crates in the workspace?
+glam = "0.27" # todo how do we ensure the same version is used accross the different crates in the workspace?
 strum = { version = "0.26", features = ["derive"] }
 
 [[example]]

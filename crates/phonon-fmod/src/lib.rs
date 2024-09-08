@@ -20,7 +20,7 @@
 pub(crate) mod callbacks;
 mod fmod_state;
 mod parameter_init;
-mod parameter_spec;
+pub mod parameter_spec;
 
 use crate::callbacks::{
     create_callback, get_data_callback, get_int_callback, process_callback, release_callback,
@@ -118,22 +118,26 @@ impl EffectState {
         length: usize,
         channels: usize,
     ) {
-        let num_samples = length * channels;
+        let _num_samples = length * channels;
 
         // update parameters
         let position = self.source.relative.position;
         let direction = Vec3::new(position.x, position.y, position.z);
         let panning_params = PanningEffectParameters { direction };
 
-        let mut flags = DirectApplyFlags::AirAbsorption;
+        let mut flags = DirectApplyFlags::AirAbsorption
+            | DirectApplyFlags::Occlusion
+            | DirectApplyFlags::Transmission;
+
         match self.apply_distance_attenuation {
             ParameterApplyType::Disable => flags.set(DirectApplyFlags::DistanceAttenuation, false),
             ParameterApplyType::SimulationDefined => {
                 flags.set(DirectApplyFlags::DistanceAttenuation, true)
             }
             ParameterApplyType::UserDefined => {
+                // todo
                 flags.set(DirectApplyFlags::DistanceAttenuation, true)
-            } // todo
+            }
         }
 
         let direct_params = DirectEffectParameters {
@@ -160,7 +164,7 @@ pub fn create_dsp_description() -> DspDescription {
     DspDescription {
         pluginsdkversion: FMOD_PLUGIN_SDK_VERSION,
         name: str_to_c_char_array("Phonon Spatializer"),
-        version: 2,
+        version: 1,
         numinputbuffers: 1,
         numoutputbuffers: 1,
         create: Some(create_callback),
