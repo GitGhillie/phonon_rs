@@ -143,6 +143,7 @@ pub(crate) unsafe extern "C" fn process_callback(
 
 // todo: Check if all set and get callbacks return FMOD_ERR_INVALID_PARAM when the index is unknown
 
+#[expect(dead_code, reason = "No float params have been added yet")]
 pub(crate) unsafe extern "C" fn set_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     _index: c_int,
@@ -154,6 +155,7 @@ pub(crate) unsafe extern "C" fn set_float_callback(
     FMOD_OK
 }
 
+#[expect(dead_code, reason = "No float params have been added yet")]
 pub(crate) unsafe extern "C" fn get_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     _index: c_int,

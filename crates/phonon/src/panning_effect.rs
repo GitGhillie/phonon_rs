@@ -96,7 +96,7 @@ impl PanningEffect {
         direction: Vec3,
         speaker_layout: &SpeakerLayout,
         index: usize,
-        panning_data: &PanningData,
+        _panning_data: &PanningData, // todo: Can't this be based on the SpeakerLayout?
     ) -> f32 {
         match speaker_layout.layout_type {
             SpeakerLayoutType::Mono => 1.0,

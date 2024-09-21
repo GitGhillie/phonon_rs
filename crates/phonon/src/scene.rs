@@ -29,7 +29,7 @@ use std::sync::{Arc, Mutex};
 /// Objects can be added and removed from the scene at any time.
 /// Objects can also be defined as instances of one another.
 /// This class also allows rays to be traced through the scene.
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Scene {
     /// Two lists of static meshes. The one at index 0 is used internally while
     /// the one at index 1 can be changed by the user through `add_static_mesh`
@@ -39,15 +39,15 @@ pub struct Scene {
     //todo: Only static_meshes[0] should be serialized/deserialized.
     pub(crate) static_meshes: [Vec<Arc<StaticMesh>>; 2],
 
-    #[cfg_attr(feature = "serde", serde(skip))]
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     pub(crate) instanced_meshes: [Vec<Arc<Mutex<InstancedMesh>>>; 2],
 
     /// Flag indicating whether the scene has changed in some way since the previous call to commit().
-    #[cfg_attr(feature = "serde", serde(skip))]
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     has_changed: bool,
 
     /// The change version of the scene.
-    #[cfg_attr(feature = "serde", serde(skip))]
+    #[cfg_attr(feature = "serde-serialize", serde(skip))]
     change_version: u32,
 }
 

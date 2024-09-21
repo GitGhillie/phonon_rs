@@ -46,6 +46,7 @@ impl FmodDspState {
         }
     }
 
+    #[expect(dead_code, reason = "Not sure yet how this works")]
     pub(crate) unsafe fn log_message(&self, message: &'static str) {
         let functions = (*self.0).functions;
         let log_fn = (*functions).log.unwrap();

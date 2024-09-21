@@ -27,6 +27,10 @@ impl Sphere {
         Self { center, radius }
     }
 
+    #[expect(
+        dead_code,
+        reason = "Features that use this have not been implemented yet"
+    )]
     pub(crate) fn contains(&self, point: Vec3) -> bool {
         (point - self.center).length_squared() <= self.radius * self.radius
     }

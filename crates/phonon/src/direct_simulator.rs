@@ -28,16 +28,6 @@ use crate::scene::Scene;
 use crate::sphere::Sphere;
 use glam::Vec3;
 
-// todo: Remove in favor of DirectApplyFlags?
-enum DirectSimulationType {
-    CalcDistanceAttenuation,
-    CalcAirAbsorption,
-    CalcDirectivity,
-    CalcOcclusion,
-    CalcTransmission,
-    CalcDelay,
-}
-
 pub enum OcclusionType {
     Raycast,
     Volumetric,

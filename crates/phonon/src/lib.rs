@@ -1,6 +1,6 @@
 //! A community effort to rewrite Valve's Steam Audio into a Rust library.
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-serialize")]
 #[macro_use]
 extern crate serde;
 

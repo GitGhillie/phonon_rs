@@ -41,6 +41,7 @@ fn create_param_data(
     }
 }
 
+#[expect(dead_code, reason = "No float params have been added yet")]
 fn create_param_float(name: &str, description: &'static str) -> DspParameterDesc {
     DspParameterDesc {
         type_: DspParameterType::Float,

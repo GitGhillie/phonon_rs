@@ -51,6 +51,7 @@ pub struct ReverbEffect {
     num_tail_frames_remaining: i32,
 }
 
+#[expect(dead_code, reason = "ReverbEffect is a WIP")]
 impl ReverbEffect {
     pub fn new(audio_settings: AudioSettings) -> Self {
         let delay_values = Self::calc_delays_for_reverb_time(2.0, audio_settings.sampling_rate);

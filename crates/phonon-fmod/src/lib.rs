@@ -71,6 +71,7 @@ impl Into<c_int> for ParameterApplyType {
     }
 }
 
+#[expect(dead_code, reason = "Not everything is implemented yet")]
 pub(crate) struct EffectState {
     source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
     overall_gain: FMOD_DSP_PARAMETER_OVERALLGAIN,

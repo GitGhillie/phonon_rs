@@ -20,7 +20,7 @@ use crate::bands::NUM_BANDS;
 /// An acoustic material. The acoustic surface properties of an object are represented using multi-band absorption
 /// and transmission loss coefficients, and a single random-incidence scattering coefficient.
 /// All values are in the 0.0 to 1.0 range.
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Material {
     pub absorption: [f32; NUM_BANDS],
