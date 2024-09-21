@@ -33,7 +33,7 @@ use libfmod::ffi::{
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
 };
 use libfmod::DspDescription;
-use phonon::audio_buffer::AudioBuffer;
+use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
@@ -71,6 +71,7 @@ impl Into<c_int> for ParameterApplyType {
     }
 }
 
+#[expect(dead_code, reason = "Not everything is implemented yet")]
 pub(crate) struct EffectState {
     source: FMOD_DSP_PARAMETER_3DATTRIBUTES,
     overall_gain: FMOD_DSP_PARAMETER_OVERALLGAIN,
@@ -100,6 +101,8 @@ pub(crate) struct EffectState {
     attenuation_range: FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
     attenuation_range_set: bool, // todo: Original is atomic
 
+    audio_settings: AudioSettings,
+
     in_buffer_stereo: AudioBuffer<2>,
     in_buffer_mono: AudioBuffer<1>,
     out_buffer: AudioBuffer<2>,
@@ -110,7 +113,49 @@ pub(crate) struct EffectState {
     direct_effect: DirectEffect,
 }
 
+fn apply_flag(
+    apply: ParameterApplyType,
+    target_flag: DirectApplyFlags,
+    current_flags: &mut DirectApplyFlags,
+) {
+    match apply {
+        ParameterApplyType::Disable => current_flags.set(target_flag, false),
+        ParameterApplyType::SimulationDefined => current_flags.set(target_flag, true),
+        ParameterApplyType::UserDefined => current_flags.set(target_flag, true), //todo
+    }
+}
+
 impl EffectState {
+    fn create_flags(&mut self) -> DirectApplyFlags {
+        let mut flags = DirectApplyFlags::empty();
+
+        apply_flag(
+            self.apply_distance_attenuation,
+            DirectApplyFlags::DistanceAttenuation,
+            &mut flags,
+        );
+
+        apply_flag(
+            self.apply_air_absorption,
+            DirectApplyFlags::AirAbsorption,
+            &mut flags,
+        );
+
+        apply_flag(
+            self.apply_directivity,
+            DirectApplyFlags::Directivity,
+            &mut flags,
+        );
+
+        apply_flag(
+            self.apply_occlusion,
+            DirectApplyFlags::Occlusion,
+            &mut flags,
+        );
+
+        flags
+    }
+
     fn process(
         &mut self,
         in_buffer: &[f32],
@@ -125,24 +170,9 @@ impl EffectState {
         let direction = Vec3::new(position.x, position.y, position.z);
         let panning_params = PanningEffectParameters { direction };
 
-        let mut flags = DirectApplyFlags::AirAbsorption
-            | DirectApplyFlags::Occlusion
-            | DirectApplyFlags::Transmission;
-
-        match self.apply_distance_attenuation {
-            ParameterApplyType::Disable => flags.set(DirectApplyFlags::DistanceAttenuation, false),
-            ParameterApplyType::SimulationDefined => {
-                flags.set(DirectApplyFlags::DistanceAttenuation, true)
-            }
-            ParameterApplyType::UserDefined => {
-                // todo
-                flags.set(DirectApplyFlags::DistanceAttenuation, true)
-            }
-        }
-
         let direct_params = DirectEffectParameters {
             direct_sound_path: self.direct_sound_path,
-            flags,
+            flags: self.create_flags(),
             transmission_type: TransmissionType::FrequencyDependent,
         };
 

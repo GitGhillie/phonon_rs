@@ -135,7 +135,7 @@ impl IIRFilterer {
     }
 
     /// Applies the filter to an entire buffer of input, using SIMD operations.
-    pub fn apply(&mut self, size: usize, input: &[f32], output: &mut [f32]) {
+    pub fn apply(&mut self, _size: usize, input: &[f32], output: &mut [f32]) {
         //todo: Temporary implementation, no SIMD optimizations yet
         //todo: Can panic
         for i in 0..input.len() {

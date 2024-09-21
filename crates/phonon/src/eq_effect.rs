@@ -108,9 +108,10 @@ impl EqEffect {
             self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
         }
 
-        return AudioEffectState::TailComplete;
+        AudioEffectState::TailComplete
     }
 
+    #[expect(dead_code, reason = "Used in HybridReverbEffect, not ported yet")]
     fn tail_apply(
         &mut self,
         input: &AudioBuffer<1>,
@@ -125,6 +126,7 @@ impl EqEffect {
         )
     }
 
+    #[expect(dead_code, reason = "Used in HybridReverbEffect, not ported yet")]
     fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete

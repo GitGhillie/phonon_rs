@@ -18,15 +18,13 @@ use std::ptr::{null_mut, slice_from_raw_parts_mut};
 use std::slice;
 
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
-    // todo: I guess the settings frame_size, sampling_rate and speaker_layout could change at
-    // any time in the other callbacks.
-
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
     let frame_size = dsp_state_wrapped.get_block_size().unwrap() as usize;
     let sampling_rate = dsp_state_wrapped.get_sample_rate().unwrap();
 
     let audio_settings = AudioSettings::new(sampling_rate, frame_size);
-    let speaker_layout = SpeakerLayoutType::Stereo; // todo, support mono as well
+    // todo, support mono as well (don't forget the process callback)
+    let speaker_layout = SpeakerLayoutType::Stereo;
 
     // why does distance attenuation range seem to exist twice?
     let fmod_gain_state = Box::new(EffectState {
@@ -57,6 +55,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
             max: 20.0,
         },
         attenuation_range_set: false,
+        audio_settings: audio_settings,
         in_buffer_stereo: AudioBuffer::new(frame_size),
         in_buffer_mono: AudioBuffer::new(frame_size),
         out_buffer: AudioBuffer::new(frame_size),
@@ -112,10 +111,22 @@ pub(crate) unsafe extern "C" fn process_callback(
         let num_channels = *(*in_buffer_array).buffernumchannels as usize;
         let num_samples = num_channels * length as usize;
 
-        // todo I think these can technically change at any time and that is currently
-        // not taken into account
-        let block_size = dsp_state.get_block_size().unwrap();
-        let sample_rate = dsp_state.get_sample_rate().unwrap();
+        let new_block_size = dsp_state.get_block_size().unwrap() as usize;
+        let new_sample_rate = dsp_state.get_sample_rate().unwrap();
+
+        let block_size = (*effect_state).audio_settings.frame_size;
+        let sample_rate = (*effect_state).audio_settings.sampling_rate;
+
+        if (new_block_size != block_size) || (new_sample_rate != sample_rate) {
+            let audio_settings = AudioSettings::new(new_sample_rate, new_block_size);
+            (*effect_state).in_buffer_stereo = AudioBuffer::new(new_block_size);
+            (*effect_state).in_buffer_mono = AudioBuffer::new(new_block_size);
+            (*effect_state).out_buffer = AudioBuffer::new(new_block_size);
+            (*effect_state).direct_buffer = AudioBuffer::new(new_block_size);
+            (*effect_state).mono_buffer = AudioBuffer::new(new_block_size);
+            (*effect_state).direct_effect = DirectEffect::new(audio_settings);
+            (*effect_state).audio_settings = audio_settings;
+        }
 
         let inbuf = slice::from_raw_parts(*(*in_buffer_array).buffers, num_samples);
         let outbuf = slice::from_raw_parts_mut(*(*out_buffer_array).buffers, num_samples);
@@ -132,6 +143,7 @@ pub(crate) unsafe extern "C" fn process_callback(
 
 // todo: Check if all set and get callbacks return FMOD_ERR_INVALID_PARAM when the index is unknown
 
+#[expect(dead_code, reason = "No float params have been added yet")]
 pub(crate) unsafe extern "C" fn set_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     _index: c_int,
@@ -143,6 +155,7 @@ pub(crate) unsafe extern "C" fn set_float_callback(
     FMOD_OK
 }
 
+#[expect(dead_code, reason = "No float params have been added yet")]
 pub(crate) unsafe extern "C" fn get_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
     _index: c_int,
@@ -218,6 +231,10 @@ pub(crate) unsafe extern "C" fn set_int_callback(
             Params::ApplyDistanceAttenuation => {
                 data.apply_distance_attenuation = value.into();
             }
+            Params::ApplyAirabsorption => data.apply_air_absorption = value.into(),
+            Params::ApplyDirectivity => data.apply_directivity = value.into(),
+            Params::ApplyOcclusion => data.apply_occlusion = value.into(),
+            Params::ApplyTransmission => data.apply_transmission = value.into(),
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM,
         }
     } else {
@@ -239,8 +256,20 @@ pub(crate) unsafe extern "C" fn get_int_callback(
     if let Some(param) = Params::from_repr(index) {
         match param {
             Params::ApplyDistanceAttenuation => {
-                let apply_da: c_int = (*effect).apply_distance_attenuation.into();
-                value.write(apply_da);
+                let apply: c_int = (*effect).apply_distance_attenuation.into();
+                value.write(apply);
+            }
+            Params::ApplyAirabsorption => {
+                let apply: c_int = (*effect).apply_air_absorption.into();
+                value.write(apply);
+            }
+            Params::ApplyDirectivity => {
+                let apply: c_int = (*effect).apply_directivity.into();
+                value.write(apply);
+            }
+            Params::ApplyOcclusion => {
+                let apply: c_int = (*effect).apply_occlusion.into();
+                value.write(apply);
             }
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
         }

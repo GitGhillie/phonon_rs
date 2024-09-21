@@ -27,20 +27,3 @@ pub(crate) struct Hit {
     pub(crate) normal: Vec3,
     pub(crate) material: Material,
 }
-
-impl Hit {
-    pub(crate) fn new_empty() -> Self {
-        Self {
-            distance: f32::MAX,
-            triangle_index: 0,
-            object_index: 0,
-            material_index: 0,
-            normal: Default::default(),
-            material: Material {
-                absorption: [0.0, 0.0, 0.0],
-                scattering: 0.0,
-                transmission: [0.0, 0.0, 0.0],
-            },
-        }
-    }
-}

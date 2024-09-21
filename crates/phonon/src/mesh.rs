@@ -23,7 +23,7 @@ use parry3d::shape::TriMesh;
 
 /// A triangle mesh. Vertices are stored in a contiguous array, and the triangles are stored in indexed form. Each
 /// triangle requires three indices to store (i.e., strip or fan representations are not supported).
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
 pub struct Mesh {
     pub(crate) mesh: TriMesh,
     normals: Array1<Vec3>,
