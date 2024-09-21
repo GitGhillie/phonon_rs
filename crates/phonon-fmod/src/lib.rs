@@ -33,7 +33,7 @@ use libfmod::ffi::{
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
 };
 use libfmod::DspDescription;
-use phonon::audio_buffer::AudioBuffer;
+use phonon::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::direct_effect::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
@@ -99,6 +99,8 @@ pub(crate) struct EffectState {
 
     attenuation_range: FMOD_DSP_PARAMETER_ATTENUATION_RANGE,
     attenuation_range_set: bool, // todo: Original is atomic
+
+    audio_settings: AudioSettings,
 
     in_buffer_stereo: AudioBuffer<2>,
     in_buffer_mono: AudioBuffer<1>,
