@@ -11,5 +11,7 @@ Once built the dylib can be loaded into FMOD Studio and the application:
 For FMOD Studio place it in one of the folders indicated here:
 https://www.fmod.com/docs/2.02/studio/plugin-reference.html#loading-plug-ins
 
+Place phonon_fmod.plugin.js in the same folder to give the plugin a user-friendly appearance inside FMOD.
+
 On the application side the plugin can either be dynamically or statically linked.
 By default, this should be done statically. (todo)

@@ -118,6 +118,7 @@ pub(crate) unsafe extern "C" fn process_callback(
         let sample_rate = (*effect_state).audio_settings.sampling_rate;
 
         if (new_block_size != block_size) || (new_sample_rate != sample_rate) {
+            // todo: I haven't found a way to test this path yet
             let audio_settings = AudioSettings::new(new_sample_rate, new_block_size);
             (*effect_state).in_buffer_stereo = AudioBuffer::new(new_block_size);
             (*effect_state).in_buffer_mono = AudioBuffer::new(new_block_size);
