@@ -229,6 +229,10 @@ pub(crate) unsafe extern "C" fn set_int_callback(
             Params::ApplyDistanceAttenuation => {
                 data.apply_distance_attenuation = value.into();
             }
+            Params::ApplyAirabsorption => data.apply_air_absorption = value.into(),
+            Params::ApplyDirectivity => data.apply_directivity = value.into(),
+            Params::ApplyOcclusion => data.apply_occlusion = value.into(),
+            Params::ApplyTransmission => data.apply_transmission = value.into(),
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM,
         }
     } else {
@@ -250,8 +254,20 @@ pub(crate) unsafe extern "C" fn get_int_callback(
     if let Some(param) = Params::from_repr(index) {
         match param {
             Params::ApplyDistanceAttenuation => {
-                let apply_da: c_int = (*effect).apply_distance_attenuation.into();
-                value.write(apply_da);
+                let apply: c_int = (*effect).apply_distance_attenuation.into();
+                value.write(apply);
+            }
+            Params::ApplyAirabsorption => {
+                let apply: c_int = (*effect).apply_air_absorption.into();
+                value.write(apply);
+            }
+            Params::ApplyDirectivity => {
+                let apply: c_int = (*effect).apply_directivity.into();
+                value.write(apply);
+            }
+            Params::ApplyOcclusion => {
+                let apply: c_int = (*effect).apply_occlusion.into();
+                value.write(apply);
             }
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
         }
