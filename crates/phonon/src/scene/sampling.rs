@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::sphere::Sphere;
+use crate::scene::sphere::Sphere;
 use glam::Vec3;
 use std::f32::consts::PI;
 

@@ -15,10 +15,10 @@
 // limitations under the License.
 //
 
-use crate::hit::Hit;
-use crate::instanced_mesh::InstancedMesh;
-use crate::ray::Ray;
-use crate::static_mesh::StaticMesh;
+use crate::scene::hit::Hit;
+use crate::scene::instanced_mesh::InstancedMesh;
+use crate::scene::ray::Ray;
+use crate::scene::static_mesh::StaticMesh;
 use glam::Vec3;
 use std::sync::{Arc, Mutex};
 
@@ -187,8 +187,8 @@ impl Scene {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::material::Material;
-    use crate::triangle::Triangle;
+    use crate::scene::material::Material;
+    use crate::scene::triangle::Triangle;
     use glam::{Affine3A, Mat4, Vec3};
 
     #[test]
@@ -235,7 +235,7 @@ mod tests {
 
         assert!(!scene.any_hit(&ray_hit, 0.0, 1.0));
 
-        let mut sub_scene = Arc::new(Mutex::new(Scene::new()));
+        let sub_scene = Arc::new(Mutex::new(Scene::new()));
         sub_scene.lock().unwrap().add_static_mesh(static_mesh);
 
         let transform = Affine3A::from_translation(Vec3::new(1.0, 0.0, 2.0));

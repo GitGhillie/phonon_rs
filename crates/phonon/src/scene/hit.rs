@@ -15,16 +15,15 @@
 // limitations under the License.
 //
 
-use crate::bands::NUM_BANDS;
+use crate::scene::material::Material;
+use glam::Vec3;
 
-pub struct Reverb {
-    pub reverb_times: [f32; NUM_BANDS],
-}
-
-impl Default for Reverb {
-    fn default() -> Self {
-        Reverb {
-            reverb_times: [0.1; NUM_BANDS],
-        }
-    }
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct Hit {
+    pub(crate) distance: f32,
+    pub(crate) triangle_index: usize,
+    pub(crate) object_index: usize,
+    pub(crate) material_index: usize,
+    pub(crate) normal: Vec3,
+    pub(crate) material: Material,
 }

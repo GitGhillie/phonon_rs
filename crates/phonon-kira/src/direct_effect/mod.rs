@@ -1,6 +1,6 @@
 use kira::command::{CommandReader, CommandWriter};
-use phonon::direct_effect::DirectEffectParameters;
-use phonon::panning_effect::PanningEffectParameters;
+use phonon::effects::direct_effect::DirectEffectParameters;
+use phonon::effects::panning_effect::PanningEffectParameters;
 
 pub mod builder;
 pub(crate) mod effect;

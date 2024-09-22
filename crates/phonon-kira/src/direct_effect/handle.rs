@@ -1,6 +1,6 @@
 use super::CommandWriters;
-use phonon::direct_effect::DirectEffectParameters;
-use phonon::panning_effect::PanningEffectParameters;
+use phonon::effects::direct_effect::DirectEffectParameters;
+use phonon::effects::panning_effect::PanningEffectParameters;
 
 /// Controls an EQ effect.
 pub struct DirectEffectHandle {

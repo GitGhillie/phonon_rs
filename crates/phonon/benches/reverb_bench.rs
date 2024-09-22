@@ -16,9 +16,9 @@
 //
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use phonon::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::reverb_effect::{ReverbEffect, ReverbEffectParams};
-use phonon::reverb_estimator::Reverb;
+use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::dsp::reverb_estimator::Reverb;
+use phonon::effects::reverb_effect::{ReverbEffect, ReverbEffectParams};
 
 fn bench_reverb(input: f32) -> f32 {
     const NUM_RUNS: i32 = 100_000; //todo this should be a Criterion argument probably

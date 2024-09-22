@@ -15,8 +15,8 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::{AudioBuffer, AudioEffectState};
-use crate::speaker_layout::{SpeakerLayout, SpeakerLayoutType};
+use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState};
+use crate::dsp::speaker_layout::{SpeakerLayout, SpeakerLayoutType};
 use glam::Vec3;
 use std::f32::consts::PI;
 

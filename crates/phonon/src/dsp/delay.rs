@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_delay_buffer() {
-        let mut delay = Delay {
+        let delay = Delay {
             ring_buffer: vec![1.0, 2.0, 3.0],
             cursor: 0,
             read_cursor: 0,

@@ -15,17 +15,17 @@
 // limitations under the License.
 //
 
-use crate::air_absorption::AirAbsorptionModel;
-use crate::bands::NUM_BANDS;
-use crate::coordinate_space::CoordinateSpace3f;
-use crate::direct_effect::DirectApplyFlags;
-use crate::directivity::Directivity;
-use crate::distance_attenuation::DistanceAttenuationModel;
-use crate::propagation_medium::SPEED_OF_SOUND;
-use crate::ray::Ray;
-use crate::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
+use crate::dsp::bands::NUM_BANDS;
+use crate::effects::direct_effect::DirectApplyFlags;
+use crate::models::air_absorption::AirAbsorptionModel;
+use crate::models::directivity::Directivity;
+use crate::models::distance_attenuation::DistanceAttenuationModel;
+use crate::models::propagation_medium::SPEED_OF_SOUND;
+use crate::scene::coordinate_space::CoordinateSpace3f;
+use crate::scene::ray::Ray;
+use crate::scene::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
+use crate::scene::sphere::Sphere;
 use crate::scene::Scene;
-use crate::sphere::Sphere;
 use glam::Vec3;
 
 pub enum OcclusionType {
