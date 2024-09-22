@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use phonon::iir::{IIRFilterer, IIR};
+use phonon::dsp::iir::{IIRFilterer, IIR};
 
 #[test]
 fn iir_filter() {

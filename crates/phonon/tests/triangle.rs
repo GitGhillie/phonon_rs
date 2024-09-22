@@ -16,8 +16,8 @@
 //
 
 use glam::Vec3;
-use phonon::mesh::Mesh;
-use phonon::triangle::Triangle;
+use phonon::scene::mesh::Mesh;
+use phonon::scene::triangle::Triangle;
 
 #[test]
 fn triangle_normals() {

@@ -4,10 +4,10 @@ use kira::clock::clock_info::ClockInfoProvider;
 use kira::effect::Effect;
 use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
-use phonon::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::direct_effect::{DirectEffect, DirectEffectParameters};
-use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
-use phonon::speaker_layout::SpeakerLayoutType;
+use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::dsp::speaker_layout::SpeakerLayoutType;
+use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
+use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
 
 pub(crate) struct DirectEffectWrapped {
     command_readers: CommandReaders,

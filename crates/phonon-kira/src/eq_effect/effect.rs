@@ -4,9 +4,9 @@ use kira::clock::clock_info::ClockInfoProvider;
 use kira::effect::Effect;
 use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
-use phonon::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::eq_effect::{EqEffect, EqEffectParameters};
-use phonon::gain_effect::{GainEffect, GainEffectParameters};
+use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::effects::eq::{EqEffect, EqEffectParameters};
+use phonon::effects::gain::{GainEffect, GainEffectParameters};
 
 pub(crate) struct EqEffectWrapped {
     command_readers: CommandReaders,

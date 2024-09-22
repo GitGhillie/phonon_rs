@@ -33,12 +33,12 @@ use libfmod::ffi::{
     FMOD_DSP_PARAMETER_ATTENUATION_RANGE, FMOD_DSP_PARAMETER_OVERALLGAIN, FMOD_PLUGIN_SDK_VERSION,
 };
 use libfmod::DspDescription;
-use phonon::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::direct_effect::{
+use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
-use phonon::direct_simulator::DirectSoundPath;
-use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
+use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
+use phonon::simulators::direct::DirectSoundPath;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;

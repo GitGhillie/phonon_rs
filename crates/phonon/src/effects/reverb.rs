@@ -15,12 +15,12 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
-use crate::bands::NUM_BANDS;
-use crate::delay::Delay;
-use crate::reverb_estimator::Reverb;
+use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::bands::NUM_BANDS;
+use crate::dsp::delay::Delay;
+use crate::dsp::reverb_estimator::Reverb;
 
-use crate::iir::{IIRFilterer, IIR};
+use crate::dsp::iir::{IIRFilterer, IIR};
 use derive_deref::{Deref, DerefMut};
 use ndarray::{s, Array, Array2, ArrayView, Axis};
 use rand::Rng;

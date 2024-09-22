@@ -15,26 +15,25 @@
 // limitations under the License.
 //
 
-use crate::bands::NUM_BANDS;
+use crate::dsp::bands::NUM_BANDS;
 
-pub trait AirAbsorptionModel {
-    fn evaluate(&self, distance: f32, band: usize) -> f32;
+/// An acoustic material. The acoustic surface properties of an object are represented using multi-band absorption
+/// and transmission loss coefficients, and a single random-incidence scattering coefficient.
+/// All values are in the 0.0 to 1.0 range.
+#[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Material {
+    pub absorption: [f32; NUM_BANDS],
+    pub scattering: f32,
+    pub transmission: [f32; NUM_BANDS],
 }
 
-pub struct DefaultAirAbsorptionModel {
-    coefficients: [f32; NUM_BANDS],
-}
-
-impl Default for DefaultAirAbsorptionModel {
+impl Default for Material {
     fn default() -> Self {
-        Self {
-            coefficients: [0.0002, 0.0017, 0.182],
+        Material {
+            absorption: [0.5, 0.3, 0.1],
+            scattering: 0.05,
+            transmission: [0.1, 0.05, 0.01],
         }
-    }
-}
-
-impl AirAbsorptionModel for DefaultAirAbsorptionModel {
-    fn evaluate(&self, distance: f32, band: usize) -> f32 {
-        (-self.coefficients[band] * distance).exp()
     }
 }

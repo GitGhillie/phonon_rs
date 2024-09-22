@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 
 const NUM_INTERPOLATION_FRAMES: usize = 4;
 

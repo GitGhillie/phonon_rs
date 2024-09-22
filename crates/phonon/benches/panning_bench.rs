@@ -20,9 +20,9 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use glam::Vec3;
-use phonon::audio_buffer::AudioBuffer;
-use phonon::panning_effect::{PanningEffect, PanningEffectParameters};
-use phonon::speaker_layout::SpeakerLayoutType;
+use phonon::dsp::audio_buffer::AudioBuffer;
+use phonon::dsp::speaker_layout::SpeakerLayoutType;
+use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
 use rand::Rng;
 
 pub fn criterion_benchmark(c: &mut Criterion) {

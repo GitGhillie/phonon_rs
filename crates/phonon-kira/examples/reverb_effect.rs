@@ -4,8 +4,8 @@ use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
 use kira::sound::static_sound::StaticSoundData;
 use kira::track::TrackBuilder;
-use phonon::reverb_effect::ReverbEffectParams;
-use phonon::reverb_estimator::Reverb;
+use phonon::dsp::reverb_estimator::Reverb;
+use phonon::effects::reverb::ReverbEffectParams;
 
 use phonon_kira::reverb_effect::builder::ReverbEffectBuilder;
 

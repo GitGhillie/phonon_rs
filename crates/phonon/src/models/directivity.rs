@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::coordinate_space::CoordinateSpace3f;
+use crate::scene::coordinate_space::CoordinateSpace3f;
 use glam::Vec3;
 
 // todo: Describe what these do and what the limits are

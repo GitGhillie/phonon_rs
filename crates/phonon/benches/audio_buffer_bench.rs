@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use phonon::audio_buffer::AudioBuffer;
+use phonon::dsp::audio_buffer::AudioBuffer;
 
 fn mix_buffers(in1: AudioBuffer<1>) -> AudioBuffer<1> {
     let mut in2: AudioBuffer<1> = AudioBuffer::new(200);

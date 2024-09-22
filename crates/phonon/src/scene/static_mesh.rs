@@ -15,11 +15,11 @@
 // limitations under the License.
 //
 
-use crate::hit::Hit;
-use crate::material::Material;
-use crate::mesh::Mesh;
-use crate::ray::Ray;
-use crate::triangle::Triangle;
+use crate::scene::hit::Hit;
+use crate::scene::material::Material;
+use crate::scene::mesh::Mesh;
+use crate::scene::ray::Ray;
+use crate::scene::triangle::Triangle;
 use glam::Vec3;
 use ndarray::Array1;
 use parry3d::query::RayCast;

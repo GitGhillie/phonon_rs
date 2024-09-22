@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::triangle::Triangle;
+use crate::scene::triangle::Triangle;
 use glam::Vec3;
 use ndarray::Array1;
 use parry3d::math::Point;

@@ -4,9 +4,9 @@ use kira::clock::clock_info::ClockInfoProvider;
 use kira::effect::Effect;
 use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
-use phonon::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::reverb_effect::{ReverbEffect, ReverbEffectParams};
-use phonon::reverb_estimator::Reverb;
+use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::dsp::reverb_estimator::Reverb;
+use phonon::effects::reverb::{ReverbEffect, ReverbEffectParams};
 
 pub(crate) struct ReverbEffectWrapped {
     command_readers: CommandReaders,

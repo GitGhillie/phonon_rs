@@ -15,11 +15,11 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use ndarray::{Array, Array1};
 
-use crate::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
-use crate::iir::{IIRFilterer, IIR};
+use crate::dsp::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
+use crate::dsp::iir::{IIRFilterer, IIR};
 
 pub struct EqEffectParameters {
     pub gains: [f32; NUM_BANDS],

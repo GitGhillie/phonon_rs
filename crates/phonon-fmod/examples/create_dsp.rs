@@ -9,7 +9,7 @@ use libfmod::ffi::{
     FMOD_VECTOR,
 };
 use libfmod::{Error, System};
-use phonon::direct_simulator::DirectSoundPath;
+use phonon::simulators::direct::DirectSoundPath;
 use phonon_fmod::create_dsp_description;
 use std::io;
 use std::io::BufRead;

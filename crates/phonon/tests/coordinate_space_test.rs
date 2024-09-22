@@ -16,7 +16,7 @@
 //
 
 use glam::Vec3;
-use phonon::coordinate_space::CoordinateSpace3f;
+use phonon::scene::coordinate_space::CoordinateSpace3f;
 
 #[test]
 fn coordinate_system_right_handed() {

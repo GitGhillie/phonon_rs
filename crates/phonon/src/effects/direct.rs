@@ -15,14 +15,14 @@
 // limitations under the License.
 //
 
-use crate::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
-use crate::bands::NUM_BANDS;
+use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::bands::NUM_BANDS;
 use bitflags::bitflags;
 use std::cmp::PartialEq;
 
-use crate::direct_simulator::DirectSoundPath;
-use crate::eq_effect::{EqEffect, EqEffectParameters};
-use crate::gain_effect::{GainEffect, GainEffectParameters};
+use crate::effects::eq::{EqEffect, EqEffectParameters};
+use crate::effects::gain::{GainEffect, GainEffectParameters};
+use crate::simulators::direct::DirectSoundPath;
 
 bitflags! {
     //todo check if these are all necessary
