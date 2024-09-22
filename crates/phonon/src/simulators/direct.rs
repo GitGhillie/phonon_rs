@@ -16,7 +16,7 @@
 //
 
 use crate::dsp::bands::NUM_BANDS;
-use crate::effects::direct_effect::DirectApplyFlags;
+use crate::effects::direct::DirectApplyFlags;
 use crate::models::air_absorption::AirAbsorptionModel;
 use crate::models::directivity::Directivity;
 use crate::models::distance_attenuation::DistanceAttenuationModel;

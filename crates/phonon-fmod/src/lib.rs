@@ -34,11 +34,11 @@ use libfmod::ffi::{
 };
 use libfmod::DspDescription;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::effects::direct_effect::{
+use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
-use phonon::effects::panning_effect::{PanningEffect, PanningEffectParameters};
-use phonon::simulators::direct_simulator::DirectSoundPath;
+use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
+use phonon::simulators::direct::DirectSoundPath;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;

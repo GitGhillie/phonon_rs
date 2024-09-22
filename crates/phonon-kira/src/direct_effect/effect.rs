@@ -6,8 +6,8 @@ use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::dsp::speaker_layout::SpeakerLayoutType;
-use phonon::effects::direct_effect::{DirectEffect, DirectEffectParameters};
-use phonon::effects::panning_effect::{PanningEffect, PanningEffectParameters};
+use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
+use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
 
 pub(crate) struct DirectEffectWrapped {
     command_readers: CommandReaders,

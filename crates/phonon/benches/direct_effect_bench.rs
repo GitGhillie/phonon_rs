@@ -17,10 +17,10 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::effects::direct_effect::{
+use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
-use phonon::simulators::direct_simulator::DirectSoundPath;
+use phonon::simulators::direct::DirectSoundPath;
 use rand::Rng;
 
 pub fn criterion_benchmark(c: &mut Criterion) {

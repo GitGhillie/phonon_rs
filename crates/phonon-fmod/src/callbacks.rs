@@ -10,9 +10,9 @@ use libfmod::ffi::{
 };
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::dsp::speaker_layout::SpeakerLayoutType;
-use phonon::effects::direct_effect::{DirectEffect, TransmissionType};
-use phonon::effects::panning_effect::PanningEffect;
-use phonon::simulators::direct_simulator::DirectSoundPath;
+use phonon::effects::direct::{DirectEffect, TransmissionType};
+use phonon::effects::panning::PanningEffect;
+use phonon::simulators::direct::DirectSoundPath;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
 use std::ptr::{null_mut, slice_from_raw_parts_mut};
 use std::slice;

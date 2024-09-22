@@ -5,8 +5,8 @@ use kira::effect::Effect;
 use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::effects::eq_effect::{EqEffect, EqEffectParameters};
-use phonon::effects::gain_effect::{GainEffect, GainEffectParameters};
+use phonon::effects::eq::{EqEffect, EqEffectParameters};
+use phonon::effects::gain::{GainEffect, GainEffectParameters};
 
 pub(crate) struct EqEffectWrapped {
     command_readers: CommandReaders,

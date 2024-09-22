@@ -2,8 +2,8 @@ use super::command_writers_and_readers;
 use super::effect::DirectEffectWrapped;
 use super::handle::DirectEffectHandle;
 use kira::effect::{Effect, EffectBuilder};
-use phonon::effects::direct_effect::DirectEffectParameters;
-use phonon::effects::panning_effect::PanningEffectParameters;
+use phonon::effects::direct::DirectEffectParameters;
+use phonon::effects::panning::PanningEffectParameters;
 
 #[derive(Debug, Copy, Clone)]
 pub struct DirectEffectBuilder {

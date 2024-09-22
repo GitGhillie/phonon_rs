@@ -4,8 +4,8 @@ use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
 use kira::sound::static_sound::StaticSoundData;
 use kira::track::TrackBuilder;
-use phonon::effects::direct_effect::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
-use phonon::simulators::direct_simulator::DirectSoundPath;
+use phonon::effects::direct::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
+use phonon::simulators::direct::DirectSoundPath;
 
 use phonon_kira::direct_effect::builder::DirectEffectBuilder;
 

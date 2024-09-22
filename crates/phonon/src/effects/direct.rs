@@ -20,9 +20,9 @@ use crate::dsp::bands::NUM_BANDS;
 use bitflags::bitflags;
 use std::cmp::PartialEq;
 
-use crate::effects::eq_effect::{EqEffect, EqEffectParameters};
-use crate::effects::gain_effect::{GainEffect, GainEffectParameters};
-use crate::simulators::direct_simulator::DirectSoundPath;
+use crate::effects::eq::{EqEffect, EqEffectParameters};
+use crate::effects::gain::{GainEffect, GainEffectParameters};
+use crate::simulators::direct::DirectSoundPath;
 
 bitflags! {
     //todo check if these are all necessary

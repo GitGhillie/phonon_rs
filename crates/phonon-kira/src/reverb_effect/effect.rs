@@ -6,7 +6,7 @@ use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::dsp::reverb_estimator::Reverb;
-use phonon::effects::reverb_effect::{ReverbEffect, ReverbEffectParams};
+use phonon::effects::reverb::{ReverbEffect, ReverbEffectParams};
 
 pub(crate) struct ReverbEffectWrapped {
     command_readers: CommandReaders,
