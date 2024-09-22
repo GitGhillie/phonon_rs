@@ -11,7 +11,6 @@ Please contact me on Discord (user: ixml) to check what is being worked on and w
 
 At this stage the focus is on the following:
 - Try to get the tests and benchmarks working
-- Roughly follow the file structure of Steam Audio
 - Write Rusty code
 - Don't worry too much about performance yet (leave a 'todo' if necessary)
 - Look for opportunities to make use of the Rust ecosystem
