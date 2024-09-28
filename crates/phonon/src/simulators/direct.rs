@@ -28,6 +28,7 @@ use crate::scene::sphere::Sphere;
 use crate::scene::Scene;
 use glam::Vec3;
 
+#[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
 #[derive(Debug, Clone, Copy)]
 pub enum OcclusionType {
     Raycast,
