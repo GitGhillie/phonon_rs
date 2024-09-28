@@ -63,7 +63,7 @@ impl EqEffect {
             self.previous_gains[band] = 1.0;
         }
 
-        let gains = self.previous_gains.clone();
+        let gains = self.previous_gains;
         self.set_filter_gains(0, gains.as_slice());
 
         self.current = 0;

@@ -66,6 +66,7 @@ pub(crate) struct SpeakerLayout {
 }
 
 impl SpeakerLayout {
+    #[expect(dead_code, reason = "Custom layouts are not supported yet")]
     pub fn new_custom(num_speakers: i16, speakers: &[Vec3]) -> Self {
         Self {
             layout_type: SpeakerLayoutType::Custom,

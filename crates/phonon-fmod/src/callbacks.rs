@@ -55,7 +55,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
             max: 20.0,
         },
         attenuation_range_set: false,
-        audio_settings: audio_settings,
+        audio_settings,
         in_buffer_stereo: AudioBuffer::new(frame_size),
         in_buffer_mono: AudioBuffer::new(frame_size),
         out_buffer: AudioBuffer::new(frame_size),

@@ -64,8 +64,8 @@ impl DirectEffect {
     pub fn new(audio_settings: AudioSettings) -> Self {
         Self {
             frame_size: audio_settings.frame_size,
-            eq_effect: EqEffect::new(audio_settings.clone()),
-            gain_effect: GainEffect::new(audio_settings.clone()),
+            eq_effect: EqEffect::new(audio_settings),
+            gain_effect: GainEffect::new(audio_settings),
         }
     }
 
@@ -108,7 +108,7 @@ impl DirectEffect {
             };
 
             self.eq_effect.apply(eq_parameters, input, &mut buf);
-            self.gain_effect.apply(gain_parameters, &mut buf, output);
+            self.gain_effect.apply(gain_parameters, &buf, output);
         } else {
             self.gain_effect.apply(gain_parameters, input, output);
         }

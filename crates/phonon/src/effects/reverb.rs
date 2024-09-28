@@ -263,7 +263,7 @@ impl ReverbEffect {
         }
 
         let mut sum = self.x_old.sum_axis(Axis(0)).to_owned();
-        sum = sum / NUM_DELAYS as f32;
+        sum /= NUM_DELAYS as f32;
         self.x_old.row_mut(0).assign(&sum);
 
         let mut x_m: f32x4;
@@ -326,7 +326,7 @@ impl ReverbEffect {
         }
 
         let mut sum = self.x_old.sum_axis(Axis(0)).to_owned();
-        sum = sum / NUM_DELAYS as f32;
+        sum /= NUM_DELAYS as f32;
         self.x_old.row_mut(0).assign(&sum);
 
         let mut x_m: f32x4;

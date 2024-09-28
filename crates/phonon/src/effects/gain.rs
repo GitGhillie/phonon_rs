@@ -86,7 +86,7 @@ impl GainEffect {
             gain: self.previous_gain,
         };
 
-        return self.apply(previous_params, input, output);
+        self.apply(previous_params, input, output)
     }
 
     pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {

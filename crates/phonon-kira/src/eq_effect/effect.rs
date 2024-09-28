@@ -24,8 +24,8 @@ pub(crate) struct EqEffectWrapped {
 impl EqEffectWrapped {
     pub(crate) fn new(builder: EqEffectBuilder, command_readers: CommandReaders) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
-        let eq_effect = EqEffect::new(audio_settings.clone());
-        let gain_effect = GainEffect::new(audio_settings.clone());
+        let eq_effect = EqEffect::new(audio_settings);
+        let gain_effect = GainEffect::new(audio_settings);
 
         Self {
             command_readers,

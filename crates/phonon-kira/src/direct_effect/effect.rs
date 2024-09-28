@@ -26,7 +26,7 @@ pub(crate) struct DirectEffectWrapped {
 impl DirectEffectWrapped {
     pub(crate) fn new(builder: DirectEffectBuilder, command_readers: CommandReaders) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
-        let direct_effect = DirectEffect::new(audio_settings.clone());
+        let direct_effect = DirectEffect::new(audio_settings);
         let panning_effect = PanningEffect::new(SpeakerLayoutType::Stereo);
 
         Self {
