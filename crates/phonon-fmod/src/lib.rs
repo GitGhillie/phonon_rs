@@ -23,8 +23,9 @@ mod parameter_init;
 pub mod parameter_spec;
 
 use crate::callbacks::{
-    create_callback, get_data_callback, get_int_callback, process_callback, release_callback,
-    set_data_callback, set_int_callback, sys_deregister_callback, sys_register_callback,
+    create_callback, get_data_callback, get_float_callback, get_int_callback, process_callback,
+    release_callback, set_data_callback, set_float_callback, set_int_callback,
+    sys_deregister_callback, sys_register_callback,
 };
 use crate::parameter_init::init_parameters;
 use glam::Vec3;
@@ -204,11 +205,11 @@ pub fn create_dsp_description() -> DspDescription {
         process: Some(process_callback),
         setposition: None,
         paramdesc: init_parameters(),
-        setparameterfloat: None,
+        setparameterfloat: Some(set_float_callback),
         setparameterint: Some(set_int_callback),
         setparameterbool: None, //todo
         setparameterdata: Some(set_data_callback),
-        getparameterfloat: None,
+        getparameterfloat: Some(get_float_callback),
         getparameterint: Some(get_int_callback),
         getparameterbool: None, // todo
         getparameterdata: Some(get_data_callback),
