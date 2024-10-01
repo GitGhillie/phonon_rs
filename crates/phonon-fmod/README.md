@@ -16,4 +16,4 @@ Place phonon_fmod.plugin.js in the same folder to give the plugin a user-friendl
 
 On the application side the plugin can either be dynamically or statically linked.
 
-todo pictures
+![FMOD Phonon Spatializer](/media/phonon-spatializer.png)
