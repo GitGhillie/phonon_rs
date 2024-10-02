@@ -10,7 +10,7 @@ documentation = "https://docs.rs/phonon-kira"
 readme = "README.md"
 
 [dependencies]
-phonon = { path = "../phonon" }
+phonon = { path = "../phonon", version = "0.2" }
 kira = { version = "0.9", features = ["serde"] }
 
 [dev-dependencies]
