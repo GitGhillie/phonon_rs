@@ -21,6 +21,7 @@ use glam::Vec3;
 use std::f32::consts::PI;
 
 /// Intermediate data for 2D pairwise constant-power panning.
+#[expect(dead_code)]
 #[derive(Default)]
 struct PanningData {
     /// The two speaker indices we want to pan between.
@@ -52,6 +53,7 @@ impl PanningEffect {
         }
     }
 
+    #[expect(dead_code)]
     pub(crate) fn reset(&mut self) {
         self.prev_direction = Vec3::ZERO;
     }

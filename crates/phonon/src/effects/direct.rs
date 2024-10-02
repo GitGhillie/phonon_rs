@@ -69,6 +69,7 @@ impl DirectEffect {
         }
     }
 
+    #[expect(dead_code)]
     pub(crate) fn reset(&mut self) {
         self.eq_effect.reset();
         self.gain_effect.reset();
@@ -116,6 +117,7 @@ impl DirectEffect {
         AudioEffectState::TailComplete
     }
 
+    #[expect(dead_code)]
     pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete

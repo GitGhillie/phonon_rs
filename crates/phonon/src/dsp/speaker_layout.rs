@@ -58,6 +58,7 @@ pub enum SpeakerLayoutType {
     Custom,
 }
 
+#[expect(dead_code)]
 #[derive(Debug)]
 pub(crate) struct SpeakerLayout {
     pub(crate) layout_type: SpeakerLayoutType,

@@ -42,4 +42,4 @@ Licensed under Apache-2.0
 [Steam Audio]: https://github.com/ValveSoftware/steam-audio
 [FMOD integration]: https://crates.io/crates/phonon-fmod
 [Kira integration]: https://crates.io/crates/phonon-kira
-[Bevy integration]: https://crates.io/crates/bevy-phonon
+[Bevy integration]: https://github.com/GitGhillie/bevy_phonon
