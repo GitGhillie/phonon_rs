@@ -28,6 +28,8 @@ use crate::scene::sphere::Sphere;
 use crate::scene::Scene;
 use glam::Vec3;
 
+#[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
+#[derive(Debug, Clone, Copy)]
 pub enum OcclusionType {
     Raycast,
     Volumetric,
@@ -52,7 +54,7 @@ impl Default for DirectSoundPath {
             air_absorption: [1.0, 1.0, 1.0],
             delay: 0.0,
             occlusion: 1.0,
-            transmission: [1.0, 1.0, 1.0],
+            transmission: [0.1, 0.1, 0.1],
             directivity: 0.0,
         }
     }
@@ -121,7 +123,7 @@ impl DirectSimulator {
         }
 
         if flags.contains(DirectApplyFlags::Directivity) {
-            direct_sound_path.directivity = directivity.evaluate_at(listener.origin, &source);
+            direct_sound_path.directivity = directivity.evaluate_at(listener.origin, source);
         } else {
             direct_sound_path.directivity = 1.0;
         }
@@ -226,7 +228,7 @@ impl DirectSimulator {
         num_transmission_rays: usize,
     ) {
         // todo: Warn instead?
-        if num_transmission_rays <= 0 {
+        if num_transmission_rays == 0 {
             return;
         }
 

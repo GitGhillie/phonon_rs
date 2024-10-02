@@ -1,3 +1,6 @@
+//! This example shows how different parameters for the `DirectEffect` affect the sound.
+//! Normally the `DirectSoundPath` would be driven by the outputs of the `DirectSimulator`.
+
 use eframe::egui;
 
 use kira::manager::backend::cpal::CpalBackend;
@@ -12,8 +15,10 @@ use phonon_kira::direct_effect::builder::DirectEffectBuilder;
 fn main() {
     let mut direct_params = DirectEffectParameters {
         direct_sound_path: DirectSoundPath::default(),
-        flags: DirectApplyFlags::AirAbsorption | DirectApplyFlags::Occlusion,
-        transmission_type: TransmissionType::FrequencyIndependent,
+        flags: DirectApplyFlags::AirAbsorption
+            | DirectApplyFlags::Occlusion
+            | DirectApplyFlags::Transmission,
+        transmission_type: TransmissionType::FrequencyDependent,
     };
 
     let mut distance_attenuation = false;
@@ -70,6 +75,21 @@ fn main() {
                 ui.add(
                     egui::Slider::new(&mut sound_path.occlusion, 0.0..=1.0)
                         .text("Occlusion factor"),
+                );
+
+                ui.add(
+                    egui::Slider::new(&mut sound_path.transmission[0], 0.0..=1.0)
+                        .text("Transmission Low"),
+                );
+
+                ui.add(
+                    egui::Slider::new(&mut sound_path.transmission[1], 0.0..=1.0)
+                        .text("Transmission Mid"),
+                );
+
+                ui.add(
+                    egui::Slider::new(&mut sound_path.transmission[2], 0.0..=1.0)
+                        .text("Transmission High"),
                 );
             });
 

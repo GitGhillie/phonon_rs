@@ -1,14 +1,18 @@
 [package]
 name = "phonon"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+categories = ["multimedia::audio"]
 license = "Apache-2.0"
 description = "Unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
+documentation = "https://docs.rs/phonon"
+readme = "README.md"
 
 [features]
 default = []
 serde-serialize = ["dep:serde", "parry3d/serde-serialize", "ndarray/serde"]
+reflect = ["dep:bevy_reflect"]
 
 [dependencies]
 derive_deref = "1"
@@ -20,7 +24,8 @@ parry3d = "0.13" # todo: Enable SIMD? Replace with glam-based parry?
 nalgebra = { version = "0.32", features = ["default", "convert-glam027"] } # todo: Replace with glam after replacing parry3d
 bitflags = "2"
 ultraviolet = "0.9"
-serde = {version = "1", optional = true}
+serde = { version = "1", optional = true }
+bevy_reflect = { version = "0.14", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

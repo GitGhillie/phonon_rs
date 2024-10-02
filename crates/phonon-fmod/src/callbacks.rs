@@ -55,7 +55,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
             max: 20.0,
         },
         attenuation_range_set: false,
-        audio_settings: audio_settings,
+        audio_settings,
         in_buffer_stereo: AudioBuffer::new(frame_size),
         in_buffer_mono: AudioBuffer::new(frame_size),
         out_buffer: AudioBuffer::new(frame_size),
@@ -144,27 +144,50 @@ pub(crate) unsafe extern "C" fn process_callback(
 
 // todo: Check if all set and get callbacks return FMOD_ERR_INVALID_PARAM when the index is unknown
 
-#[expect(dead_code, reason = "No float params have been added yet")]
 pub(crate) unsafe extern "C" fn set_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
-    _index: c_int,
-    _value: c_float,
+    index: c_int,
+    value: c_float,
 ) -> FMOD_RESULT {
-    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
-    let _state = state.as_mut().unwrap();
+    let data = &mut *((*dsp_state).plugindata as *mut EffectState);
+
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::DirectivityDipolePower => data.dipole_power = value.into(),
+            Params::DirectivityDipoleWeight => data.dipole_weight = value.into(),
+            _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM,
+        }
+    } else {
+        return FMOD_OK;
+    }
 
     FMOD_OK
 }
 
-#[expect(dead_code, reason = "No float params have been added yet")]
 pub(crate) unsafe extern "C" fn get_float_callback(
     dsp_state: *mut FMOD_DSP_STATE,
-    _index: c_int,
-    _value: *mut c_float,
+    index: c_int,
+    value: *mut c_float,
     _value_str: *mut c_char,
 ) -> FMOD_RESULT {
-    let state: *mut EffectState = (*dsp_state).plugindata as *mut EffectState;
-    let _state = state.as_mut().unwrap();
+    let dsp_state_wrapped = FmodDspState::new(dsp_state);
+    let effect = dsp_state_wrapped.get_effect_state();
+
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::DirectivityDipoleWeight => {
+                let apply: c_float = (*effect).dipole_weight.into();
+                value.write(apply);
+            }
+            Params::DirectivityDipolePower => {
+                let apply: c_float = (*effect).dipole_power.into();
+                value.write(apply);
+            }
+            _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
+        }
+    } else {
+        return FMOD_OK;
+    }
 
     FMOD_OK
 }

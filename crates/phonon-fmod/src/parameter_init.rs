@@ -41,8 +41,13 @@ fn create_param_data(
     }
 }
 
-#[expect(dead_code, reason = "No float params have been added yet")]
-fn create_param_float(name: &str, description: &'static str) -> DspParameterDesc {
+fn create_param_float(
+    name: &str,
+    description: &'static str,
+    min: f32,
+    max: f32,
+    default: f32,
+) -> DspParameterDesc {
     DspParameterDesc {
         type_: DspParameterType::Float,
         name: str_to_c_char_array(name),
@@ -50,9 +55,9 @@ fn create_param_float(name: &str, description: &'static str) -> DspParameterDesc
         description: description.to_string(),
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             floatdesc: FMOD_DSP_PARAMETER_DESC_FLOAT {
-                min: 0.0,
-                max: 1.0,
-                defaultval: 0.42,
+                min,
+                max,
+                defaultval: default,
                 mapping: Default::default(),
             },
         },
@@ -165,6 +170,11 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
         FMOD_DSP_PARAMETER_DATA_TYPE_USER,
     );
 
+    let param_directivity_dipole_weight =
+        create_param_float("DipoleWeight", "Directivity dipole weight.", 0.0, 1.0, 1.0);
+    let param_directivity_dipole_power =
+        create_param_float("DipolePower", "Directivity dipole power.", 0.0, 4.0, 1.0);
+
     vec![
         param_source,
         param_overall_gain,
@@ -177,5 +187,7 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
         param_apply_pathing,
         param_hrtf_interpolation,
         param_direct_sound_path,
+        param_directivity_dipole_weight,
+        param_directivity_dipole_power,
     ]
 }

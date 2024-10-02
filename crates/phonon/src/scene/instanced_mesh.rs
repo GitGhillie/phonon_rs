@@ -82,11 +82,7 @@ impl InstancedMesh {
             max_distance,
         );
 
-        return if let Some(hit) = hit_maybe {
-            Some(self.transform_hit(&hit, &transformed_ray))
-        } else {
-            None
-        };
+        hit_maybe.map(|hit| self.transform_hit(&hit, &transformed_ray))
     }
 
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {
@@ -133,7 +129,7 @@ impl InstancedMesh {
     }
 
     fn transform_hit(&self, hit: &Hit, ray: &Ray) -> Hit {
-        let mut transformed_hit = hit.clone();
+        let mut transformed_hit = *hit;
 
         let origin = self.transform.transform_point3(ray.origin());
         let hit_point = self

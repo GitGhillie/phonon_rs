@@ -58,6 +58,7 @@ pub enum SpeakerLayoutType {
     Custom,
 }
 
+#[expect(dead_code)]
 #[derive(Debug)]
 pub(crate) struct SpeakerLayout {
     pub(crate) layout_type: SpeakerLayoutType,
@@ -66,6 +67,7 @@ pub(crate) struct SpeakerLayout {
 }
 
 impl SpeakerLayout {
+    #[expect(dead_code, reason = "Custom layouts are not supported yet")]
     pub fn new_custom(num_speakers: i16, speakers: &[Vec3]) -> Self {
         Self {
             layout_type: SpeakerLayoutType::Custom,

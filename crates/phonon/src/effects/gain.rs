@@ -77,6 +77,7 @@ impl GainEffect {
         AudioEffectState::TailComplete
     }
 
+    #[expect(dead_code)]
     pub(crate) fn tail_apply(
         &mut self,
         input: &AudioBuffer<1>,
@@ -86,9 +87,10 @@ impl GainEffect {
             gain: self.previous_gain,
         };
 
-        return self.apply(previous_params, input, output);
+        self.apply(previous_params, input, output)
     }
 
+    #[expect(dead_code)]
     pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete

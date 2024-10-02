@@ -18,6 +18,7 @@
 use crate::scene::material::Material;
 use glam::Vec3;
 
+#[expect(dead_code)]
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Hit {
     pub(crate) distance: f32,

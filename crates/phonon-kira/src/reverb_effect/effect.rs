@@ -25,7 +25,7 @@ pub(crate) struct ReverbEffectWrapped {
 impl ReverbEffectWrapped {
     pub(crate) fn new(builder: ReverbEffectBuilder, command_readers: CommandReaders) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
-        let reverb_effect = ReverbEffect::new(audio_settings.clone());
+        let reverb_effect = ReverbEffect::new(audio_settings);
 
         Self {
             command_readers,

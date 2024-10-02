@@ -16,7 +16,7 @@
 //
 
 studio.plugins.registerPluginDescription("Phonon Spatializer", {
-    companyName: "The Rust Community",
+    companyName: "Phonon",
     productName: "Phonon Spatializer",
     parameters: {
         "DirectBinaural": {displayName: "Apply HRTF To Direct"},
