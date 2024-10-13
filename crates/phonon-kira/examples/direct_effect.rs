@@ -2,11 +2,12 @@
 //! Normally the `DirectSoundPath` would be driven by the outputs of the `DirectSimulator`.
 
 use eframe::egui;
-
+use glam::Vec3;
 use kira::manager::backend::cpal::CpalBackend;
 use kira::manager::{AudioManager, AudioManagerSettings};
 use kira::sound::static_sound::StaticSoundData;
 use kira::track::TrackBuilder;
+use phonon::effects::binaural::BinauralEffectParameters;
 use phonon::effects::direct::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
 use phonon::simulators::direct::DirectSoundPath;
 
@@ -23,12 +24,14 @@ fn main() {
 
     let mut distance_attenuation = false;
 
+    let mut direction = Vec3::new(0.0, 1.0, 0.0);
+
     let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
 
     let mut track_builder = TrackBuilder::new();
     let mut effect_handle = track_builder.add_effect(DirectEffectBuilder {
         parameters: direct_params,
-        panning_params: Default::default(),
+        binaural_params: Default::default(),
     });
     let track = manager.add_sub_track(track_builder).unwrap();
 
@@ -56,6 +59,7 @@ fn main() {
                         .text("Distance Attenuation"),
                 );
 
+                ui.add(egui::Separator::default());
                 ui.label("Air Absorption (AA) parameters:");
 
                 ui.add(
@@ -70,7 +74,7 @@ fn main() {
                     egui::Slider::new(&mut sound_path.air_absorption[2], 0.0..=1.0).text("AA High"),
                 );
 
-                ui.label("");
+                ui.add(egui::Separator::default());
 
                 ui.add(
                     egui::Slider::new(&mut sound_path.occlusion, 0.0..=1.0)
@@ -91,6 +95,14 @@ fn main() {
                     egui::Slider::new(&mut sound_path.transmission[2], 0.0..=1.0)
                         .text("Transmission High"),
                 );
+
+                ui.add(egui::Separator::default());
+
+                ui.add(egui::Slider::new(&mut direction.x, -1.0..=1.0).text("Direction X"));
+
+                ui.add(egui::Slider::new(&mut direction.y, -1.0..=1.0).text("Direction Y"));
+
+                ui.add(egui::Slider::new(&mut direction.z, -1.0..=1.0).text("Direction Z"));
             });
 
             direct_params
@@ -98,6 +110,7 @@ fn main() {
                 .set(DirectApplyFlags::DistanceAttenuation, distance_attenuation);
 
             effect_handle.set_parameters(direct_params);
+            effect_handle.set_direction(BinauralEffectParameters { direction });
         },
     )
     .unwrap()
