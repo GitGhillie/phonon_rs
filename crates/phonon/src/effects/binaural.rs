@@ -5,8 +5,8 @@ use sofar::render::Renderer;
 
 #[derive(Debug, Copy, Clone)]
 pub struct BinauralEffectParameters {
-    // todo check if the following is still correct
-    /// Direction relative to the listener. Will be normalized by the BinauralEffect.
+    /// Direction/position relative to the listener. Should not be normalized.
+    /// Avoid going through 0.0, 0.0, 0.0, as this will result in a jarring change in the audio.
     pub direction: Vec3,
 }
 
@@ -22,6 +22,9 @@ pub struct BinauralEffect {
     renderer: Renderer,
     sofa: Sofar,
     filter: sofar::reader::Filter,
+    /// Direction/position relative to the listener. Should not be normalized.
+    /// This may never reach Vec3::ZERO, as that will result in a panic.
+    direction: Vec3,
 }
 
 impl BinauralEffect {
@@ -47,6 +50,7 @@ impl BinauralEffect {
             renderer,
             sofa,
             filter,
+            direction: Vec3::new(0.0, 1.0, 0.0),
         }
     }
 
@@ -56,12 +60,13 @@ impl BinauralEffect {
         input: &AudioBuffer<1>,
         output: &mut AudioBuffer<2>,
     ) -> AudioEffectState {
-        // todo check if input and output are equal in num samples?
-
         // todo silence output?
 
-        // todo: Currently panics if direction is 0, 0, 0.
-        let dir = params.direction;
+        if params.direction != Vec3::ZERO {
+            self.direction = params.direction;
+        }
+
+        let dir = self.direction;
         self.sofa.filter(dir.x, dir.y, dir.z, &mut self.filter);
         self.renderer.set_filter(&self.filter).unwrap();
 
