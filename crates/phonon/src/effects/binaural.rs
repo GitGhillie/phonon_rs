@@ -32,9 +32,11 @@ impl BinauralEffect {
         let sampling_rate = audio_settings.sampling_rate;
         let frame_size = audio_settings.frame_size;
 
+        let sofa_bytes = include_bytes!("../../data/hrtf/cipic_124.sofa");
+
         let sofa = OpenOptions::new()
             .sample_rate(sampling_rate as f32)
-            .open("data/hrtf/cipic_124.sofa") // todo
+            .open_data(sofa_bytes)
             .unwrap();
 
         let filter_len = sofa.filter_len();
