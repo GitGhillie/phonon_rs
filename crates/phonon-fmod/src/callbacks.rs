@@ -16,6 +16,7 @@ use phonon::simulators::direct::DirectSoundPath;
 use std::os::raw::{c_char, c_float, c_int, c_uint, c_void};
 use std::ptr::{null_mut, slice_from_raw_parts_mut};
 use std::slice;
+use phonon::effects::binaural::BinauralEffect;
 
 pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) -> FMOD_RESULT {
     let dsp_state_wrapped = FmodDspState::new(dsp_state);
@@ -62,6 +63,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
         direct_buffer: AudioBuffer::new(frame_size),
         mono_buffer: AudioBuffer::new(frame_size),
         panning_effect: PanningEffect::new(speaker_layout),
+        binaural_effect: BinauralEffect::new(audio_settings),
         direct_effect: DirectEffect::new(audio_settings),
     });
 

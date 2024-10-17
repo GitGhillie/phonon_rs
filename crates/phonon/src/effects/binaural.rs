@@ -69,7 +69,7 @@ impl BinauralEffect {
         }
 
         let dir = self.direction;
-        self.sofa.filter(dir.x, dir.y, dir.z, &mut self.filter);
+        self.sofa.filter(dir.y, -dir.x, dir.z, &mut self.filter);
         self.renderer.set_filter(&self.filter).unwrap();
 
         let input_data: &[f32] = &input.0[0];

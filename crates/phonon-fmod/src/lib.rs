@@ -43,6 +43,7 @@ use phonon::simulators::direct::DirectSoundPath;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
+use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 
 #[derive(Copy, Clone)]
 enum ParameterApplyType {
@@ -111,6 +112,7 @@ pub(crate) struct EffectState {
     mono_buffer: AudioBuffer<1>,
 
     panning_effect: PanningEffect,
+    binaural_effect: BinauralEffect,
     direct_effect: DirectEffect,
 }
 
@@ -170,6 +172,7 @@ impl EffectState {
         let position = self.source.relative.position;
         let direction = Vec3::new(position.x, position.y, position.z);
         let panning_params = PanningEffectParameters { direction };
+        let binaural_params = BinauralEffectParameters { direction };
 
         let direct_params = DirectEffectParameters {
             direct_sound_path: self.direct_sound_path,
@@ -184,8 +187,12 @@ impl EffectState {
         self.direct_effect
             .apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
 
-        self.panning_effect
-            .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
+        // todo ability to switch between panning and binaural
+        // self.panning_effect
+        //     .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
+
+        self.binaural_effect
+            .apply(binaural_params, &self.direct_buffer, &mut self.out_buffer);
 
         self.out_buffer.write_interleaved(out_buffer);
     }

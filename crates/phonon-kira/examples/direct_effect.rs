@@ -24,7 +24,7 @@ fn main() {
 
     let mut distance_attenuation = false;
 
-    let mut direction = Vec3::new(0.0, 1.0, 0.0);
+    let mut direction = Vec3::new(1.0, 1.0, 0.0);
 
     let mut manager = AudioManager::<CpalBackend>::new(AudioManagerSettings::default()).unwrap();
 
