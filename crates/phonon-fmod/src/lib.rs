@@ -23,9 +23,9 @@ mod parameter_init;
 pub mod parameter_spec;
 
 use crate::callbacks::{
-    create_callback, get_data_callback, get_float_callback, get_int_callback, process_callback,
-    release_callback, set_data_callback, set_float_callback, set_int_callback,
-    sys_deregister_callback, sys_register_callback,
+    create_callback, get_bool_callback, get_data_callback, get_float_callback, get_int_callback,
+    process_callback, release_callback, set_bool_callback, set_data_callback, set_float_callback,
+    set_int_callback, sys_deregister_callback, sys_register_callback,
 };
 use crate::parameter_init::init_parameters;
 use glam::Vec3;
@@ -35,6 +35,7 @@ use libfmod::ffi::{
 };
 use libfmod::DspDescription;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
@@ -43,7 +44,6 @@ use phonon::simulators::direct::DirectSoundPath;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 use std::ptr::null_mut;
-use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 
 #[derive(Copy, Clone)]
 enum ParameterApplyType {
@@ -83,6 +83,7 @@ pub(crate) struct EffectState {
     apply_directivity: ParameterApplyType,
     apply_occlusion: ParameterApplyType,
     apply_transmission: ParameterApplyType,
+    apply_hrtf: bool,
 
     distance_attenuation: f32,
     distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_TYPE,
@@ -214,11 +215,11 @@ pub fn create_dsp_description() -> DspDescription {
         paramdesc: init_parameters(),
         setparameterfloat: Some(set_float_callback),
         setparameterint: Some(set_int_callback),
-        setparameterbool: None, //todo
+        setparameterbool: Some(set_bool_callback),
         setparameterdata: Some(set_data_callback),
         getparameterfloat: Some(get_float_callback),
         getparameterint: Some(get_int_callback),
-        getparameterbool: None, // todo
+        getparameterbool: Some(get_bool_callback),
         getparameterdata: Some(get_data_callback),
         shouldiprocess: None,
         userdata: null_mut(),

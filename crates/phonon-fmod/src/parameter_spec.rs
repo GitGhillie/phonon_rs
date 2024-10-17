@@ -109,34 +109,33 @@ pub enum Params {
      */
     ApplyTransmission,
 
-    /**
-     *  **Type**: `FMOD_DSP_PARAMETER_TYPE_BOOL`
-     *
-     *  If true, reflections are rendered, using the data calculated by the game engine using simulation, and provided
-     *  via the \c SimulationOutputs parameter.
-     */
-    ApplyReflections,
+    // /**
+    //  *  **Type**: `FMOD_DSP_PARAMETER_TYPE_BOOL`
+    //  *
+    //  *  If true, reflections are rendered, using the data calculated by the game engine using simulation, and provided
+    //  *  via the \c SimulationOutputs parameter.
+    //  */
+    // ApplyReflections,
+    //
+    // /**
+    //  *  **Type**: `FMOD_DSP_PARAMETER_TYPE_BOOL`
+    //  *
+    //  *  If true, pathing is rendered, using the data calculated by the game engine using simulation, and provided
+    //  *  via the \c SimulationOutputs parameter.
+    //  */
+    // ApplyPathing,
 
-    /**
-     *  **Type**: `FMOD_DSP_PARAMETER_TYPE_BOOL`
-     *
-     *  If true, pathing is rendered, using the data calculated by the game engine using simulation, and provided
-     *  via the \c SimulationOutputs parameter.
-     */
-    ApplyPathing,
-
-    /**
-     *  **Type**: `FMOD_DSP_PARAMETER_TYPE_INT`
-     *
-     *  **Range**: 0 to 1.
-     *
-     *  Controls how HRTFs are interpolated when the source moves relative to the listener.
-     *
-     *  - `0`: Nearest-neighbor interpolation.
-     *  - `1`: Bilinear interpolation.
-     */
-    HrtfInterpolation,
-
+    // /**
+    //  *  **Type**: `FMOD_DSP_PARAMETER_TYPE_INT`
+    //  *
+    //  *  **Range**: 0 to 1.
+    //  *
+    //  *  Controls how HRTFs are interpolated when the source moves relative to the listener.
+    //  *
+    //  *  - `0`: Nearest-neighbor interpolation.
+    //  *  - `1`: Bilinear interpolation.
+    //  */
+    // HrtfInterpolation,
     /**
      *  **Type**: `FMOD_DSP_PARAMETER_TYPE_DATA`
      *
@@ -165,6 +164,14 @@ pub enum Params {
      *  if \c ApplyDirectivity is set to \c 1.
      */
     DirectivityDipolePower,
+
+    /**
+     *  **Type**: `FMOD_DSP_PARAMETER_TYPE_BOOL`
+     *
+     *  If true, applies HRTF-based 3D audio rendering to the direct sound path. Otherwise, sound is panned based on
+     *  the speaker configuration.
+     */
+    DirectBinaural,
 }
 
 // Original copied from Steam Audio:
