@@ -188,12 +188,13 @@ impl EffectState {
         self.direct_effect
             .apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
 
-        // todo ability to switch between panning and binaural
-        // self.panning_effect
-        //     .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
-
-        self.binaural_effect
-            .apply(binaural_params, &self.direct_buffer, &mut self.out_buffer);
+        if self.apply_hrtf {
+            self.binaural_effect
+                .apply(binaural_params, &self.direct_buffer, &mut self.out_buffer);
+        } else {
+            self.panning_effect
+                .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
+        }
 
         self.out_buffer.write_interleaved(out_buffer);
     }
