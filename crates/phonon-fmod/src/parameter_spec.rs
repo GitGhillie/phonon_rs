@@ -165,6 +165,14 @@ pub enum Params {
      *  if \c ApplyDirectivity is set to \c 1.
      */
     DirectivityDipolePower,
+
+    /**
+     *  **Type**: `FMOD_DSP_PARAMETER_TYPE_BOOL`
+     *
+     *  If true, applies HRTF-based 3D audio rendering to the direct sound path. Otherwise, sound is panned based on
+     *  the speaker configuration.
+     */
+    DirectBinaural,
 }
 
 // Original copied from Steam Audio:

@@ -23,9 +23,9 @@ mod parameter_init;
 pub mod parameter_spec;
 
 use crate::callbacks::{
-    create_callback, get_data_callback, get_float_callback, get_int_callback, process_callback,
-    release_callback, set_data_callback, set_float_callback, set_int_callback,
-    sys_deregister_callback, sys_register_callback,
+    create_callback, get_bool_callback, get_data_callback, get_float_callback, get_int_callback,
+    process_callback, release_callback, set_bool_callback, set_data_callback, set_float_callback,
+    set_int_callback, sys_deregister_callback, sys_register_callback,
 };
 use crate::parameter_init::init_parameters;
 use glam::Vec3;
@@ -35,6 +35,7 @@ use libfmod::ffi::{
 };
 use libfmod::DspDescription;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
@@ -82,6 +83,7 @@ pub(crate) struct EffectState {
     apply_directivity: ParameterApplyType,
     apply_occlusion: ParameterApplyType,
     apply_transmission: ParameterApplyType,
+    apply_hrtf: bool,
 
     distance_attenuation: f32,
     distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_TYPE,
@@ -111,6 +113,7 @@ pub(crate) struct EffectState {
     mono_buffer: AudioBuffer<1>,
 
     panning_effect: PanningEffect,
+    binaural_effect: BinauralEffect,
     direct_effect: DirectEffect,
 }
 
@@ -170,6 +173,7 @@ impl EffectState {
         let position = self.source.relative.position;
         let direction = Vec3::new(position.x, position.y, position.z);
         let panning_params = PanningEffectParameters { direction };
+        let binaural_params = BinauralEffectParameters { direction };
 
         let direct_params = DirectEffectParameters {
             direct_sound_path: self.direct_sound_path,
@@ -184,8 +188,13 @@ impl EffectState {
         self.direct_effect
             .apply(direct_params, &self.in_buffer_mono, &mut self.direct_buffer);
 
-        self.panning_effect
-            .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
+        if self.apply_hrtf {
+            self.binaural_effect
+                .apply(binaural_params, &self.direct_buffer, &mut self.out_buffer);
+        } else {
+            self.panning_effect
+                .apply(panning_params, &self.direct_buffer, &mut self.out_buffer);
+        }
 
         self.out_buffer.write_interleaved(out_buffer);
     }
@@ -207,11 +216,11 @@ pub fn create_dsp_description() -> DspDescription {
         paramdesc: init_parameters(),
         setparameterfloat: Some(set_float_callback),
         setparameterint: Some(set_int_callback),
-        setparameterbool: None, //todo
+        setparameterbool: Some(set_bool_callback),
         setparameterdata: Some(set_data_callback),
         getparameterfloat: Some(get_float_callback),
         getparameterint: Some(get_int_callback),
-        getparameterbool: None, // todo
+        getparameterbool: Some(get_bool_callback),
         getparameterdata: Some(get_data_callback),
         shouldiprocess: None,
         userdata: null_mut(),

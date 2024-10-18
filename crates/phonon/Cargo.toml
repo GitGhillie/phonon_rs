@@ -26,6 +26,7 @@ bitflags = "2"
 ultraviolet = "0.9"
 serde = { version = "1", optional = true }
 bevy_reflect = { version = "0.14", optional = true }
+sofar = "0.2.1"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

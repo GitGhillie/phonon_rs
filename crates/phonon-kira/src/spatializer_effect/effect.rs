@@ -5,16 +5,15 @@ use kira::effect::Effect;
 use kira::modulator::value_provider::ModulatorValueProvider;
 use kira::Frame;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::dsp::speaker_layout::SpeakerLayoutType;
+use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
-use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
 
 pub(crate) struct DirectEffectWrapped {
     command_readers: CommandReaders,
     direct_effect: DirectEffect,
     parameters: DirectEffectParameters,
-    panning_effect: PanningEffect,
-    panning_params: PanningEffectParameters,
+    binaural_effect: BinauralEffect,
+    binaural_params: BinauralEffectParameters,
     audio_buffer: AudioBuffer<2>,
     mono_buffer0: AudioBuffer<1>,
     mono_buffer1: AudioBuffer<1>,
@@ -27,14 +26,14 @@ impl DirectEffectWrapped {
     pub(crate) fn new(builder: DirectEffectBuilder, command_readers: CommandReaders) -> Self {
         let audio_settings = AudioSettings::new(44_100, 1024);
         let direct_effect = DirectEffect::new(audio_settings);
-        let panning_effect = PanningEffect::new(SpeakerLayoutType::Stereo);
+        let binaural_effect = BinauralEffect::new(audio_settings);
 
         Self {
             command_readers,
             direct_effect,
             parameters: builder.parameters,
-            panning_effect,
-            panning_params: builder.panning_params,
+            binaural_effect,
+            binaural_params: builder.binaural_params,
             audio_buffer: AudioBuffer::new(audio_settings.frame_size),
             mono_buffer0: AudioBuffer::new(audio_settings.frame_size),
             mono_buffer1: AudioBuffer::new(audio_settings.frame_size),
@@ -50,8 +49,8 @@ impl Effect for DirectEffectWrapped {
         if let Some(command) = self.command_readers.set_parameters.read() {
             self.parameters = command;
         }
-        if let Some(command) = self.command_readers.set_panning.read() {
-            self.panning_params = command;
+        if let Some(command) = self.command_readers.set_direction.read() {
+            self.binaural_params = command;
         }
     }
 
@@ -76,8 +75,8 @@ impl Effect for DirectEffectWrapped {
             self.direct_effect
                 .apply(self.parameters, &self.mono_buffer0, &mut self.mono_buffer1);
 
-            self.panning_effect.apply(
-                self.panning_params,
+            self.binaural_effect.apply(
+                self.binaural_params,
                 &self.mono_buffer1,
                 &mut self.output_buffer,
             );

@@ -67,6 +67,7 @@ fn create_param_float(
 fn create_param_bool(
     name: &str,
     description: &'static str,
+    default: bool,
     value_names: [&'static str; 2],
 ) -> DspParameterDesc {
     let value_names_c: Vec<*mut c_char> = value_names
@@ -85,7 +86,7 @@ fn create_param_bool(
         description: description.to_string(),
         union: FMOD_DSP_PARAMETER_DESC_UNION {
             booldesc: FMOD_DSP_PARAMETER_DESC_BOOL {
-                defaultval: 0,
+                defaultval: default as c_int,
                 valuenames: Box::into_raw(value_names_c.into_boxed_slice()) as *const *const c_char,
             },
         },
@@ -154,9 +155,14 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
     let param_apply_directivity = create_param_apply("ApplyDir", "Apply directivity.");
     let param_apply_occlusion = create_param_apply("ApplyOc", "Apply occlusion.");
     let param_apply_transmission = create_param_apply("ApplyTrans", "Apply transmission.");
-    let param_apply_reflections =
-        create_param_bool("ApplyReflections", "Apply reflections.", ["Off", "On"]);
-    let param_apply_pathing = create_param_bool("ApplyPathing", "Apply pathing.", ["Off", "On"]);
+    let param_apply_reflections = create_param_bool(
+        "ApplyReflections",
+        "Apply reflections.",
+        true,
+        ["Off", "On"],
+    );
+    let param_apply_pathing =
+        create_param_bool("ApplyPathing", "Apply pathing.", true, ["Off", "On"]);
 
     let param_hrtf_interpolation = create_param_int(
         "HrtfInterp",
@@ -175,6 +181,13 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
     let param_directivity_dipole_power =
         create_param_float("DipolePower", "Directivity dipole power.", 0.0, 4.0, 1.0);
 
+    let param_direct_binaural = create_param_bool(
+        "DirectBinaural",
+        "Apply HRTF to direct path.",
+        true,
+        ["Off", "On"],
+    );
+
     vec![
         param_source,
         param_overall_gain,
@@ -189,5 +202,6 @@ pub(crate) fn init_parameters() -> Vec<DspParameterDesc> {
         param_direct_sound_path,
         param_directivity_dipole_weight,
         param_directivity_dipole_power,
+        param_direct_binaural,
     ]
 }

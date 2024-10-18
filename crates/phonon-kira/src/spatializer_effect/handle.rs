@@ -1,6 +1,6 @@
 use super::CommandWriters;
+use phonon::effects::binaural::BinauralEffectParameters;
 use phonon::effects::direct::DirectEffectParameters;
-use phonon::effects::panning::PanningEffectParameters;
 
 /// Controls an EQ effect.
 pub struct DirectEffectHandle {
@@ -12,7 +12,7 @@ impl DirectEffectHandle {
         self.command_writers.set_parameters.write(params);
     }
 
-    pub fn set_panning(&mut self, params: PanningEffectParameters) {
-        self.command_writers.set_panning.write(params);
+    pub fn set_direction(&mut self, params: BinauralEffectParameters) {
+        self.command_writers.set_direction.write(params);
     }
 }

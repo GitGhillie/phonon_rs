@@ -10,6 +10,7 @@ use libfmod::ffi::{
 };
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::dsp::speaker_layout::SpeakerLayoutType;
+use phonon::effects::binaural::BinauralEffect;
 use phonon::effects::direct::{DirectEffect, TransmissionType};
 use phonon::effects::panning::PanningEffect;
 use phonon::simulators::direct::DirectSoundPath;
@@ -38,6 +39,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
         apply_directivity: ParameterApplyType::Disable,
         apply_occlusion: ParameterApplyType::Disable,
         apply_transmission: ParameterApplyType::Disable,
+        apply_hrtf: true,
         distance_attenuation: 1.0,
         distance_attenuation_rolloff_type: FMOD_DSP_PAN_3D_ROLLOFF_INVERSE,
         distance_attenuation_min_distance: 1.0,
@@ -62,6 +64,7 @@ pub(crate) unsafe extern "C" fn create_callback(dsp_state: *mut FMOD_DSP_STATE) 
         direct_buffer: AudioBuffer::new(frame_size),
         mono_buffer: AudioBuffer::new(frame_size),
         panning_effect: PanningEffect::new(speaker_layout),
+        binaural_effect: BinauralEffect::new(audio_settings),
         direct_effect: DirectEffect::new(audio_settings),
     });
 
@@ -296,6 +299,49 @@ pub(crate) unsafe extern "C" fn get_int_callback(
                 value.write(apply);
             }
             _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
+        }
+    } else {
+        return FMOD_OK;
+    }
+
+    FMOD_OK
+}
+
+pub(crate) unsafe extern "C" fn get_bool_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    value: *mut FMOD_BOOL,
+    _valuestr: *mut c_char,
+) -> FMOD_RESULT {
+    let dsp_state_wrapped = FmodDspState::new(dsp_state);
+    let effect = dsp_state_wrapped.get_effect_state();
+
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::DirectBinaural => {
+                let apply: c_int = (*effect).apply_hrtf.into();
+                value.write(apply);
+            }
+            _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM
+        }
+    } else {
+        return FMOD_OK;
+    }
+
+    FMOD_OK
+}
+
+pub(crate) unsafe extern "C" fn set_bool_callback(
+    dsp_state: *mut FMOD_DSP_STATE,
+    index: c_int,
+    value: FMOD_BOOL,
+) -> FMOD_RESULT {
+    let data = &mut *((*dsp_state).plugindata as *mut EffectState);
+
+    if let Some(param) = Params::from_repr(index) {
+        match param {
+            Params::DirectBinaural => data.apply_hrtf = value != 0,
+            _ => return FMOD_OK, // todo should be FMOD_ERR_INVALID_PARAM,
         }
     } else {
         return FMOD_OK;
