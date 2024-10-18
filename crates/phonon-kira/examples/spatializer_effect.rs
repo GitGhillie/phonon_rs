@@ -1,5 +1,6 @@
 //! This example shows how different parameters for the `DirectEffect` affect the sound.
 //! Normally the `DirectSoundPath` would be driven by the outputs of the `DirectSimulator`.
+//! Additionally, a HRTF is used to create a binaural sound.
 
 use eframe::egui;
 use glam::Vec3;
@@ -11,7 +12,7 @@ use phonon::effects::binaural::BinauralEffectParameters;
 use phonon::effects::direct::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
 use phonon::simulators::direct::DirectSoundPath;
 
-use phonon_kira::direct_effect::builder::DirectEffectBuilder;
+use phonon_kira::spatializer_effect::builder::DirectEffectBuilder;
 
 fn main() {
     let mut direct_params = DirectEffectParameters {
