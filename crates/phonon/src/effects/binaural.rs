@@ -22,12 +22,13 @@ pub struct BinauralEffect {
     renderer: Renderer,
     sofa: Sofar,
     filter: sofar::reader::Filter,
-    /// Direction/position relative to the listener. Should not be normalized.
+    /// Position relative to the listener. Should not be normalized.
     /// This may never reach Vec3::ZERO, as that will result in a panic.
     direction: Vec3,
 }
 
 impl BinauralEffect {
+    // todo: Check if a renderer can be shared between multiple instances of the effect.
     pub fn new(audio_settings: AudioSettings) -> Self {
         let sampling_rate = audio_settings.sampling_rate;
         let frame_size = audio_settings.frame_size;

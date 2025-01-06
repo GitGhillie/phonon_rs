@@ -11,7 +11,7 @@ readme = "README.md"
 
 [dependencies]
 phonon = { path = "../phonon", version = "0.2" }
-kira = { version = "0.9", features = ["serde"] }
+kira = { version = "0.10", features = ["serde"] }
 
 [dev-dependencies]
 eframe = "0.27"

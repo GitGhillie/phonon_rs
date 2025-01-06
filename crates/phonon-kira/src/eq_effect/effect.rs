@@ -1,8 +1,7 @@
 use super::builder::EqEffectBuilder;
 use super::CommandReaders;
-use kira::clock::clock_info::ClockInfoProvider;
 use kira::effect::Effect;
-use kira::modulator::value_provider::ModulatorValueProvider;
+use kira::info::Info;
 use kira::Frame;
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::effects::eq::{EqEffect, EqEffectParameters};
@@ -17,8 +16,6 @@ pub(crate) struct EqEffectWrapped {
     audio_buffer: AudioBuffer<2>,
     mono_buffer: AudioBuffer<1>,
     output_buffer: AudioBuffer<1>,
-    current_sample: usize,
-    frame_count: usize,
 }
 
 impl EqEffectWrapped {
@@ -36,8 +33,6 @@ impl EqEffectWrapped {
             audio_buffer: AudioBuffer::new(audio_settings.frame_size),
             mono_buffer: AudioBuffer::new(audio_settings.frame_size),
             output_buffer: AudioBuffer::new(audio_settings.frame_size),
-            current_sample: 0,
-            frame_count: 0,
         }
     }
 }
@@ -52,44 +47,33 @@ impl Effect for EqEffectWrapped {
         }
     }
 
-    fn process(
-        &mut self,
-        input: Frame,
-        _dt: f64,
-        _clock_info_provider: &ClockInfoProvider,
-        _modulator_value_provider: &ModulatorValueProvider,
-    ) -> Frame {
-        self.audio_buffer[0][self.current_sample] = input.left;
-        self.audio_buffer[1][self.current_sample] = input.right;
+    fn process(&mut self, mut input: &mut [Frame], _dt: f64, _info: &Info) {
+        let (left, right) = input.iter().map(|frame| (frame.left, frame.right)).unzip();
 
-        let output_sample = self.output_buffer[0][self.current_sample];
+        self.audio_buffer[0] = left;
+        self.audio_buffer[1] = right;
 
-        if self.current_sample < self.eq_effect.frame_size - 1 {
-            self.current_sample += 1;
-        } else {
-            self.audio_buffer.downmix(&mut self.output_buffer);
+        self.audio_buffer.downmix(&mut self.output_buffer);
 
-            self.gain_effect.apply(
-                GainEffectParameters { gain: self.gain },
-                &self.output_buffer,
-                &mut self.mono_buffer,
-            );
+        self.gain_effect.apply(
+            GainEffectParameters { gain: self.gain },
+            &self.output_buffer,
+            &mut self.mono_buffer,
+        );
 
-            self.eq_effect.apply(
-                EqEffectParameters {
-                    gains: self.eq_gains,
-                },
-                &self.mono_buffer,
-                &mut self.output_buffer,
-            );
+        self.eq_effect.apply(
+            EqEffectParameters {
+                gains: self.eq_gains,
+            },
+            &self.mono_buffer,
+            &mut self.output_buffer,
+        );
 
-            self.current_sample = 0;
-            self.frame_count += 1;
-        }
-
-        Frame {
-            left: output_sample,
-            right: output_sample,
-        }
+        // todo avoid clone here?
+        input = self.output_buffer[0]
+            .iter()
+            .cloned()
+            .map(|sample| Frame::new(sample, sample))
+            .collect();
     }
 }

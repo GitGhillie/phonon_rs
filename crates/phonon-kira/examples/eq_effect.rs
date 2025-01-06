@@ -1,9 +1,8 @@
 use eframe::egui;
-
-use kira::manager::backend::cpal::CpalBackend;
-use kira::manager::{AudioManager, AudioManagerSettings};
+use kira::backend::cpal::CpalBackend;
 use kira::sound::static_sound::StaticSoundData;
 use kira::track::TrackBuilder;
+use kira::{AudioManager, AudioManagerSettings};
 
 use phonon_kira::eq_effect::builder::EqEffectBuilder;
 
@@ -15,14 +14,13 @@ fn main() {
 
     let mut track_builder = TrackBuilder::new();
     let mut effect_handle = track_builder.add_effect(EqEffectBuilder { eq_gains, gain });
-    let track = manager.add_sub_track(track_builder).unwrap();
+    let mut track = manager.add_sub_track(track_builder).unwrap();
 
     let sound_data = StaticSoundData::from_file("data/audio/pink_noise.ogg")
         .unwrap()
-        .loop_region(..)
-        .output_destination(&track);
+        .loop_region(..);
 
-    manager.play(sound_data).unwrap();
+    track.play(sound_data).unwrap();
 
     eframe::run_simple_native(
         "EQ & Gain Effect (Kira)",
