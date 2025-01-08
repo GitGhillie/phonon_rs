@@ -103,7 +103,7 @@ impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
         let num_channels = self.len();
         let factor = 1.0 / (num_channels as f32);
 
-        for i in 0..output[0].len() {
+        for i in 0..self.len() {
             let mut sum = 0.0;
 
             for j in 0..num_channels {

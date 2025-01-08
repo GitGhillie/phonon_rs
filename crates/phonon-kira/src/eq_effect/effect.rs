@@ -20,6 +20,7 @@ pub(crate) struct EqEffectWrapped {
 
 impl EqEffectWrapped {
     pub(crate) fn new(builder: EqEffectBuilder, command_readers: CommandReaders) -> Self {
+        // todo do not guess these values:
         let audio_settings = AudioSettings::new(44_100, 1024);
         let eq_effect = EqEffect::new(audio_settings);
         let gain_effect = GainEffect::new(audio_settings);
@@ -47,7 +48,21 @@ impl Effect for EqEffectWrapped {
         }
     }
 
-    fn process(&mut self, mut input: &mut [Frame], _dt: f64, _info: &Info) {
+    fn process(&mut self, input: &mut [Frame], _dt: f64, _info: &Info) {
+        let buffer_len = input.len();
+        if buffer_len != self.audio_buffer.len() {
+            dbg!(buffer_len);
+            // Frame size changed, re-init effect
+            // todo make function
+            let audio_settings = AudioSettings::new(44_100, buffer_len);
+            self.gain_effect = GainEffect::new(audio_settings);
+            self.eq_effect = EqEffect::new(audio_settings);
+            self.audio_buffer = AudioBuffer::new(audio_settings.frame_size);
+            self.mono_buffer = AudioBuffer::new(audio_settings.frame_size);
+            self.output_buffer = AudioBuffer::new(audio_settings.frame_size);
+        }
+
+        // De-interlace:
         let (left, right) = input.iter().map(|frame| (frame.left, frame.right)).unzip();
 
         self.audio_buffer[0] = left;
@@ -69,11 +84,9 @@ impl Effect for EqEffectWrapped {
             &mut self.output_buffer,
         );
 
-        // todo avoid clone here?
-        input = self.output_buffer[0]
-            .iter()
-            .cloned()
-            .map(|sample| Frame::new(sample, sample))
-            .collect();
+        input.iter_mut().enumerate().for_each(|(i, frame)| {
+            frame.left = self.output_buffer[0][i];
+            frame.right = self.output_buffer[0][i];
+        })
     }
 }
