@@ -16,22 +16,22 @@ reflect = ["dep:bevy_reflect"]
 
 [dependencies]
 derive_deref = "1"
-glam = "0.27"
-biquad = "0.4"
-rand = "0.8"
-ndarray = "0.15"
-parry3d = "0.13" # todo: Enable SIMD? Replace with glam-based parry?
-nalgebra = { version = "0.32", features = ["default", "convert-glam027"] } # todo: Replace with glam after replacing parry3d
+glam = "0.29"
+biquad = "0.5"
+rand = "0.9"
+ndarray = "0.16"
+parry3d = "0.17" # todo: Enable SIMD? Replace with glam-based parry?
+nalgebra = { version = "0.33", features = ["default", "convert-glam029"] } # todo: Replace with glam after replacing parry3d
 bitflags = "2"
-ultraviolet = "0.9"
+ultraviolet = "0.10"
 serde = { version = "1", optional = true }
-bevy_reflect = { version = "0.14", optional = true }
+bevy_reflect = { version = "0.16", optional = true }
 sofar = "0.2.1"
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 plotters = "0.3"
-rand = "0.8"
+rand = "0.9"
 
 [[bench]]
 name = "audio_buffer_bench"

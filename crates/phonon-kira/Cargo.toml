@@ -15,4 +15,4 @@ kira = { version = "0.9", features = ["serde"] }
 
 [dev-dependencies]
 eframe = "0.27"
-glam = "0.27"
+glam = "0.29"

@@ -362,10 +362,10 @@ impl ReverbEffect {
         let delay_min = (delay_sum / (NUM_DELAYS as f32)) as i32;
 
         // todo: Check if rand performance and behavior is OK.
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for i in 0..NUM_DELAYS {
-            let random_offset_unsigned: u16 = rng.gen();
+            let random_offset_unsigned: u16 = rng.random();
             let random_offset = (random_offset_unsigned as i32) % 101;
 
             result[i] = Self::next_power_of_prime(delay_min + random_offset, PRIMES[i]);

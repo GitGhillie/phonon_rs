@@ -120,7 +120,7 @@ impl StaticMesh {
             let material_index = self.material_indices[triangle_index];
 
             Some(Hit {
-                distance: hit.toi,
+                distance: hit.time_of_impact,
                 triangle_index,
                 object_index: 0,
                 material_index,
