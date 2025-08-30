@@ -1,8 +1,6 @@
 [workspace]
 members = [
     "crates/phonon",
-    "crates/phonon-fmod",
-    "crates/phonon-kira",
 ]
 
 resolver = "2"
