@@ -19,14 +19,15 @@ use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use ndarray::{Array, Array1};
 
 use crate::dsp::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
-use crate::dsp::iir::{IIRFilterer, IIR};
+use crate::dsp::iir::{IIR, IIRFilterer};
 
+#[derive(Clone, Copy)]
 pub struct EqEffectParameters {
     pub gains: [f32; NUM_BANDS],
 }
 
 pub struct EqEffect {
-    pub sampling_rate: i32,
+    pub sampling_rate: u32,
     pub frame_size: usize,
     /// Two rows of filterers, one for the current `EqEffectParameters` and one for the previous
     /// `EqEffectParameters`. Which row is which depends on the `current` field.

@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,

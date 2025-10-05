@@ -24,12 +24,12 @@ pub enum AudioEffectState {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct AudioSettings {
-    pub sampling_rate: i32,
+    pub sampling_rate: u32,
     pub frame_size: usize,
 }
 
 impl AudioSettings {
-    pub fn new(sampling_rate: i32, frame_size: usize) -> Self {
+    pub fn new(sampling_rate: u32, frame_size: usize) -> Self {
         Self {
             sampling_rate,
             frame_size,

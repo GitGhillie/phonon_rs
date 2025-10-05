@@ -123,10 +123,6 @@ impl PanningEffect {
         let p = horizontal.x;
         let q = (p + 1.0) * (PI / 4.0);
 
-        if channel == 0 {
-            q.cos()
-        } else {
-            q.sin()
-        }
+        if channel == 0 { q.cos() } else { q.sin() }
     }
 }

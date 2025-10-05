@@ -21,11 +21,11 @@ use crate::models::air_absorption::AirAbsorptionModel;
 use crate::models::directivity::Directivity;
 use crate::models::distance_attenuation::DistanceAttenuationModel;
 use crate::models::propagation_medium::SPEED_OF_SOUND;
+use crate::scene::Scene;
 use crate::scene::coordinate_space::CoordinateSpace3f;
 use crate::scene::ray::Ray;
 use crate::scene::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
 use crate::scene::sphere::Sphere;
-use crate::scene::Scene;
 use glam::Vec3;
 
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
