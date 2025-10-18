@@ -108,7 +108,7 @@ impl StaticMesh {
             .mesh
             .cast_local_ray_and_get_normal(&ray.0, max_distance, false);
 
-        return if let Some(hit) = info {
+        if let Some(hit) = info {
             let mut triangle_index = hit.feature.unwrap_face() as usize;
 
             if triangle_index >= self.mesh.mesh.indices().len() {
@@ -129,7 +129,7 @@ impl StaticMesh {
             })
         } else {
             None
-        };
+        }
     }
 
     pub(crate) fn any_hit(&self, ray: &Ray, min_distance: f32, max_distance: f32) -> bool {

@@ -70,7 +70,7 @@ impl AudioNode for FilterNode {
             gain: 1.0,
             eq_effect,
             fixed_block: FixedProcessBlock::new(
-                frame_size as usize,
+                frame_size,
                 cx.stream_info.max_block_frames.get() as usize,
                 2,
                 2,
@@ -126,16 +126,14 @@ impl AudioNodeProcessor for Processor {
             inputs: buffers.inputs,
             outputs: buffers.outputs,
         };
-        let result = self
-            .fixed_block
+
+        self.fixed_block
             .process(temp_proc, info, |inputs, outputs| {
                 // todo: EqEffectParameters as node param?
                 let eq_params = EqEffectParameters { gains: self.eq };
 
                 self.eq_effect.apply(eq_params, inputs[0], outputs[0]);
                 self.eq_effect.apply(eq_params, inputs[1], outputs[1]);
-            });
-
-        result
+            })
     }
 }
