@@ -47,9 +47,9 @@ impl AudioSystem {
         let sampler_node_id = cx.add_node(sampler_node.clone(), None);
         let eq_node_id = cx.add_node(eq_node.clone(), None);
 
-        cx.connect(sampler_node_id, eq_node_id, &[(0, 0), (1, 1)], false)
+        cx.connect(sampler_node_id, eq_node_id, &[(0, 0), (1, 0)], false)
             .unwrap();
-        cx.connect(eq_node_id, graph_out_node_id, &[(0, 0), (1, 1)], false)
+        cx.connect(eq_node_id, graph_out_node_id, &[(0, 0), (0, 1)], false)
             .unwrap();
 
         Self {
@@ -82,18 +82,18 @@ impl AudioSystem {
 
 fn main() {
     let mut audio_system = AudioSystem::new();
-    let mut eq_gains: [f32; 3] = [1.0, 1.0, 1.0];
+    let mut eq_params = EqEffectParameters::default();
 
     eframe::run_simple_native(
-        "EQ & Gain Effect (Kira)",
+        "EQ Effect (Firewheel)",
         eframe::NativeOptions::default(),
         move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                ui.add(egui::Slider::new(&mut eq_gains[0], 0.0..=1.0).text("Gain Low"));
-                ui.add(egui::Slider::new(&mut eq_gains[1], 0.0..=1.0).text("Gain Mid"));
-                ui.add(egui::Slider::new(&mut eq_gains[2], 0.0..=1.0).text("Gain High"));
+                ui.add(egui::Slider::new(&mut eq_params.gains[0], 0.0..=1.0).text("Gain Low"));
+                ui.add(egui::Slider::new(&mut eq_params.gains[1], 0.0..=1.0).text("Gain Mid"));
+                ui.add(egui::Slider::new(&mut eq_params.gains[2], 0.0..=1.0).text("Gain High"));
             });
-            audio_system.eq_node.eq_effect_parameters = EqEffectParameters { gains: eq_gains };
+            audio_system.eq_node.eq_effect_parameters = eq_params;
             audio_system
                 .eq_node
                 .update_memo(&mut audio_system.cx.event_queue(audio_system.eq_node_id));

@@ -8,7 +8,7 @@ use prealloc_ref_vec::{PreallocRefVec, TmpRefVec};
 pub(crate) struct FixedProcessBlock {
     inputs: FlatChannels,
     // The outputs are represented as a collection of `Vec`
-    // because pusing beyond the expected bounds has a
+    // because pushing beyond the expected bounds has a
     // non-zero chance of happening.
     outputs: Box<[Vec<f32>]>,
     input_slices: PreallocRefVec<[f32]>,

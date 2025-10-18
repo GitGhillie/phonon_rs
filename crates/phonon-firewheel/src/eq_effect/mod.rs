@@ -32,8 +32,8 @@ impl AudioNode for FilterNode {
             .debug_name("example_filter_")
             // The configuration of the input/output ports.
             .channel_config(ChannelConfig {
-                num_inputs: ChannelCount::STEREO,
-                num_outputs: ChannelCount::STEREO,
+                num_inputs: ChannelCount::MONO,
+                num_outputs: ChannelCount::MONO,
             })
     }
 
@@ -51,17 +51,15 @@ impl AudioNode for FilterNode {
         let frame_size = 1024;
 
         let audio_settings = AudioSettings::new(sample_rate.get(), frame_size);
-        let eq_effect_l = EqEffect::new(audio_settings);
-        let eq_effect_r = EqEffect::new(audio_settings);
+        let eq_effect = EqEffect::new(audio_settings);
 
         Processor {
-            eq_effect_l,
-            eq_effect_r,
+            eq_effect,
             fixed_block: FixedProcessBlock::new(
                 frame_size,
                 cx.stream_info.max_block_frames.get() as usize,
-                2,
-                2,
+                1,
+                1,
             ),
             params: self.clone(),
         }
@@ -72,8 +70,7 @@ impl AudioNode for FilterNode {
 struct Processor {
     params: FilterNode,
     fixed_block: FixedProcessBlock,
-    eq_effect_l: EqEffect,
-    eq_effect_r: EqEffect,
+    eq_effect: EqEffect,
 }
 
 impl AudioNodeProcessor for Processor {
@@ -107,9 +104,7 @@ impl AudioNodeProcessor for Processor {
         self.fixed_block
             .process(temp_proc, info, |inputs, outputs| {
                 let eq_params = self.params.eq_effect_parameters;
-
-                self.eq_effect_l.apply(eq_params, inputs[0], outputs[0]);
-                self.eq_effect_r.apply(eq_params, inputs[1], outputs[1]);
+                self.eq_effect.apply(eq_params, inputs[0], outputs[0]);
             })
     }
 }
