@@ -39,6 +39,9 @@ pub struct EqEffect {
     previous_gains: [f32; NUM_BANDS],
     /// Current row of `filters` that is applicable.
     current: usize,
+    /// Scratch buffers
+    scratch_buffer1: Vec<f32>,
+    scratch_buffer2: Vec<f32>,
 }
 
 impl EqEffect {
@@ -50,6 +53,8 @@ impl EqEffect {
             temp: Array::zeros(audio_settings.frame_size), // Doesn't need to be zeros
             previous_gains: [1.0, 1.0, 1.0],
             current: 0,
+            scratch_buffer1: vec![0.0; audio_settings.frame_size],
+            scratch_buffer2: vec![0.0; audio_settings.frame_size],
         };
 
         // Port note: Instead of initializing with gains of 0.0 we use gains of 1.0
@@ -151,9 +156,8 @@ impl EqEffect {
     }
 
     fn apply_filter_cascade(&mut self, index: usize, input: &[f32], output: &mut [f32]) {
-        // todo: The original code does not have these allocations
-        let mut temp_output1 = vec![0.0; self.frame_size];
-        let mut temp_output2 = vec![0.0; self.frame_size];
+        let mut temp_output1 = self.scratch_buffer1.as_mut_slice();
+        let mut temp_output2 = self.scratch_buffer2.as_mut_slice();
 
         self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
         self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
@@ -161,9 +165,8 @@ impl EqEffect {
     }
 
     fn apply_filter_to_temp_cascade(&mut self, index: usize, input: &[f32]) {
-        // todo: The original code does not have these allocations
-        let mut temp_output1 = vec![0.0; self.frame_size];
-        let mut temp_output2 = vec![0.0; self.frame_size];
+        let mut temp_output1 = self.scratch_buffer1.as_mut_slice();
+        let mut temp_output2 = self.scratch_buffer2.as_mut_slice();
 
         self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
         self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
