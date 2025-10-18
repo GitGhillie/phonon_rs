@@ -21,9 +21,21 @@ use ndarray::{Array, Array1};
 use crate::dsp::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
 use crate::dsp::iir::{IIR, IIRFilterer};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
 pub struct EqEffectParameters {
     pub gains: [f32; NUM_BANDS],
+}
+
+impl Default for EqEffectParameters {
+    fn default() -> Self {
+        Self {
+            gains: [1.0, 1.0, 1.0],
+        }
+    }
 }
 
 pub struct EqEffect {

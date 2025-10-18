@@ -1,7 +1,5 @@
-use firewheel::Volume;
 use firewheel::channel_config::{ChannelConfig, ChannelCount};
 use firewheel::diff::{Diff, Patch, RealtimeClone};
-use firewheel::dsp::volume::DEFAULT_AMP_EPSILON;
 use firewheel::event::ProcEvents;
 use firewheel::node::{
     AudioNode, AudioNodeInfo, AudioNodeProcessor, ConstructProcessorContext, EmptyConfig,
@@ -12,21 +10,10 @@ use phonon::effects::eq::{EqEffect, EqEffectParameters};
 
 use crate::fixed_block::FixedProcessBlock;
 
-#[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq)]
+#[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq, Default)]
 pub struct FilterNode {
-    /// The overall volume.
-    pub volume: Volume,
-    /// EQ bands
-    pub eq: [f32; 3],
-}
-
-impl Default for FilterNode {
-    fn default() -> Self {
-        Self {
-            volume: Volume::default(),
-            eq: [1.0, 1.0, 1.0],
-        }
-    }
+    /// EQ effect parameters
+    pub eq_effect_parameters: EqEffectParameters,
 }
 
 // Implement the AudioNode type for your node.
@@ -64,28 +51,29 @@ impl AudioNode for FilterNode {
         let frame_size = 1024;
 
         let audio_settings = AudioSettings::new(sample_rate.get(), frame_size);
-        let eq_effect = EqEffect::new(audio_settings);
+        let eq_effect_l = EqEffect::new(audio_settings);
+        let eq_effect_r = EqEffect::new(audio_settings);
 
         Processor {
-            gain: 1.0,
-            eq_effect,
+            eq_effect_l,
+            eq_effect_r,
             fixed_block: FixedProcessBlock::new(
                 frame_size,
                 cx.stream_info.max_block_frames.get() as usize,
                 2,
                 2,
             ),
-            eq: [1.0, 1.0, 1.0],
+            params: self.clone(),
         }
     }
 }
 
 // The realtime processor counterpart to your node.
 struct Processor {
+    params: FilterNode,
     fixed_block: FixedProcessBlock,
-    gain: f32,
-    eq: [f32; 3],
-    eq_effect: EqEffect,
+    eq_effect_l: EqEffect,
+    eq_effect_r: EqEffect,
 }
 
 impl AudioNodeProcessor for Processor {
@@ -101,19 +89,8 @@ impl AudioNodeProcessor for Processor {
         // Extra buffers and utilities.
         _extra: &mut ProcExtra,
     ) -> ProcessStatus {
-        // Process the events.
-        //
-        // We don't need to keep around a `FilterNode` instance,
-        // so we can just match on each event directly.
         for patch in events.drain_patches::<FilterNode>() {
-            match patch {
-                FilterNodePatch::Volume(volume) => {
-                    self.gain = volume.amp_clamped(DEFAULT_AMP_EPSILON);
-                }
-                FilterNodePatch::Eq(eq_event) => {
-                    self.eq[eq_event.0] = eq_event.1;
-                }
-            }
+            self.params.apply(patch);
         }
 
         // If the previous output of this node was silent, and the inputs are also silent
@@ -129,11 +106,10 @@ impl AudioNodeProcessor for Processor {
 
         self.fixed_block
             .process(temp_proc, info, |inputs, outputs| {
-                // todo: EqEffectParameters as node param?
-                let eq_params = EqEffectParameters { gains: self.eq };
+                let eq_params = self.params.eq_effect_parameters;
 
-                self.eq_effect.apply(eq_params, inputs[0], outputs[0]);
-                self.eq_effect.apply(eq_params, inputs[1], outputs[1]);
+                self.eq_effect_l.apply(eq_params, inputs[0], outputs[0]);
+                self.eq_effect_r.apply(eq_params, inputs[1], outputs[1]);
             })
     }
 }

@@ -13,6 +13,7 @@ readme = "README.md"
 default = []
 serde-serialize = ["dep:serde", "parry3d/serde-serialize", "ndarray/serde"]
 reflect = ["dep:bevy_reflect"]
+firewheel = ["dep:firewheel"]
 
 [dependencies]
 derive_deref = "1"
@@ -27,6 +28,7 @@ ultraviolet = "0.10"
 serde = { version = "1", optional = true }
 bevy_reflect = { version = "0.16", optional = true }
 sofar = "0.2.1"
+firewheel = { version = "0.8.0-rc.1", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }

@@ -10,7 +10,7 @@ documentation = "https://docs.rs/phonon-firewheel"
 readme = "README.md"
 
 [dependencies]
-phonon = { path = "../phonon", version = "0.2" }
+phonon = { path = "../phonon", version = "0.2", features = ["firewheel"]}
 firewheel = "0.8.0-rc.1"
 prealloc_ref_vec = "0.1"
 
