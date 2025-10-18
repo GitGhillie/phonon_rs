@@ -7,7 +7,7 @@ use firewheel::node::{
     AudioNode, AudioNodeInfo, AudioNodeProcessor, ConstructProcessorContext, EmptyConfig,
     ProcBuffers, ProcExtra, ProcInfo, ProcessStatus,
 };
-use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::dsp::audio_buffer::AudioSettings;
 use phonon::effects::eq::{EqEffect, EqEffectParameters};
 
 use crate::fixed_block::FixedProcessBlock;
@@ -75,10 +75,6 @@ impl AudioNode for FilterNode {
                 2,
                 2,
             ),
-            phonon_buffer_in_l: AudioBuffer::new(frame_size),
-            phonon_buffer_in_r: AudioBuffer::new(frame_size),
-            phonon_buffer_out_l: AudioBuffer::new(frame_size),
-            phonon_buffer_out_r: AudioBuffer::new(frame_size),
             eq: [1.0, 1.0, 1.0],
         }
     }
@@ -87,10 +83,6 @@ impl AudioNode for FilterNode {
 // The realtime processor counterpart to your node.
 struct Processor {
     fixed_block: FixedProcessBlock,
-    phonon_buffer_in_l: AudioBuffer<1>,
-    phonon_buffer_in_r: AudioBuffer<1>,
-    phonon_buffer_out_l: AudioBuffer<1>,
-    phonon_buffer_out_r: AudioBuffer<1>,
     gain: f32,
     eq: [f32; 3],
     eq_effect: EqEffect,
@@ -120,7 +112,6 @@ impl AudioNodeProcessor for Processor {
                 }
                 FilterNodePatch::Eq(eq_event) => {
                     self.eq[eq_event.0] = eq_event.1;
-                    dbg!(self.eq);
                 }
             }
         }
@@ -141,25 +132,8 @@ impl AudioNodeProcessor for Processor {
                 // todo: EqEffectParameters as node param?
                 let eq_params = EqEffectParameters { gains: self.eq };
 
-                self.phonon_buffer_in_l.0[0].copy_from_slice(inputs[0]);
-                self.phonon_buffer_in_r.0[0].copy_from_slice(inputs[1]);
-                // todo make it easier to apply this to multiple channels
-                self.eq_effect.apply(
-                    eq_params,
-                    &self.phonon_buffer_in_l,
-                    &mut self.phonon_buffer_out_l,
-                );
-                self.eq_effect.apply(
-                    eq_params,
-                    &self.phonon_buffer_in_r,
-                    &mut self.phonon_buffer_out_r,
-                );
-
-                self.phonon_buffer_out_l.scale(self.gain);
-                self.phonon_buffer_out_r.scale(self.gain);
-
-                outputs[0].copy_from_slice(self.phonon_buffer_out_l.0[0].as_slice());
-                outputs[1].copy_from_slice(self.phonon_buffer_out_r.0[0].as_slice());
+                self.eq_effect.apply(eq_params, inputs[0], outputs[0]);
+                self.eq_effect.apply(eq_params, inputs[1], outputs[1]);
             });
 
         result

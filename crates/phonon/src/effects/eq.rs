@@ -73,8 +73,8 @@ impl EqEffect {
     pub fn apply(
         &mut self,
         parameters: EqEffectParameters,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
+        input: &[f32],
+        output: &mut [f32],
     ) -> AudioEffectState {
         //todo: Function can panic if `output` is too short
 
@@ -94,30 +94,26 @@ impl EqEffect {
             self.filters[1][self.current].copy_state_from(self.filters[1][previous]);
             self.filters[2][self.current].copy_state_from(self.filters[2][previous]);
 
-            self.apply_filter_to_temp_cascade(previous, &input[0]);
-            self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
+            self.apply_filter_to_temp_cascade(previous, input);
+            self.apply_filter_cascade(self.current, input, output);
 
             for i in 0..self.frame_size {
                 let weight = (i / self.frame_size) as f32;
-                output[0][i] = weight * output[0][i] + (1.0 - weight) * self.temp[i];
+                output[i] = weight * output[i] + (1.0 - weight) * self.temp[i];
             }
 
             for i in 0..NUM_BANDS {
                 self.previous_gains[i] = parameters.gains[i];
             }
         } else {
-            self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
+            self.apply_filter_cascade(self.current, input, output);
         }
 
         AudioEffectState::TailComplete
     }
 
     #[expect(dead_code, reason = "Used in HybridReverbEffect, not ported yet")]
-    fn tail_apply(
-        &mut self,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
-    ) -> AudioEffectState {
+    fn tail_apply(&mut self, input: &[f32], output: &mut [f32]) -> AudioEffectState {
         self.apply(
             EqEffectParameters {
                 gains: self.previous_gains,

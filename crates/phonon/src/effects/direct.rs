@@ -108,7 +108,8 @@ impl DirectEffect {
                 gains: eq_coefficients,
             };
 
-            self.eq_effect.apply(eq_parameters, input, &mut buf);
+            self.eq_effect
+                .apply(eq_parameters, input[0].as_slice(), buf[0].as_mut_slice());
             self.gain_effect.apply(gain_parameters, &buf, output);
         } else {
             self.gain_effect.apply(gain_parameters, input, output);
