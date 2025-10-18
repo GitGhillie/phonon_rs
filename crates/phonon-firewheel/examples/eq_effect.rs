@@ -82,6 +82,7 @@ impl AudioSystem {
 fn main() {
     let mut audio_system = AudioSystem::new();
     let mut gain: f32 = 1.0;
+    let mut eq_gains: [f32; 3] = [1.0, 1.0, 1.0];
 
     eframe::run_simple_native(
         "EQ & Gain Effect (Kira)",
@@ -89,8 +90,12 @@ fn main() {
         move |ctx, _frame| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.add(egui::Slider::new(&mut gain, 0.0..=1.0).text("Gain"));
+                ui.add(egui::Slider::new(&mut eq_gains[0], 0.0..=1.0).text("Gain Low"));
+                ui.add(egui::Slider::new(&mut eq_gains[1], 0.0..=1.0).text("Gain Mid"));
+                ui.add(egui::Slider::new(&mut eq_gains[2], 0.0..=1.0).text("Gain High"));
             });
             audio_system.eq_node.volume = firewheel::Volume::Linear(gain);
+            audio_system.eq_node.eq = eq_gains;
             audio_system
                 .eq_node
                 .update_memo(&mut audio_system.cx.event_queue(audio_system.eq_node_id));

@@ -120,6 +120,7 @@ impl AudioNodeProcessor for Processor {
                 }
                 FilterNodePatch::Eq(eq_event) => {
                     self.eq[eq_event.0] = eq_event.1;
+                    dbg!(self.eq);
                 }
             }
         }
@@ -140,8 +141,8 @@ impl AudioNodeProcessor for Processor {
                 // todo: EqEffectParameters as node param?
                 let eq_params = EqEffectParameters { gains: self.eq };
 
-                self.phonon_buffer_in_l.0[0] = inputs[0].to_vec();
-                self.phonon_buffer_in_r.0[0] = inputs[1].to_vec();
+                self.phonon_buffer_in_l.0[0].copy_from_slice(inputs[0]);
+                self.phonon_buffer_in_r.0[0].copy_from_slice(inputs[1]);
                 // todo make it easier to apply this to multiple channels
                 self.eq_effect.apply(
                     eq_params,
@@ -154,13 +155,11 @@ impl AudioNodeProcessor for Processor {
                     &mut self.phonon_buffer_out_r,
                 );
 
+                self.phonon_buffer_out_l.scale(self.gain);
+                self.phonon_buffer_out_r.scale(self.gain);
+
                 outputs[0].copy_from_slice(self.phonon_buffer_out_l.0[0].as_slice());
                 outputs[1].copy_from_slice(self.phonon_buffer_out_r.0[0].as_slice());
-
-                for i in 0..inputs[0].len() {
-                    outputs[0][i] = inputs[0][i] * self.gain;
-                    outputs[1][i] = inputs[1][i] * self.gain;
-                }
             });
 
         result
