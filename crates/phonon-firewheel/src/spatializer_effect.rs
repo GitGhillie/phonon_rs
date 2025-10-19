@@ -6,17 +6,17 @@ use firewheel::node::{
     ProcBuffers, ProcExtra, ProcInfo, ProcessStatus,
 };
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
 
 use crate::fixed_block::FixedProcessBlock;
 
 #[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq, Default)]
 pub struct SpatializerNode {
-    /// Direct effect parameters
     pub direct_effect_parameters: DirectEffectParameters,
+    pub binaural_effect_parameters: BinauralEffectParameters,
 }
 
-// Implement the AudioNode type for your node.
 impl AudioNode for SpatializerNode {
     // Since this node doesn't need any configuration, we'll just
     // default to `EmptyConfig`.
@@ -33,7 +33,7 @@ impl AudioNode for SpatializerNode {
             // The configuration of the input/output ports.
             .channel_config(ChannelConfig {
                 num_inputs: ChannelCount::MONO,
-                num_outputs: ChannelCount::MONO,
+                num_outputs: ChannelCount::STEREO,
             })
     }
 
@@ -52,17 +52,20 @@ impl AudioNode for SpatializerNode {
 
         let audio_settings = AudioSettings::new(sample_rate.get(), frame_size);
         let direct_effect = DirectEffect::new(audio_settings);
+        let binaural_effect = BinauralEffect::new(audio_settings);
 
         Processor {
             direct_effect,
+            binaural_effect,
             fixed_block: FixedProcessBlock::new(
                 frame_size,
                 cx.stream_info.max_block_frames.get() as usize,
                 1,
-                1,
+                2,
             ),
             params: self.clone(),
             in_buf: AudioBuffer::new(frame_size),
+            scratch_buf: AudioBuffer::new(frame_size),
             out_buf: AudioBuffer::new(frame_size),
         }
     }
@@ -73,8 +76,10 @@ struct Processor {
     params: SpatializerNode,
     fixed_block: FixedProcessBlock,
     direct_effect: DirectEffect,
+    binaural_effect: BinauralEffect,
     in_buf: AudioBuffer<1>,
-    out_buf: AudioBuffer<1>,
+    scratch_buf: AudioBuffer<1>,
+    out_buf: AudioBuffer<2>,
 }
 
 impl AudioNodeProcessor for Processor {
@@ -107,11 +112,16 @@ impl AudioNodeProcessor for Processor {
 
         self.fixed_block
             .process(temp_proc, info, |inputs, outputs| {
-                self.in_buf[0].copy_from_slice(inputs[0]);
                 let direct_params = self.params.direct_effect_parameters;
+                let binaural_params = self.params.binaural_effect_parameters;
+
+                self.in_buf[0].copy_from_slice(inputs[0]);
                 self.direct_effect
-                    .apply(direct_params, &self.in_buf, &mut self.out_buf);
+                    .apply(direct_params, &self.in_buf, &mut self.scratch_buf);
+                self.binaural_effect
+                    .apply(binaural_params, &self.scratch_buf, &mut self.out_buf);
                 outputs[0].copy_from_slice(&self.out_buf[0]);
+                outputs[1].copy_from_slice(&self.out_buf[1]);
             })
     }
 }

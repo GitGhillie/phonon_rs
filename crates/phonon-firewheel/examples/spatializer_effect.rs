@@ -8,6 +8,7 @@ use firewheel::diff::Memo;
 use firewheel::error::UpdateError;
 use firewheel::node::NodeID;
 use firewheel::nodes::sampler::{RepeatMode, SamplerNode};
+use phonon::effects::binaural::BinauralEffectParameters;
 use phonon::effects::direct::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
 use phonon::simulators::direct::DirectSoundPath;
 use phonon_firewheel::spatializer_effect::SpatializerNode;
@@ -30,7 +31,7 @@ impl AudioSystem {
         let mut loader = SymphoniumLoader::new();
         let sample = firewheel::load_audio_file(
             &mut loader,
-            "data/audio/windless_slopes.ogg",
+            "data/audio/pink_noise.ogg",
             sample_rate,
             Default::default(),
         )
@@ -59,7 +60,7 @@ impl AudioSystem {
         cx.connect(
             spatializer_node_id,
             graph_out_node_id,
-            &[(0, 0), (0, 1)],
+            &[(0, 0), (1, 1)],
             false,
         )
         .unwrap();
@@ -97,6 +98,7 @@ fn main() {
         flags: DirectApplyFlags::none(),
         transmission_type: TransmissionType::FrequencyDependent,
     };
+    let mut binaural_params = BinauralEffectParameters::default();
 
     direct_params.flags.air_absorption = true;
     direct_params.flags.occlusion = true;
@@ -177,9 +179,27 @@ fn main() {
                     )
                     .text("Transmission High"),
                 );
+
+                ui.add(egui::Separator::default());
+
+                ui.add(
+                    egui::Slider::new(&mut binaural_params.direction.x, -1.0..=1.0)
+                        .text("Direction X"),
+                );
+
+                ui.add(
+                    egui::Slider::new(&mut binaural_params.direction.y, -1.0..=1.0)
+                        .text("Direction Y"),
+                );
+
+                ui.add(
+                    egui::Slider::new(&mut binaural_params.direction.z, -1.0..=1.0)
+                        .text("Direction Z"),
+                );
             });
 
             audio_system.spatializer_node.direct_effect_parameters = direct_params;
+            audio_system.spatializer_node.binaural_effect_parameters = binaural_params;
             audio_system
                 .spatializer_node
                 .update_memo(&mut audio_system.cx.event_queue(audio_system.eq_node_id));

@@ -28,7 +28,7 @@ ultraviolet = "0.10"
 serde = { version = "1", optional = true }
 bevy_reflect = { version = "0.16", optional = true }
 sofar = "0.2.1"
-firewheel = { version = "0.8.0-rc.1", optional = true }
+firewheel = { version = "0.8.0-rc.1", optional = true, features = ["std", "glam-29"]}
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }

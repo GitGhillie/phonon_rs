@@ -3,7 +3,11 @@ use glam::Vec3;
 use sofar::reader::{OpenOptions, Sofar};
 use sofar::render::Renderer;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
 pub struct BinauralEffectParameters {
     /// Direction/position relative to the listener. Should not be normalized.
     /// Avoid going through 0.0, 0.0, 0.0, as this will result in a jarring change in the audio.
