@@ -17,6 +17,8 @@
 
 use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use crate::dsp::bands::NUM_BANDS;
+#[cfg(feature = "firewheel")]
+use firewheel::diff::{Diff, Patch};
 use std::cmp::PartialEq;
 
 use crate::effects::eq::{EqEffect, EqEffectParameters};
@@ -25,10 +27,7 @@ use crate::simulators::direct::DirectSoundPath;
 
 //todo check if these are all necessary
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(
-    feature = "firewheel",
-    derive(firewheel::diff::Diff, firewheel::diff::Patch)
-)]
+#[cfg_attr(feature = "firewheel", derive(Diff, Patch))]
 pub struct DirectApplyFlags {
     pub distance_attenuation: bool,
     pub air_absorption: bool,
@@ -63,20 +62,14 @@ impl DirectApplyFlags {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "firewheel",
-    derive(firewheel::diff::Diff, firewheel::diff::Patch)
-)]
+#[cfg_attr(feature = "firewheel", derive(Diff, Patch))]
 pub enum TransmissionType {
     FrequencyIndependent,
     FrequencyDependent,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(
-    feature = "firewheel",
-    derive(firewheel::diff::Diff, firewheel::diff::Patch)
-)]
+#[cfg_attr(feature = "firewheel", derive(Diff, Patch))]
 pub struct DirectEffectParameters {
     pub direct_sound_path: DirectSoundPath,
     pub flags: DirectApplyFlags,
