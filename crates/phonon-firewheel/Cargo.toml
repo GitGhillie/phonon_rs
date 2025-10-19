@@ -15,6 +15,6 @@ firewheel = "0.8.0-rc.1"
 prealloc_ref_vec = "0.1"
 
 [dev-dependencies]
-eframe = "0.32"
-glam = "0.29"
+eframe = "0.33"
+glam = "0.30"
 symphonium = "0.6"
