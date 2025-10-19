@@ -1,3 +1,2 @@
-pub mod eq_effect;
+pub mod effects;
 mod fixed_block;
-pub mod spatializer_effect;
