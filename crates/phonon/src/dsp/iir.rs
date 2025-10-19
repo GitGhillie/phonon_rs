@@ -25,7 +25,7 @@ pub struct IIR(DirectForm1<f32>);
 
 impl IIR {
     /// Creates a low-shelf filter (controls the amplitude of all frequencies below the cutoff).
-    pub fn new_low_shelf(high_cutoff: f32, gain: f32, sample_rate: i32) -> Self {
+    pub fn new_low_shelf(high_cutoff: f32, gain: f32, sample_rate: u32) -> Self {
         // Port note: The IIR crate used assumes gain is in dB.
         // This does create some extra work that will hopefully be optimized away...
         let gain_adjusted = (gain.sqrt().log(10.0)) * 40.0;
@@ -41,7 +41,7 @@ impl IIR {
     }
 
     /// Creates a high-shelf filter (controls the amplitude of all frequencies above the cutoff).
-    pub fn new_high_shelf(low_cutoff: f32, gain: f32, sample_rate: i32) -> Self {
+    pub fn new_high_shelf(low_cutoff: f32, gain: f32, sample_rate: u32) -> Self {
         // Port note: The IIR crate used assumes gain is in dB.
         // This does create some extra work that will hopefully be optimized away...
         let gain_adjusted = (gain.sqrt().log(10.0)) * 40.0;
@@ -57,7 +57,7 @@ impl IIR {
     }
 
     /// Creates a peaking filter (controls the amplitude of all frequencies between the cutoffs).
-    pub fn new_peaking(low_cutoff: f32, high_cutoff: f32, gain: f32, sample_rate: i32) -> Self {
+    pub fn new_peaking(low_cutoff: f32, high_cutoff: f32, gain: f32, sample_rate: u32) -> Self {
         // Port note: The IIR crate used assumes gain is in dB.
         // This does create some extra work that will hopefully be optimized away...
         let gain_adjusted = (gain.sqrt().log(10.0)) * 40.0;

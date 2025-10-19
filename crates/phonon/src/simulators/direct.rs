@@ -21,11 +21,11 @@ use crate::models::air_absorption::AirAbsorptionModel;
 use crate::models::directivity::Directivity;
 use crate::models::distance_attenuation::DistanceAttenuationModel;
 use crate::models::propagation_medium::SPEED_OF_SOUND;
+use crate::scene::Scene;
 use crate::scene::coordinate_space::CoordinateSpace3f;
 use crate::scene::ray::Ray;
 use crate::scene::sampling::{generate_sphere_volume_sample, transform_sphere_volume_sample};
 use crate::scene::sphere::Sphere;
-use crate::scene::Scene;
 use glam::Vec3;
 
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
@@ -37,6 +37,10 @@ pub enum OcclusionType {
 
 /// Describes the properties of a direct sound path.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
 #[repr(C)]
 pub struct DirectSoundPath {
     pub distance_attenuation: f32,
@@ -102,13 +106,13 @@ impl DirectSimulator {
     ) {
         let distance = (source.origin - listener.origin).length();
 
-        if flags.contains(DirectApplyFlags::DistanceAttenuation) {
+        if flags.distance_attenuation {
             direct_sound_path.distance_attenuation = distance_attenuation_model.evaluate(distance);
         } else {
             direct_sound_path.distance_attenuation = 1.0
         }
 
-        if flags.contains(DirectApplyFlags::AirAbsorption) {
+        if flags.air_absorption {
             for i in 0..NUM_BANDS {
                 direct_sound_path.air_absorption[i] = air_absorption_model.evaluate(distance, i);
             }
@@ -116,20 +120,20 @@ impl DirectSimulator {
             direct_sound_path.air_absorption.fill(1.0);
         }
 
-        if flags.contains(DirectApplyFlags::Delay) {
+        if flags.delay {
             direct_sound_path.delay = Self::direct_path_delay(listener.origin, source.origin);
         } else {
             direct_sound_path.delay = 0.0;
         }
 
-        if flags.contains(DirectApplyFlags::Directivity) {
+        if flags.directivity {
             direct_sound_path.directivity = directivity.evaluate_at(listener.origin, source);
         } else {
             direct_sound_path.directivity = 1.0;
         }
 
         // todo: The scene must be optional
-        if flags.contains(DirectApplyFlags::Occlusion) {
+        if flags.occlusion {
             match occlusion_type {
                 OcclusionType::Raycast => {
                     direct_sound_path.occlusion =
@@ -150,7 +154,7 @@ impl DirectSimulator {
         }
 
         // todo: The scene must be optional
-        if flags.contains(DirectApplyFlags::Transmission) {
+        if flags.transmission {
             self.transmission(
                 scene,
                 listener.origin,

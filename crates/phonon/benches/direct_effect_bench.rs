@@ -15,13 +15,14 @@
 // limitations under the License.
 //
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
 use phonon::simulators::direct::DirectSoundPath;
 use rand::Rng;
+use std::hint::black_box;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("direct effect", |b| {
@@ -39,9 +40,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let mut in_buffer = AudioBuffer::new(frame_size);
         let mut out_buffer = AudioBuffer::new(frame_size);
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for sample in &mut in_buffer[0] {
-            let random_sample = (rng.gen_range(0..i32::MAX) % 10001) as f32 / 10000.0f32;
+            let random_sample = (rng.random_range(0..i32::MAX) % 10001) as f32 / 10000.0f32;
             *sample = black_box(random_sample);
         }
 
@@ -54,13 +55,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 transmission: [0.1, 0.2, 0.3],
                 directivity: 0.0,
             },
-            flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::Occlusion,
+            flags: DirectApplyFlags {
+                distance_attenuation: true,
+                air_absorption: false,
+                directivity: false,
+                occlusion: true,
+                transmission: false,
+                delay: false,
+            },
             transmission_type,
         };
 
-        direct_params
-            .flags
-            .set(DirectApplyFlags::Transmission, apply_transmission);
+        direct_params.flags.transmission = apply_transmission;
 
         b.iter(|| {
             // Changing transmission factor each run to get the worst case performance.

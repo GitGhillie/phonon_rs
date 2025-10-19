@@ -20,9 +20,9 @@ use crate::dsp::bands::NUM_BANDS;
 use crate::dsp::delay::Delay;
 use crate::dsp::reverb_estimator::Reverb;
 
-use crate::dsp::iir::{IIRFilterer, IIR};
+use crate::dsp::iir::{IIR, IIRFilterer};
 use derive_deref::{Deref, DerefMut};
-use ndarray::{s, Array, Array2, ArrayView, Axis};
+use ndarray::{Array, Array2, ArrayView, Axis, s};
 use rand::Rng;
 use ultraviolet::f32x4;
 
@@ -35,7 +35,7 @@ const ALLPASS_DELAYS: [usize; 4] = [225, 341, 441, 556];
 pub struct ReverbEffectParams(pub Reverb);
 
 pub struct ReverbEffect {
-    sampling_rate: i32,
+    sampling_rate: u32,
     pub frame_size: usize,
     delay_values: [i32; NUM_DELAYS],
     delay_lines: [Delay; NUM_DELAYS],
@@ -353,7 +353,7 @@ impl ReverbEffect {
         }
     }
 
-    fn calc_delays_for_reverb_time(reverb_time: f32, sampling_rate: i32) -> [i32; NUM_DELAYS] {
+    fn calc_delays_for_reverb_time(reverb_time: f32, sampling_rate: u32) -> [i32; NUM_DELAYS] {
         let mut result: [i32; NUM_DELAYS] = [0; NUM_DELAYS];
 
         const PRIMES: [i32; 16] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53];
@@ -362,10 +362,10 @@ impl ReverbEffect {
         let delay_min = (delay_sum / (NUM_DELAYS as f32)) as i32;
 
         // todo: Check if rand performance and behavior is OK.
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for i in 0..NUM_DELAYS {
-            let random_offset_unsigned: u16 = rng.gen();
+            let random_offset_unsigned: u16 = rng.random();
             let random_offset = (random_offset_unsigned as i32) % 101;
 
             result[i] = Self::next_power_of_prime(delay_min + random_offset, PRIMES[i]);

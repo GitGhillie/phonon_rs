@@ -19,14 +19,27 @@ use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use ndarray::{Array, Array1};
 
 use crate::dsp::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
-use crate::dsp::iir::{IIRFilterer, IIR};
+use crate::dsp::iir::{IIR, IIRFilterer};
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
 pub struct EqEffectParameters {
     pub gains: [f32; NUM_BANDS],
 }
 
+impl Default for EqEffectParameters {
+    fn default() -> Self {
+        Self {
+            gains: [1.0, 1.0, 1.0],
+        }
+    }
+}
+
 pub struct EqEffect {
-    pub sampling_rate: i32,
+    pub sampling_rate: u32,
     pub frame_size: usize,
     /// Two rows of filterers, one for the current `EqEffectParameters` and one for the previous
     /// `EqEffectParameters`. Which row is which depends on the `current` field.
@@ -38,6 +51,9 @@ pub struct EqEffect {
     previous_gains: [f32; NUM_BANDS],
     /// Current row of `filters` that is applicable.
     current: usize,
+    /// Scratch buffers
+    scratch_buffer1: Vec<f32>,
+    scratch_buffer2: Vec<f32>,
 }
 
 impl EqEffect {
@@ -49,6 +65,8 @@ impl EqEffect {
             temp: Array::zeros(audio_settings.frame_size), // Doesn't need to be zeros
             previous_gains: [1.0, 1.0, 1.0],
             current: 0,
+            scratch_buffer1: vec![0.0; audio_settings.frame_size],
+            scratch_buffer2: vec![0.0; audio_settings.frame_size],
         };
 
         // Port note: Instead of initializing with gains of 0.0 we use gains of 1.0
@@ -72,8 +90,8 @@ impl EqEffect {
     pub fn apply(
         &mut self,
         parameters: EqEffectParameters,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
+        input: &[f32],
+        output: &mut [f32],
     ) -> AudioEffectState {
         //todo: Function can panic if `output` is too short
 
@@ -93,30 +111,26 @@ impl EqEffect {
             self.filters[1][self.current].copy_state_from(self.filters[1][previous]);
             self.filters[2][self.current].copy_state_from(self.filters[2][previous]);
 
-            self.apply_filter_to_temp_cascade(previous, &input[0]);
-            self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
+            self.apply_filter_to_temp_cascade(previous, input);
+            self.apply_filter_cascade(self.current, input, output);
 
             for i in 0..self.frame_size {
                 let weight = (i / self.frame_size) as f32;
-                output[0][i] = weight * output[0][i] + (1.0 - weight) * self.temp[i];
+                output[i] = weight * output[i] + (1.0 - weight) * self.temp[i];
             }
 
             for i in 0..NUM_BANDS {
                 self.previous_gains[i] = parameters.gains[i];
             }
         } else {
-            self.apply_filter_cascade(self.current, &input[0], &mut output[0]);
+            self.apply_filter_cascade(self.current, input, output);
         }
 
         AudioEffectState::TailComplete
     }
 
     #[expect(dead_code, reason = "Used in HybridReverbEffect, not ported yet")]
-    fn tail_apply(
-        &mut self,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
-    ) -> AudioEffectState {
+    fn tail_apply(&mut self, input: &[f32], output: &mut [f32]) -> AudioEffectState {
         self.apply(
             EqEffectParameters {
                 gains: self.previous_gains,
@@ -154,9 +168,8 @@ impl EqEffect {
     }
 
     fn apply_filter_cascade(&mut self, index: usize, input: &[f32], output: &mut [f32]) {
-        // todo: The original code does not have these allocations
-        let mut temp_output1 = vec![0.0; self.frame_size];
-        let mut temp_output2 = vec![0.0; self.frame_size];
+        let mut temp_output1 = self.scratch_buffer1.as_mut_slice();
+        let mut temp_output2 = self.scratch_buffer2.as_mut_slice();
 
         self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
         self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
@@ -164,9 +177,8 @@ impl EqEffect {
     }
 
     fn apply_filter_to_temp_cascade(&mut self, index: usize, input: &[f32]) {
-        // todo: The original code does not have these allocations
-        let mut temp_output1 = vec![0.0; self.frame_size];
-        let mut temp_output2 = vec![0.0; self.frame_size];
+        let mut temp_output1 = self.scratch_buffer1.as_mut_slice();
+        let mut temp_output2 = self.scratch_buffer2.as_mut_slice();
 
         self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
         self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);

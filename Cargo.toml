@@ -1,8 +1,10 @@
 [workspace]
 members = [
     "crates/phonon",
-    "crates/phonon-fmod",
-    "crates/phonon-kira",
+    "crates/phonon-firewheel",
 ]
 
 resolver = "2"
+
+[patch.crates-io]
+firewheel = { git = "https://github.com/BillyDM/firewheel" }

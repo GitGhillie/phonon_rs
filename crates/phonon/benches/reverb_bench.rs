@@ -15,14 +15,14 @@
 // limitations under the License.
 //
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::dsp::reverb_estimator::Reverb;
 use phonon::effects::reverb::{ReverbEffect, ReverbEffectParams};
 
 fn bench_reverb(input: f32) -> f32 {
     const NUM_RUNS: i32 = 100_000; //todo this should be a Criterion argument probably
-    const SAMPLING_RATE: i32 = 48_000;
+    const SAMPLING_RATE: u32 = 48_000;
     const FRAME_SIZE: usize = 1024;
 
     // let in_array = [0.0f32; FRAME_SIZE];

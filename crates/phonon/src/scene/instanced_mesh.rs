@@ -15,9 +15,9 @@
 // limitations under the License.
 //
 
+use crate::scene::Scene;
 use crate::scene::hit::Hit;
 use crate::scene::ray::Ray;
-use crate::scene::Scene;
 use glam::Mat4;
 use std::sync::{Arc, Mutex};
 

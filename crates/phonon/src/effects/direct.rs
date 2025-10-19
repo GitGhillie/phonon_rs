@@ -17,37 +17,80 @@
 
 use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
 use crate::dsp::bands::NUM_BANDS;
-use bitflags::bitflags;
 use std::cmp::PartialEq;
 
 use crate::effects::eq::{EqEffect, EqEffectParameters};
 use crate::effects::gain::{GainEffect, GainEffectParameters};
 use crate::simulators::direct::DirectSoundPath;
 
-bitflags! {
-    //todo check if these are all necessary
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-    pub struct DirectApplyFlags: u8 {
-        const DistanceAttenuation = 1 << 0;
-        const AirAbsorption = 1 << 1;
-        const Directivity = 1 << 2;
-        const Occlusion = 1 << 3;
-        const Transmission = 1 << 4;
-        const Delay = 1 << 5;
+//todo check if these are all necessary
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
+pub struct DirectApplyFlags {
+    pub distance_attenuation: bool,
+    pub air_absorption: bool,
+    pub directivity: bool,
+    pub occlusion: bool,
+    pub transmission: bool,
+    pub delay: bool,
+}
+
+impl DirectApplyFlags {
+    pub fn all() -> Self {
+        Self {
+            distance_attenuation: true,
+            air_absorption: true,
+            directivity: true,
+            occlusion: true,
+            transmission: true,
+            delay: true,
+        }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            distance_attenuation: false,
+            air_absorption: false,
+            directivity: false,
+            occlusion: false,
+            transmission: false,
+            delay: false,
+        }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
 pub enum TransmissionType {
     FrequencyIndependent,
     FrequencyDependent,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(
+    feature = "firewheel",
+    derive(firewheel::diff::Diff, firewheel::diff::Patch)
+)]
 pub struct DirectEffectParameters {
     pub direct_sound_path: DirectSoundPath,
     pub flags: DirectApplyFlags,
     pub transmission_type: TransmissionType,
+}
+
+impl Default for DirectEffectParameters {
+    fn default() -> Self {
+        Self {
+            direct_sound_path: DirectSoundPath::default(),
+            flags: DirectApplyFlags::all(),
+            transmission_type: TransmissionType::FrequencyDependent,
+        }
+    }
 }
 
 // Port note: Compared to the original code this DirectEffect applies to 1 channel only.
@@ -95,8 +138,8 @@ impl DirectEffect {
             &mut eq_coefficients,
         );
 
-        let air_absorption = (parameters.flags & DirectApplyFlags::AirAbsorption).bits() != 0;
-        let transmission = (parameters.flags & DirectApplyFlags::Transmission).bits() != 0;
+        let air_absorption = parameters.flags.air_absorption;
+        let transmission = parameters.flags.transmission;
         let transmission_freq_dep =
             parameters.transmission_type == TransmissionType::FrequencyDependent;
         let apply_eq = air_absorption || (transmission && transmission_freq_dep);
@@ -108,7 +151,8 @@ impl DirectEffect {
                 gains: eq_coefficients,
             };
 
-            self.eq_effect.apply(eq_parameters, input, &mut buf);
+            self.eq_effect
+                .apply(eq_parameters, input[0].as_slice(), buf[0].as_mut_slice());
             self.gain_effect.apply(gain_parameters, &buf, output);
         } else {
             self.gain_effect.apply(gain_parameters, input, output);
@@ -131,14 +175,14 @@ impl DirectEffect {
         eq_coefficients: &mut [f32; NUM_BANDS],
     ) {
         // Apply distance attenuation.
-        *overall_gain = match flags & DirectApplyFlags::DistanceAttenuation {
-            DirectApplyFlags::DistanceAttenuation => direct_path.distance_attenuation,
-            _ => 1.0,
+        *overall_gain = match flags.distance_attenuation {
+            true => direct_path.distance_attenuation,
+            false => 1.0,
         };
 
         // Apply air absorption.
         for i in 0..NUM_BANDS {
-            if (flags & DirectApplyFlags::AirAbsorption).bits() != 0 {
+            if flags.air_absorption {
                 eq_coefficients[i] = direct_path.air_absorption[i];
             } else {
                 eq_coefficients[i] = 1.0;
@@ -146,13 +190,13 @@ impl DirectEffect {
         }
 
         // Apply directivity.
-        if (flags & DirectApplyFlags::Directivity).bits() != 0 {
+        if flags.directivity {
             *overall_gain *= direct_path.directivity;
         }
 
-        if ((flags & DirectApplyFlags::AirAbsorption).bits() != 0)
-            || (((flags & DirectApplyFlags::Transmission).bits() != 0)
-                && transmission_type == TransmissionType::FrequencyDependent)
+        // todo double check this
+        if flags.air_absorption
+            || (flags.transmission && transmission_type == TransmissionType::FrequencyDependent)
         {
             // Maximum value in EQ filter should be normalized to 1 and common factor rolled into attenuation factor,
             // this will allow for smooth changes to frequency changes (possible exception is if maximum remains
@@ -162,12 +206,12 @@ impl DirectEffect {
         }
 
         // Early return if we don't apply occlusion
-        if (flags & DirectApplyFlags::Occlusion).bits() == 0 {
+        if !flags.occlusion {
             return;
         }
 
         // Apply occlusion and transmission.
-        if (flags & DirectApplyFlags::Transmission).bits() != 0 {
+        if flags.transmission {
             match transmission_type {
                 TransmissionType::FrequencyIndependent => {
                     // Update attenuation factor with the average transmission coefficient and

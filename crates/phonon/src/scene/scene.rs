@@ -131,11 +131,11 @@ impl Scene {
         for static_mesh in &self.static_meshes[0] {
             let object_hit_maybe = static_mesh.closest_hit(ray, min_distance, max_distance);
 
-            if let Some(object_hit) = object_hit_maybe {
-                if object_hit.distance < hit_distance {
-                    hit = Some(object_hit);
-                    hit_distance = object_hit.distance;
-                }
+            if let Some(object_hit) = object_hit_maybe
+                && object_hit.distance < hit_distance
+            {
+                hit = Some(object_hit);
+                hit_distance = object_hit.distance;
             }
         }
 
@@ -146,11 +146,11 @@ impl Scene {
                     .unwrap()
                     .closest_hit(ray, min_distance, max_distance);
 
-            if let Some(object_hit) = object_hit_maybe {
-                if object_hit.distance < hit_distance {
-                    hit = Some(object_hit);
-                    hit_distance = object_hit.distance;
-                }
+            if let Some(object_hit) = object_hit_maybe
+                && object_hit.distance < hit_distance
+            {
+                hit = Some(object_hit);
+                hit_distance = object_hit.distance;
             }
         }
 

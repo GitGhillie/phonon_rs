@@ -18,7 +18,7 @@
 // Port note: Steam Audio measures the result in terms of Max Sources.
 // To get the time per run, do ( 1024 / ( 48000 * Max Sources )
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use glam::Vec3;
 use phonon::dsp::audio_buffer::AudioBuffer;
 use phonon::dsp::speaker_layout::SpeakerLayoutType;
