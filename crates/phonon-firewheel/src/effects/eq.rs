@@ -11,13 +11,13 @@ use phonon::effects::eq::{EqEffect, EqEffectParameters};
 use crate::fixed_block::FixedProcessBlock;
 
 #[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq, Default)]
-pub struct FilterNode {
+pub struct EqNode {
     /// EQ effect parameters
     pub eq_effect_parameters: EqEffectParameters,
 }
 
 // Implement the AudioNode type for your node.
-impl AudioNode for FilterNode {
+impl AudioNode for EqNode {
     // Since this node doesn't need any configuration, we'll just
     // default to `EmptyConfig`.
     type Configuration = EmptyConfig;
@@ -68,7 +68,7 @@ impl AudioNode for FilterNode {
 
 // The realtime processor counterpart to your node.
 struct Processor {
-    params: FilterNode,
+    params: EqNode,
     fixed_block: FixedProcessBlock,
     eq_effect: EqEffect,
 }
@@ -86,7 +86,7 @@ impl AudioNodeProcessor for Processor {
         // Extra buffers and utilities.
         _extra: &mut ProcExtra,
     ) -> ProcessStatus {
-        for patch in events.drain_patches::<FilterNode>() {
+        for patch in events.drain_patches::<EqNode>() {
             self.params.apply(patch);
         }
 

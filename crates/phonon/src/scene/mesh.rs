@@ -46,7 +46,7 @@ impl Mesh {
         let parry_mesh = TriMesh::new(parry_vertices, parry_indices);
 
         let mut mesh = Self {
-            mesh: parry_mesh,
+            mesh: parry_mesh.unwrap(),
             normals: Array1::default(num_triangles),
         };
 

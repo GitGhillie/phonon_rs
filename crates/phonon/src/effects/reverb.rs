@@ -44,7 +44,7 @@ pub struct ReverbEffect {
     allpass_x: [[Delay; 2]; NUM_DELAYS],
     allpass_y: [[Delay; 2]; NUM_DELAYS],
     absorptive: Vec<Vec<IIRFilterer>>,
-    tone_correction: Vec<IIRFilterer>,
+    tone_corrections: [IIRFilterer; NUM_BANDS],
     x_old: Array2<f32>,
     x_new: Array2<f32>,
     previous_reverb: Reverb,
@@ -82,7 +82,7 @@ impl ReverbEffect {
             allpass_x,
             allpass_y,
             absorptive: vec![vec![IIRFilterer::new(IIR::new_empty()); NUM_BANDS]; NUM_DELAYS],
-            tone_correction: vec![IIRFilterer::new(IIR::new_empty()); NUM_BANDS],
+            tone_corrections: [IIRFilterer::new(IIR::new_empty()); NUM_BANDS],
             x_old: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             x_new: Array::zeros((NUM_DELAYS, audio_settings.frame_size)),
             previous_reverb: Reverb::default(),
@@ -214,7 +214,7 @@ impl ReverbEffect {
         ];
 
         for i in 0..NUM_BANDS {
-            self.tone_correction[i] = IIRFilterer::new(iir[i]);
+            self.tone_corrections[i] = IIRFilterer::new(iir[i]);
         }
 
         for i in 0..NUM_DELAYS {
@@ -286,7 +286,7 @@ impl ReverbEffect {
         }
 
         for band in 0..NUM_BANDS {
-            self.tone_correction[band].apply_self(output);
+            self.tone_corrections[band].apply_self(output);
         }
     }
 
@@ -349,7 +349,7 @@ impl ReverbEffect {
         }
 
         for band in 0..NUM_BANDS {
-            self.tone_correction[band].apply_self(output);
+            self.tone_corrections[band].apply_self(output);
         }
     }
 

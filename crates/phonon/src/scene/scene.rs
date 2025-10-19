@@ -245,7 +245,7 @@ mod tests {
         scene.commit();
 
         let ray_hit: Ray = Ray::new(Vec3::new(1.1, 0.1, -1.0), Vec3::new(0.0, 0.0, 1.0));
-        let hit_point = scene.closest_hit(&ray_hit, 0.0, 10.0).unwrap();
+        let _hit_point = scene.closest_hit(&ray_hit, 0.0, 10.0).unwrap();
 
         assert!(scene.any_hit(&ray_hit, 0.0, 10.0));
     }

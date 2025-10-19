@@ -17,18 +17,18 @@ firewheel = ["dep:firewheel"]
 
 [dependencies]
 derive_deref = "1"
-glam = "0.29"
+glam = "0.30"
 biquad = "0.5"
 rand = "0.9"
 ndarray = "0.16"
-parry3d = "0.17" # todo: Enable SIMD? Replace with glam-based parry?
-nalgebra = { version = "0.33", features = ["default", "convert-glam029"] } # todo: Replace with glam after replacing parry3d
+parry3d = "0.25" # todo: Enable SIMD? Replace with glam-based parry?
+nalgebra = { version = "0.34", features = ["default", "convert-glam030"] } # todo: Replace with glam after replacing parry3d
 bitflags = "2"
 ultraviolet = "0.10"
 serde = { version = "1", optional = true }
-bevy_reflect = { version = "0.16", optional = true }
+bevy_reflect = { version = "0.17", optional = true }
 sofar = "0.2.1"
-firewheel = { version = "0.8.0-rc.1", optional = true, features = ["std", "glam-29"]}
+firewheel = { version = "0.8.0-rc.1", optional = true, features = ["std", "glam-30"]}
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }

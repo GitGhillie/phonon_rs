@@ -8,13 +8,13 @@ use firewheel::error::UpdateError;
 use firewheel::node::NodeID;
 use firewheel::nodes::sampler::{RepeatMode, SamplerNode};
 use phonon::effects::eq::EqEffectParameters;
-use phonon_firewheel::eq_effect::FilterNode;
+use phonon_firewheel::effects::eq::EqNode;
 use symphonium::SymphoniumLoader;
 
 struct AudioSystem {
     cx: FirewheelContext,
 
-    eq_node: Memo<FilterNode>,
+    eq_node: Memo<EqNode>,
     eq_node_id: NodeID,
 }
 
@@ -42,7 +42,7 @@ impl AudioSystem {
         sampler_node.repeat_mode = RepeatMode::RepeatEndlessly;
         sampler_node.start_or_restart();
 
-        let eq_node = FilterNode::default();
+        let eq_node = EqNode::default();
 
         let sampler_node_id = cx.add_node(sampler_node.clone(), None);
         let eq_node_id = cx.add_node(eq_node.clone(), None);
