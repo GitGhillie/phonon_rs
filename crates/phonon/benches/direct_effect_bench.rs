@@ -55,13 +55,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 transmission: [0.1, 0.2, 0.3],
                 directivity: 0.0,
             },
-            flags: DirectApplyFlags::DistanceAttenuation | DirectApplyFlags::Occlusion,
+            flags: DirectApplyFlags {
+                distance_attenuation: true,
+                air_absorption: false,
+                directivity: false,
+                occlusion: true,
+                transmission: false,
+                delay: false,
+            },
             transmission_type,
         };
 
-        direct_params
-            .flags
-            .set(DirectApplyFlags::Transmission, apply_transmission);
+        direct_params.flags.transmission = apply_transmission;
 
         b.iter(|| {
             // Changing transmission factor each run to get the worst case performance.

@@ -1,3 +1,6 @@
+//! Demonstrates the use of the EQ effect.
+//! Not used normally, but useful for development as it's the most simple "steam audio" effect
+
 use eframe::egui;
 use firewheel::FirewheelContext;
 use firewheel::diff::Memo;
@@ -10,9 +13,6 @@ use symphonium::SymphoniumLoader;
 
 struct AudioSystem {
     cx: FirewheelContext,
-
-    _sampler_node: SamplerNode,
-    _sampler_node_id: NodeID,
 
     eq_node: Memo<FilterNode>,
     eq_node_id: NodeID,
@@ -54,8 +54,6 @@ impl AudioSystem {
 
         Self {
             cx,
-            _sampler_node: sampler_node,
-            _sampler_node_id: sampler_node_id,
             eq_node: Memo::new(eq_node),
             eq_node_id,
         }
