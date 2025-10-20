@@ -1,18 +1,22 @@
 [package]
-name = "phonon-firewheel"
+name = "phonon_firewheel"
 version = "0.1.0"
 edition = "2024"
 categories = ["multimedia::audio"]
 license = "Apache-2.0"
 description = "Firewheel integration for the unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
-documentation = "https://docs.rs/phonon-firewheel"
+documentation = "https://docs.rs/phonon_firewheel"
 readme = "README.md"
 
+[features]
+bevy = []
+
 [dependencies]
-phonon = { path = "../phonon", version = "0.2", features = ["firewheel"]}
+phonon = { path = "../phonon", version = "0.2", features = ["firewheel"] }
 firewheel = "0.8.0-rc.1"
 prealloc_ref_vec = "0.1"
+bevy_ecs = { version = "0.17", default-features = false }
 
 [dev-dependencies]
 eframe = "0.33"

@@ -5,19 +5,20 @@ use firewheel::node::{
     AudioNode, AudioNodeInfo, AudioNodeProcessor, ConstructProcessorContext, EmptyConfig,
     ProcBuffers, ProcExtra, ProcInfo, ProcessStatus,
 };
-use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
-use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
-use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
+use phonon::dsp::audio_buffer::AudioSettings;
+use phonon::effects::eq::{EqEffect, EqEffectParameters};
 
 use crate::fixed_block::FixedProcessBlock;
 
+// todo: Have this implement Bevy Component?
 #[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq, Default)]
-pub struct SpatializerNode {
-    pub direct_effect_parameters: DirectEffectParameters,
-    pub binaural_effect_parameters: BinauralEffectParameters,
+pub struct EqNode {
+    /// EQ effect parameters
+    pub eq_effect_parameters: EqEffectParameters,
 }
 
-impl AudioNode for SpatializerNode {
+// Implement the AudioNode type for your node.
+impl AudioNode for EqNode {
     // Since this node doesn't need any configuration, we'll just
     // default to `EmptyConfig`.
     type Configuration = EmptyConfig;
@@ -29,11 +30,11 @@ impl AudioNode for SpatializerNode {
         // more fields will be added in the future.
         AudioNodeInfo::new()
             // A static name used for debugging purposes.
-            .debug_name("spatializer_node")
+            .debug_name("example_filter_")
             // The configuration of the input/output ports.
             .channel_config(ChannelConfig {
                 num_inputs: ChannelCount::MONO,
-                num_outputs: ChannelCount::STEREO,
+                num_outputs: ChannelCount::MONO,
             })
     }
 
@@ -51,35 +52,26 @@ impl AudioNode for SpatializerNode {
         let frame_size = 1024;
 
         let audio_settings = AudioSettings::new(sample_rate.get(), frame_size);
-        let direct_effect = DirectEffect::new(audio_settings);
-        let binaural_effect = BinauralEffect::new(audio_settings);
+        let eq_effect = EqEffect::new(audio_settings);
 
         Processor {
-            direct_effect,
-            binaural_effect,
+            eq_effect,
             fixed_block: FixedProcessBlock::new(
                 frame_size,
                 cx.stream_info.max_block_frames.get() as usize,
                 1,
-                2,
+                1,
             ),
             params: self.clone(),
-            in_buf: AudioBuffer::new(frame_size),
-            scratch_buf: AudioBuffer::new(frame_size),
-            out_buf: AudioBuffer::new(frame_size),
         }
     }
 }
 
 // The realtime processor counterpart to your node.
 struct Processor {
-    params: SpatializerNode,
+    params: EqNode,
     fixed_block: FixedProcessBlock,
-    direct_effect: DirectEffect,
-    binaural_effect: BinauralEffect,
-    in_buf: AudioBuffer<1>,
-    scratch_buf: AudioBuffer<1>,
-    out_buf: AudioBuffer<2>,
+    eq_effect: EqEffect,
 }
 
 impl AudioNodeProcessor for Processor {
@@ -95,7 +87,7 @@ impl AudioNodeProcessor for Processor {
         // Extra buffers and utilities.
         _extra: &mut ProcExtra,
     ) -> ProcessStatus {
-        for patch in events.drain_patches::<SpatializerNode>() {
+        for patch in events.drain_patches::<EqNode>() {
             self.params.apply(patch);
         }
 
@@ -112,16 +104,8 @@ impl AudioNodeProcessor for Processor {
 
         self.fixed_block
             .process(temp_proc, info, |inputs, outputs| {
-                let direct_params = self.params.direct_effect_parameters;
-                let binaural_params = self.params.binaural_effect_parameters;
-
-                self.in_buf[0].copy_from_slice(inputs[0]);
-                self.direct_effect
-                    .apply(direct_params, &self.in_buf, &mut self.scratch_buf);
-                self.binaural_effect
-                    .apply(binaural_params, &self.scratch_buf, &mut self.out_buf);
-                outputs[0].copy_from_slice(&self.out_buf[0]);
-                outputs[1].copy_from_slice(&self.out_buf[1]);
+                let eq_params = self.params.eq_effect_parameters;
+                self.eq_effect.apply(eq_params, inputs[0], outputs[0]);
             })
     }
 }
