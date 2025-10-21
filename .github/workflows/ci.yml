@@ -28,7 +28,7 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libfontconfig1-dev
         if: runner.os == 'linux'
       - name: Build & run tests
-        run: cargo test -p phonon; cargo test -p phonon-firewheel
+        run: cargo test -p phonon; cargo test -p phonon_firewheel; cargo test -p phonon_bevy
   lint:
     runs-on: ubuntu-latest
     steps:
