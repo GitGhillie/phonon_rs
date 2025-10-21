@@ -70,7 +70,7 @@ fn startup(server: Res<AssetServer>, mut commands: Commands) {
 
     // Let's spawn a looping sample.
     commands.spawn((
-        SamplePlayer::new(server.load("pink_noise.ogg")).looping(),
+        SamplePlayer::new(server.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
         sample_effects![SpatializerNode {
             direct_effect_parameters,
             binaural_effect_parameters
@@ -89,9 +89,9 @@ fn update(
     let mut custom_node = custom_node.get_effect_mut(&player)?;
 
     custom_node.binaural_effect_parameters.direction = Vec3 {
-        x: angle.cos() * 0.25,
-        y: 0.1,
-        z: 0.1,
+        x: angle.cos(),
+        y: angle.sin(),
+        z: 0.0,
     };
 
     let period = 5.0;
