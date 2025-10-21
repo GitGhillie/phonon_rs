@@ -1,9 +1,18 @@
 //! A simple 3D scene with light shining over a cube sitting on a plane.
 
 use bevy::prelude::*;
-use bevy_seedling::{node::RegisterNode, prelude::{EffectsQuery, SampleEffects}, sample::SamplePlayer, sample_effects, SeedlingPlugin};
+use bevy_seedling::{
+    SeedlingPlugin,
+    node::RegisterNode,
+    prelude::{EffectsQuery, SampleEffects},
+    sample::SamplePlayer,
+    sample_effects,
+};
 use phonon_bevy::effects::spatializer::SpatializerNode;
-use phonon_firewheel::phonon::effects::{binaural::BinauralEffectParameters, direct::{DirectApplyFlags, DirectEffectParameters}};
+use phonon_firewheel::phonon::effects::{
+    binaural::BinauralEffectParameters,
+    direct::{DirectApplyFlags, DirectEffectParameters},
+};
 
 fn main() {
     App::new()
@@ -79,7 +88,11 @@ fn update(
 ) -> Result {
     let mut custom_node = custom_node.get_effect_mut(&player)?;
 
-    custom_node.binaural_effect_parameters.direction = Vec3 { x: angle.cos() * 0.25, y: 0.1, z: 0.1 };
+    custom_node.binaural_effect_parameters.direction = Vec3 {
+        x: angle.cos() * 0.25,
+        y: 0.1,
+        z: 0.1,
+    };
 
     let period = 5.0;
     *angle += time.delta().as_secs_f32() * core::f32::consts::TAU / period;

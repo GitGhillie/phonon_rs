@@ -91,7 +91,7 @@ impl DirectSimulator {
 
     pub fn simulate(
         &self,
-        scene: &Scene,
+        scene: Option<&Scene>,
         flags: DirectApplyFlags,
         source: &CoordinateSpace3f,
         listener: &CoordinateSpace3f,
@@ -132,37 +132,36 @@ impl DirectSimulator {
             direct_sound_path.directivity = 1.0;
         }
 
-        // todo: The scene must be optional
-        if flags.occlusion {
-            match occlusion_type {
-                OcclusionType::Raycast => {
-                    direct_sound_path.occlusion =
-                        Self::raycast_occlusion(scene, listener.origin, source.origin);
-                }
-                OcclusionType::Volumetric => {
-                    direct_sound_path.occlusion = self.raycast_volumetric(
-                        scene,
-                        listener.origin,
-                        source.origin,
-                        occlusion_radius,
-                        num_occlusion_samples,
-                    );
+        if let Some(scene) = scene {
+            if flags.occlusion {
+                match occlusion_type {
+                    OcclusionType::Raycast => {
+                        direct_sound_path.occlusion =
+                            Self::raycast_occlusion(scene, listener.origin, source.origin);
+                    }
+                    OcclusionType::Volumetric => {
+                        direct_sound_path.occlusion = self.raycast_volumetric(
+                            scene,
+                            listener.origin,
+                            source.origin,
+                            occlusion_radius,
+                            num_occlusion_samples,
+                        );
+                    }
                 }
             }
-        } else {
-            direct_sound_path.occlusion = 1.0
-        }
 
-        // todo: The scene must be optional
-        if flags.transmission {
-            self.transmission(
-                scene,
-                listener.origin,
-                source.origin,
-                &mut direct_sound_path.transmission,
-                num_transmission_rays,
-            );
+            if flags.transmission {
+                self.transmission(
+                    scene,
+                    listener.origin,
+                    source.origin,
+                    &mut direct_sound_path.transmission,
+                    num_transmission_rays,
+                );
+            }
         } else {
+            direct_sound_path.occlusion = 1.0;
             direct_sound_path.transmission.fill(1.0);
         }
     }
