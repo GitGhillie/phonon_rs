@@ -9,9 +9,14 @@ use bevy_seedling::{
     sample_effects,
 };
 use phonon_bevy::effects::spatializer::SpatializerNode;
-use phonon_firewheel::phonon::effects::{
-    binaural::BinauralEffectParameters,
-    direct::{DirectApplyFlags, DirectEffectParameters},
+use phonon_firewheel::phonon::{
+    effects::direct::DirectApplyFlags,
+    models::{
+        air_absorption::DefaultAirAbsorptionModel, directivity::Directivity,
+        distance_attenuation::DefaultDistanceAttenuationModel,
+    },
+    scene::coordinate_space::CoordinateSpace3f,
+    simulators::direct::{DirectSimulator, DirectSoundPath, OcclusionType},
 };
 
 fn main() {
@@ -58,23 +63,10 @@ fn setup(
 }
 
 fn startup(server: Res<AssetServer>, mut commands: Commands) {
-    // todo implement default on spatializer node
-    let mut direct_effect_parameters = DirectEffectParameters::default();
-    let binaural_effect_parameters = BinauralEffectParameters::default();
-
-    // todo
-    direct_effect_parameters.flags = DirectApplyFlags::none();
-    direct_effect_parameters.flags.air_absorption = true;
-    direct_effect_parameters.flags.distance_attenuation = true;
-    direct_effect_parameters.flags.occlusion = true;
-
     // Let's spawn a looping sample.
     commands.spawn((
         SamplePlayer::new(server.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
-        sample_effects![SpatializerNode {
-            direct_effect_parameters,
-            binaural_effect_parameters
-        }],
+        sample_effects![SpatializerNode::default()],
     ));
 }
 
@@ -87,6 +79,33 @@ fn update(
     mut angle: Local<f32>,
 ) -> Result {
     let mut custom_node = custom_node.get_effect_mut(&player)?;
+
+    let max_occlusion_samples = 5;
+    let occlusion_radius = 0.5;
+    let num_occlusion_samples = 5;
+    let num_transmission_rays = 3;
+    let mut direct_sound_path = DirectSoundPath::default();
+    let simulator = DirectSimulator::new(max_occlusion_samples);
+    simulator.simulate(
+        None,
+        DirectApplyFlags::all(),
+        &CoordinateSpace3f::from_origin(Vec3 {
+            x: angle.cos(),
+            y: angle.sin(),
+            z: 0.0,
+        }),
+        &CoordinateSpace3f::from_origin(Vec3::ZERO),
+        &DefaultDistanceAttenuationModel { min_distance: 0.1 },
+        &DefaultAirAbsorptionModel::default(),
+        Directivity::default(),
+        OcclusionType::Volumetric,
+        occlusion_radius,
+        num_occlusion_samples,
+        num_transmission_rays,
+        &mut direct_sound_path,
+    );
+
+    custom_node.direct_effect_parameters.direct_sound_path = direct_sound_path;
 
     custom_node.binaural_effect_parameters.direction = Vec3 {
         x: angle.cos(),

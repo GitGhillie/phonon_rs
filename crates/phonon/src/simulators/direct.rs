@@ -59,7 +59,7 @@ impl Default for DirectSoundPath {
             delay: 0.0,
             occlusion: 1.0,
             transmission: [0.1, 0.1, 0.1],
-            directivity: 0.0,
+            directivity: 1.0,
         }
     }
 }
