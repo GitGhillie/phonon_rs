@@ -1,148 +1,205 @@
 use crate::phonon_mesh;
 use crate::phonon_mesh::instancing::StaticMeshes;
 use bevy::prelude::*;
-use bevy_fmod::prelude::AudioListener;
-use bevy_fmod::prelude::AudioSource;
-use libfmod::{Dsp, EventInstance};
-use steamaudio::context::Context;
-use steamaudio::fmod;
-use steamaudio::geometry::Orientation;
-use steamaudio::hrtf::Hrtf;
-use steamaudio::simulation::{AirAbsorptionModel, DistanceAttenuationModel, Simulator, Source};
+use phonon_firewheel::phonon;
+use phonon_firewheel::phonon::effects::direct::DirectApplyFlags;
+use phonon_firewheel::phonon::models::air_absorption::DefaultAirAbsorptionModel;
+use phonon_firewheel::phonon::models::directivity::Directivity;
+use phonon_firewheel::phonon::models::distance_attenuation::DefaultDistanceAttenuationModel;
+use phonon_firewheel::phonon::scene::coordinate_space::CoordinateSpace3f;
+use phonon_firewheel::phonon::simulators::direct::{
+    DirectSimulator, DirectSoundPath, OcclusionType,
+};
+use std::os::raw::c_void;
 
-#[derive(Component)]
-struct PhononSource {
-    address: i32,
-    source: Source,
+#[derive(Component, Reflect)]
+pub struct PhononSource {
+    pub distance_attenuation: bool,
+    pub air_absorption: bool,
+    pub occlusion: bool,
+    pub occlusion_type: OcclusionType,
+    /// Size of the audio source when `OcclusionType` is set to `Volumetric`.
+    pub occlusion_radius: f32,
+    /// Number of occlusion samples to take when volumetric occlusion is enabled.
+    /// Limited by `max_occlusion_samples` of the `DirectSimulator`.
+    pub occlusion_samples: usize,
+    // todo document what transmission is and what is needed to make it work (materials)
+    pub transmission: bool,
+    pub directivity: bool,
+    pub hrtf_enable: bool,
 }
 
-#[derive(Component)]
-pub struct PhononStaticMeshMarker;
+impl Default for PhononSource {
+    fn default() -> Self {
+        PhononSource {
+            distance_attenuation: true,
+            air_absorption: true,
+            occlusion: true,
+            occlusion_type: OcclusionType::Volumetric,
+            occlusion_radius: 1.0,
+            occlusion_samples: 64,
+            transmission: true,
+            directivity: true,
+            hrtf_enable: true,
+        }
+    }
+}
 
-//todo move or remove pub
 #[derive(Resource)]
-pub struct SteamSimulation {
-    pub context: Context,
-    pub hrtf: Hrtf,
-    pub simulator: Simulator,
-    pub scene: phonon_firewheel::phonon::scene::Scene,
+pub(crate) struct SteamSimulation {
+    pub(crate) simulator: DirectSimulator,
+    pub(crate) scene: phonon::scene::Scene,
 }
 
-pub struct PhononPlugin;
+pub struct PhononPlugin {
+    /// Set this true to have `PhononPlugin` add a system which automatically
+    /// adds a `PhononSource` to all bevy_seedling audio sources. Note that the default
+    /// settings of `PhononSource` may not fit your use case.
+    pub auto_add_phonon_sources: bool,
+    /// Sets the maximum number of occlusion samples, which is used when volumetric
+    /// occlusion is enabled on a `PhononSource`.
+    /// This only sets the max, the actual amount is set per source
+    pub max_occlusion_samples: usize,
+}
+
+impl Default for PhononPlugin {
+    fn default() -> Self {
+        PhononPlugin {
+            auto_add_phonon_sources: true,
+            max_occlusion_samples: 512,
+        }
+    }
+}
 
 impl Plugin for PhononPlugin {
     fn build(&self, app: &mut App) {
-        let sampling_rate = 48000; // Needs to be equal to FMOD sampling rate.
-        let frame_size = 1024;
-        let context = Context::new().unwrap();
-
-        let hrtf = context.create_hrtf(sampling_rate, frame_size).unwrap();
-
         // This is the main scene to which all the geometry will be added later
-        let scene = context.create_scene().unwrap();
-        scene.commit();
+        let scene = phonon::scene::Scene::new();
 
-        // todo! simulationsettings are pretty much hardcoded right now
-        // simulation_settings.max_num_occlusion_samples = 8; // This only sets the max, the actual amount is set per source
-        let mut simulator = context.create_simulator(sampling_rate, frame_size).unwrap();
-        simulator.set_scene(&scene);
-        simulator.set_reflections(4096, 16, 2.0, 1, 1.0);
+        let simulator = DirectSimulator::new(self.max_occlusion_samples);
 
-        fmod::init_fmod(&context);
-        fmod::set_hrtf(&hrtf);
-
-        let settings = fmod::fmod_create_settings(sampling_rate, frame_size);
-        fmod::set_simulation_settings(settings);
-
-        app.insert_resource(SteamSimulation {
-            simulator,
-            context,
-            hrtf,
-            scene,
-        })
-        .insert_resource(StaticMeshes::default())
-        .add_systems(
-            Update,
-            (
+        app.insert_resource(SteamSimulation { simulator, scene })
+            .insert_resource(StaticMeshes::default())
+            .register_type::<PhononSource>()
+            .add_systems(
+                Update,
                 (
-                    register_phonon_sources,
-                    phonon_mesh::register_audio_meshes,
-                    phonon_mesh::update_audio_mesh_transforms,
-                    update_steam_audio_listener,
-                    update_steam_audio_source,
-                ),
-                update_steam_audio,
-            )
-                .chain(),
-        );
+                    (
+                        phonon_mesh::register_audio_meshes,
+                        phonon_mesh::update_audio_mesh_transforms,
+                    ),
+                    update_steam_audio,
+                    phonon_source_changed,
+                )
+                    .chain(),
+            );
+
+        if self.auto_add_phonon_sources {
+            app.add_systems(Update, register_phonon_sources);
+        }
     }
 }
 
-fn update_steam_audio_listener(
+fn phonon_source_changed(query: Query<(&AudioSource, &PhononSource), Changed<PhononSource>>) {
+    for (audio_source, component) in &query {
+        if let Some(spatializer) = get_phonon_spatializer(audio_source.event_instance) {
+            spatializer
+                .set_parameter_bool(Params::DirectBinaural as i32, component.hrtf_enable)
+                .unwrap()
+        }
+    }
+}
+
+fn update_steam_audio(
     mut sim_res: ResMut<SteamSimulation>,
     listener_query: Query<&GlobalTransform, With<AudioListener>>,
+    audio_sources: Query<(&GlobalTransform, &AudioSource, &PhononSource)>,
 ) {
+    // Commit changes to the sources, listener and scene.
+    sim_res.scene.commit();
+
     let listener_transform = listener_query.get_single().unwrap();
-    let (_rotation, rotation, translation) = listener_transform.to_scale_rotation_translation();
 
-    sim_res.simulator.set_listener(Orientation {
-        translation,
-        rotation,
-    });
-}
+    let listener_position = CoordinateSpace3f::from_vectors(
+        listener_transform.forward().into(),
+        listener_transform.up().into(),
+        listener_transform.translation(),
+    );
 
-fn update_steam_audio_source(mut source_query: Query<(&GlobalTransform, &mut PhononSource)>) {
-    for (source_transform, mut phonon_source) in source_query.iter_mut() {
-        let (_rotation, rotation, translation) = source_transform.to_scale_rotation_translation();
+    for (source_transform, effect, settings) in audio_sources.iter() {
+        // todo: Only search for the spatializer DSP if it hasn't been found before,
+        // or if it's been moved
+        if let Some(spatializer) = get_phonon_spatializer(effect.event_instance) {
+            // todo reduce indentation
+            let mut flags = DirectApplyFlags::none();
+            flags.distance_attenuation = settings.distance_attenuation;
 
-        phonon_source.source.set_source(Orientation {
-            translation,
-            rotation,
-        });
+            flags.air_absorption = settings.air_absorption;
+            flags.occlusion = settings.occlusion;
+            flags.transmission = settings.transmission;
+            flags.directivity = settings.directivity;
+
+            let source_position = CoordinateSpace3f::from_vectors(
+                source_transform.forward().into(),
+                source_transform.up().into(),
+                source_transform.translation(),
+            );
+
+            let mut direct_sound_path = DirectSoundPath::default();
+
+            let directivity = match settings.directivity {
+                true => {
+                    let valuestrlen = 0;
+                    let (directivity_power, _) = spatializer
+                        .get_parameter_float(Params::DirectivityDipolePower as i32, valuestrlen)
+                        .unwrap();
+                    let (directivity_weight, _) = spatializer
+                        .get_parameter_float(Params::DirectivityDipoleWeight as i32, valuestrlen)
+                        .unwrap();
+                    Directivity {
+                        dipole_weight: directivity_weight,
+                        dipole_power: directivity_power,
+                    }
+                }
+                false => Directivity::default(),
+            };
+
+            sim_res.simulator.simulate(
+                Some(&sim_res.scene),
+                flags,
+                &source_position,
+                &listener_position,
+                &DefaultDistanceAttenuationModel::default(),
+                &DefaultAirAbsorptionModel::default(),
+                directivity,
+                settings.occlusion_type,
+                settings.occlusion_radius,
+                settings.occlusion_samples,
+                1,
+                &mut direct_sound_path,
+            );
+
+            let sound_path_ptr = &mut direct_sound_path as *mut _ as *mut c_void;
+            let sound_path_size = size_of::<DirectSoundPath>();
+
+            spatializer
+                .set_parameter_data(
+                    Params::DirectSoundPath as i32,
+                    sound_path_ptr,
+                    sound_path_size as u32,
+                )
+                .unwrap();
+        }
     }
 }
 
-fn update_steam_audio(sim_res: ResMut<SteamSimulation>) {
-    // Commit changes to the sources, listener and scene.
-    sim_res.simulator.commit();
-
-    sim_res.simulator.run_direct();
-    sim_res.simulator.run_reflections(); //todo make optional
-
-    // The Steam Audio FMOD plugin will periodically collect the simulation outputs
-    // as long as the plugin has handles to the Steam Audio sources.
-    // See function `register_phonon_sources`.
-}
-
-/// Currently all bevy_fmod audio sources will be converted to Steam Audio sources.
 fn register_phonon_sources(
-    mut audio_sources: Query<(Entity, &AudioSource), Without<PhononSource>>,
+    mut audio_sources: Query<Entity, (Without<PhononSource>, With<AudioSource>)>,
     mut commands: Commands,
-    sim_res: Res<SteamSimulation>,
 ) {
-    for (audio_entity, audio_source_fmod) in audio_sources.iter_mut() {
-        if let Some(phonon_dsp) = get_phonon_spatializer(audio_source_fmod.event_instance) {
-            let mut source = sim_res.simulator.create_source(true).unwrap();
-            source.set_distance_attenuation(DistanceAttenuationModel::Default);
-            source.set_air_absorption(AirAbsorptionModel::Default);
-            source.set_occlusion();
-            source.set_transmission(1);
-            source.set_reflections();
-            source.set_active(true);
-
-            let source_address = fmod::add_source(&source);
-            let simulation_outputs_parameter_index = 33; //todo explain where this number comes from
-
-            // By setting this field the Steam Audio FMOD plugin can retrieve the
-            // simulation results like occlusion and reflection.
-            phonon_dsp
-                .set_parameter_int(simulation_outputs_parameter_index, source_address)
-                .unwrap();
-
-            commands.entity(audio_entity).insert(PhononSource {
-                address: source_address,
-                source,
-            });
-        }
+    for audio_entity in audio_sources.iter_mut() {
+        commands
+            .entity(audio_entity)
+            .insert(PhononSource::default());
     }
 }

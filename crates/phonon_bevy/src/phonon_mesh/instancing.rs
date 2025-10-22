@@ -1,16 +1,18 @@
 use crate::phonon_mesh::material::PhononMaterial;
 use crate::phonon_mesh::mesh;
-use crate::phonon_mesh::mesh::AudioMesh;
 use crate::phonon_plugin::SteamSimulation;
 use bevy::asset::{Assets, Handle};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Deref, DerefMut, Mesh, ResMut, Resource, Transform};
-use phonon_firewheel::phonon::scene::instanced_mesh::InstancedMesh;
+use phonon::scene::instanced_mesh::InstancedMesh;
+use phonon::scene::static_mesh::StaticMesh;
+use phonon_firewheel::phonon;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub(crate) struct StaticMeshes(
-    HashMap<(Handle<Mesh>, PhononMaterial), phonon_firewheel::phonon::scene::Scene>,
+    HashMap<(Handle<Mesh>, PhononMaterial), Arc<Mutex<phonon::scene::Scene>>>,
 );
 
 /// Some information necessary to convert Bevy meshes to Steam Audio meshes
@@ -28,7 +30,7 @@ impl<'w> MeshParam<'w> {
         &mut self,
         mesh_handle: &Handle<Mesh>,
         material: &PhononMaterial,
-    ) -> Option<InstancedMesh> {
+    ) -> Option<Arc<Mutex<InstancedMesh>>> {
         create_instanced_mesh_internal(self, mesh_handle, material)
     }
 }
@@ -37,50 +39,48 @@ fn create_instanced_mesh_internal(
     mesh_param: &mut MeshParam,
     mesh_handle: &Handle<Mesh>,
     material: &PhononMaterial,
-) -> Option<InstancedMesh> {
+) -> Option<Arc<Mutex<InstancedMesh>>> {
     let static_meshes = &mut mesh_param.static_meshes;
     let meshes = &mesh_param.bevy_meshes;
-    let simulator = &mesh_param.simulator;
-    let scene_root = &simulator.scene;
+    let simulator = &mut mesh_param.simulator;
+    let scene_root = &mut simulator.scene;
 
     if let Some(static_mesh_scene) = static_meshes.get(&(mesh_handle.clone(), material.clone())) {
+        // Mesh has been converted into phonon mesh before.
         // Turn that mesh into an instanced one, so it can be moved around.
-        // todo: Differentiate between set-and-forget and movable audio meshes.
+        // todo: Differentiate between set-and-forget and movable audio meshes:
         // Currently to_matrix will be called every frame for every mesh.
 
-        let instanced_mesh = scene_root
-            .create_instanced_mesh(static_mesh_scene, Transform::default().to_matrix())
-            .unwrap();
+        let instanced_mesh = Arc::new(InstancedMesh::new(
+            static_mesh_scene.clone(),
+            Transform::default().to_matrix(),
+        ));
+        scene_root.add_instanced_mesh(instanced_mesh.clone());
 
         Some(instanced_mesh)
     } else {
         // Create audio geometry
-        if let Some(mesh) = meshes.get(&*mesh_handle) {
-            let audio_mesh: AudioMesh = mesh::try_from(mesh, material).unwrap();
+        if let Some(mesh) = meshes.get(mesh_handle) {
+            let audio_mesh: StaticMesh = mesh::try_from(mesh, material.clone()).unwrap();
 
             // Create sub scene with static mesh, this will later be used to create the instanced mesh
-            let sub_scene = simulator.context.create_scene().unwrap();
+            let mut sub_scene = phonon::scene::Scene::new();
 
             // Add mesh
-            let mut static_mesh = sub_scene
-                .create_static_mesh(
-                    audio_mesh.triangles.as_slice(),
-                    audio_mesh.vertices.as_slice(),
-                    audio_mesh.material_indices.as_slice(),
-                    audio_mesh.materials.as_slice(),
-                )
-                .unwrap();
-            static_mesh.set_visible(true);
+            sub_scene.add_static_mesh(Arc::new(audio_mesh));
             sub_scene.commit();
 
+            let sub_scene = Arc::new(Mutex::new(sub_scene));
             static_meshes.insert((mesh_handle.clone(), material.clone()), sub_scene.clone());
 
             // Turn that mesh into an instanced one, so it can be moved around.
             // todo: Differentiate between set-and-forget and movable audio meshes.
             // Currently to_matrix will be called every frame for every mesh.
-            let instanced_mesh = scene_root
-                .create_instanced_mesh(&sub_scene, Transform::default().to_matrix())
-                .unwrap();
+            let instanced_mesh = Arc::new(InstancedMesh::new(
+                sub_scene,
+                Transform::default().to_matrix(),
+            ));
+            scene_root.add_instanced_mesh(instanced_mesh.clone());
 
             Some(instanced_mesh)
         } else {

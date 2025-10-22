@@ -1,24 +1,20 @@
-use crate::prelude::PhononMaterial;
-use bevy::{
-    mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
-    prelude::Mesh,
-};
+use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
+use bevy::prelude::Mesh;
 
-pub struct AudioMesh {
-    pub vertices: Vec<[f32; 3]>,
-    pub triangles: Vec<[u32; 3]>,
-    pub materials: Vec<phonon_firewheel::phonon::scene::material::Material>,
-    pub material_indices: Vec<u32>,
-}
+use crate::phonon_mesh::material::PhononMaterial;
+use phonon::scene::material::Material;
+use phonon::scene::static_mesh::StaticMesh;
+use phonon_firewheel::phonon;
 
 #[derive(Debug, Clone)]
 pub enum AudioMeshError {
     NoVertices,
+    #[expect(dead_code, reason = "Error is currently unwrapped")]
     NonTrianglePrimitiveTopology(PrimitiveTopology),
 }
 
 // Original code from https://github.com/Aceeri/bevy-steam-audio/blob/main/src/source.rs
-pub fn try_from(mesh: &Mesh, material: &PhononMaterial) -> Result<AudioMesh, AudioMeshError> {
+pub fn try_from(mesh: &Mesh, material: PhononMaterial) -> Result<StaticMesh, AudioMeshError> {
     let triangles = match mesh.indices() {
         Some(indices) => {
             let indices: Vec<_> = match indices {
@@ -61,14 +57,14 @@ pub fn try_from(mesh: &Mesh, material: &PhononMaterial) -> Result<AudioMesh, Aud
         _ => return Err(AudioMeshError::NoVertices),
     };
 
-    let material: phonon_firewheel::phonon::scene::material::Material = material.into();
+    let material: Material = material.into();
     let materials = vec![material];
     let material_indices = triangles.iter().map(|_| 0 /* GENERIC index */).collect();
 
-    Ok(AudioMesh {
+    Ok(StaticMesh::new_static_mesh(
         vertices,
         triangles,
-        materials,
         material_indices,
-    })
+        materials,
+    ))
 }
