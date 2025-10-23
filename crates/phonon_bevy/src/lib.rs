@@ -8,4 +8,8 @@ pub mod prelude {
     pub use crate::phonon_plugin::PhononPlugin;
 }
 
+use bevy::ecs::component::Component;
 pub use phonon_firewheel::effects;
+
+#[derive(Component)]
+struct AudioListener;

@@ -1,6 +1,7 @@
-use crate::phonon_mesh;
 use crate::phonon_mesh::instancing::StaticMeshes;
+use crate::{AudioListener, phonon_mesh};
 use bevy::prelude::*;
+use phonon_firewheel::effects::spatializer::SpatializerNode;
 use phonon_firewheel::phonon;
 use phonon_firewheel::phonon::effects::direct::DirectApplyFlags;
 use phonon_firewheel::phonon::models::air_absorption::DefaultAirAbsorptionModel;
@@ -12,7 +13,7 @@ use phonon_firewheel::phonon::simulators::direct::{
 };
 use std::os::raw::c_void;
 
-#[derive(Component, Reflect)]
+#[derive(Component)]
 pub struct PhononSource {
     pub distance_attenuation: bool,
     pub air_absorption: bool,
@@ -52,10 +53,6 @@ pub(crate) struct SteamSimulation {
 }
 
 pub struct PhononPlugin {
-    /// Set this true to have `PhononPlugin` add a system which automatically
-    /// adds a `PhononSource` to all bevy_seedling audio sources. Note that the default
-    /// settings of `PhononSource` may not fit your use case.
-    pub auto_add_phonon_sources: bool,
     /// Sets the maximum number of occlusion samples, which is used when volumetric
     /// occlusion is enabled on a `PhononSource`.
     /// This only sets the max, the actual amount is set per source
@@ -65,7 +62,6 @@ pub struct PhononPlugin {
 impl Default for PhononPlugin {
     fn default() -> Self {
         PhononPlugin {
-            auto_add_phonon_sources: true,
             max_occlusion_samples: 512,
         }
     }
@@ -80,7 +76,7 @@ impl Plugin for PhononPlugin {
 
         app.insert_resource(SteamSimulation { simulator, scene })
             .insert_resource(StaticMeshes::default())
-            .register_type::<PhononSource>()
+            //.register_type::<PhononSource>() todo
             .add_systems(
                 Update,
                 (
@@ -93,27 +89,13 @@ impl Plugin for PhononPlugin {
                 )
                     .chain(),
             );
-
-        if self.auto_add_phonon_sources {
-            app.add_systems(Update, register_phonon_sources);
-        }
-    }
-}
-
-fn phonon_source_changed(query: Query<(&AudioSource, &PhononSource), Changed<PhononSource>>) {
-    for (audio_source, component) in &query {
-        if let Some(spatializer) = get_phonon_spatializer(audio_source.event_instance) {
-            spatializer
-                .set_parameter_bool(Params::DirectBinaural as i32, component.hrtf_enable)
-                .unwrap()
-        }
     }
 }
 
 fn update_steam_audio(
     mut sim_res: ResMut<SteamSimulation>,
     listener_query: Query<&GlobalTransform, With<AudioListener>>,
-    audio_sources: Query<(&GlobalTransform, &AudioSource, &PhononSource)>,
+    audio_sources: Query<(&GlobalTransform, &SpatializerNode)>,
 ) {
     // Commit changes to the sources, listener and scene.
     sim_res.scene.commit();
@@ -126,80 +108,64 @@ fn update_steam_audio(
         listener_transform.translation(),
     );
 
-    for (source_transform, effect, settings) in audio_sources.iter() {
-        // todo: Only search for the spatializer DSP if it hasn't been found before,
-        // or if it's been moved
-        if let Some(spatializer) = get_phonon_spatializer(effect.event_instance) {
-            // todo reduce indentation
-            let mut flags = DirectApplyFlags::none();
-            flags.distance_attenuation = settings.distance_attenuation;
+    for (source_transform, effect) in audio_sources.iter() {
+        let mut flags = DirectApplyFlags::none();
+        flags.distance_attenuation = settings.distance_attenuation;
 
-            flags.air_absorption = settings.air_absorption;
-            flags.occlusion = settings.occlusion;
-            flags.transmission = settings.transmission;
-            flags.directivity = settings.directivity;
+        flags.air_absorption = settings.air_absorption;
+        flags.occlusion = settings.occlusion;
+        flags.transmission = settings.transmission;
+        flags.directivity = settings.directivity;
 
-            let source_position = CoordinateSpace3f::from_vectors(
-                source_transform.forward().into(),
-                source_transform.up().into(),
-                source_transform.translation(),
-            );
+        let source_position = CoordinateSpace3f::from_vectors(
+            source_transform.forward().into(),
+            source_transform.up().into(),
+            source_transform.translation(),
+        );
 
-            let mut direct_sound_path = DirectSoundPath::default();
+        let mut direct_sound_path = DirectSoundPath::default();
 
-            let directivity = match settings.directivity {
-                true => {
-                    let valuestrlen = 0;
-                    let (directivity_power, _) = spatializer
-                        .get_parameter_float(Params::DirectivityDipolePower as i32, valuestrlen)
-                        .unwrap();
-                    let (directivity_weight, _) = spatializer
-                        .get_parameter_float(Params::DirectivityDipoleWeight as i32, valuestrlen)
-                        .unwrap();
-                    Directivity {
-                        dipole_weight: directivity_weight,
-                        dipole_power: directivity_power,
-                    }
+        let directivity = match settings.directivity {
+            true => {
+                let valuestrlen = 0;
+                let (directivity_power, _) = spatializer
+                    .get_parameter_float(Params::DirectivityDipolePower as i32, valuestrlen)
+                    .unwrap();
+                let (directivity_weight, _) = spatializer
+                    .get_parameter_float(Params::DirectivityDipoleWeight as i32, valuestrlen)
+                    .unwrap();
+                Directivity {
+                    dipole_weight: directivity_weight,
+                    dipole_power: directivity_power,
                 }
-                false => Directivity::default(),
-            };
+            }
+            false => Directivity::default(),
+        };
 
-            sim_res.simulator.simulate(
-                Some(&sim_res.scene),
-                flags,
-                &source_position,
-                &listener_position,
-                &DefaultDistanceAttenuationModel::default(),
-                &DefaultAirAbsorptionModel::default(),
-                directivity,
-                settings.occlusion_type,
-                settings.occlusion_radius,
-                settings.occlusion_samples,
-                1,
-                &mut direct_sound_path,
-            );
+        sim_res.simulator.simulate(
+            Some(&sim_res.scene),
+            flags,
+            &source_position,
+            &listener_position,
+            &DefaultDistanceAttenuationModel::default(),
+            &DefaultAirAbsorptionModel::default(),
+            directivity,
+            settings.occlusion_type,
+            settings.occlusion_radius,
+            settings.occlusion_samples,
+            1,
+            &mut direct_sound_path,
+        );
 
-            let sound_path_ptr = &mut direct_sound_path as *mut _ as *mut c_void;
-            let sound_path_size = size_of::<DirectSoundPath>();
+        let sound_path_ptr = &mut direct_sound_path as *mut _ as *mut c_void;
+        let sound_path_size = size_of::<DirectSoundPath>();
 
-            spatializer
-                .set_parameter_data(
-                    Params::DirectSoundPath as i32,
-                    sound_path_ptr,
-                    sound_path_size as u32,
-                )
-                .unwrap();
-        }
-    }
-}
-
-fn register_phonon_sources(
-    mut audio_sources: Query<Entity, (Without<PhononSource>, With<AudioSource>)>,
-    mut commands: Commands,
-) {
-    for audio_entity in audio_sources.iter_mut() {
-        commands
-            .entity(audio_entity)
-            .insert(PhononSource::default());
+        spatializer
+            .set_parameter_data(
+                Params::DirectSoundPath as i32,
+                sound_path_ptr,
+                sound_path_size as u32,
+            )
+            .unwrap();
     }
 }

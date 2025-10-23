@@ -22,7 +22,7 @@ pub(crate) struct PhononMesh(Arc<Mutex<InstancedMesh>>);
 pub(crate) fn register_audio_meshes(
     mut commands: Commands,
     mut mesh_param: MeshParam,
-    mut object_query: Query<(Entity, &Handle<Mesh>, &NeedsAudioMesh)>,
+    mut object_query: Query<(Entity, &Mesh3d, &NeedsAudioMesh)>,
 ) {
     for (ent, mesh_handle, requested_material) in &mut object_query {
         let instanced_mesh = mesh_param
