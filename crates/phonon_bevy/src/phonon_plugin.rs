@@ -93,10 +93,12 @@ fn update_steam_audio(
             settings.occlusion_type,
             settings.occlusion_radius,
             settings.occlusion_samples,
-            1,
+            settings.num_transmission_rays,
             &mut direct_sound_path,
         );
 
         effect.direct_effect_parameters.direct_sound_path = direct_sound_path;
+        effect.binaural_effect_parameters.direction =
+            listener_position.origin - source_position.origin;
     }
 }

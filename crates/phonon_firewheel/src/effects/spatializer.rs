@@ -32,6 +32,7 @@ pub struct SimulatorSettings {
     /// Limited by `max_occlusion_samples` of the `DirectSimulator`.
     pub occlusion_samples: usize,
     // todo document what transmission is and what is needed to make it work (materials)
+    pub num_transmission_rays: usize,
     pub hrtf_enable: bool, // todo, not used
 }
 
@@ -41,6 +42,7 @@ impl Default for SimulatorSettings {
             occlusion_type: OcclusionType::Volumetric,
             occlusion_radius: 1.0,
             occlusion_samples: 64,
+            num_transmission_rays: 3,
             hrtf_enable: true,
         }
     }

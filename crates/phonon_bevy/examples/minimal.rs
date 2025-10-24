@@ -9,15 +9,6 @@ use bevy_seedling::{
     sample_effects,
 };
 use phonon_bevy::effects::spatializer::SpatializerNode;
-use phonon_firewheel::phonon::{
-    effects::direct::DirectApplyFlags,
-    models::{
-        air_absorption::DefaultAirAbsorptionModel, directivity::Directivity,
-        distance_attenuation::DefaultDistanceAttenuationModel,
-    },
-    scene::coordinate_space::CoordinateSpace3f,
-    simulators::direct::{DirectSimulator, DirectSoundPath, OcclusionType},
-};
 
 fn main() {
     App::new()
@@ -62,59 +53,34 @@ fn setup(
     ));
 }
 
-fn startup(server: Res<AssetServer>, mut commands: Commands) {
+fn startup(
+    assets: Res<AssetServer>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     // Let's spawn a looping sample.
     commands.spawn((
-        SamplePlayer::new(server.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
+        SamplePlayer::new(assets.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
         sample_effects![SpatializerNode::default()],
+        Transform::default(),
+        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
     ));
 }
 
-// Here we'll see how simply mutating the parameters
-// will be automatically synchronized with the audio processor.
+// todo test with multiple sample players
+
 fn update(
-    player: Single<&SampleEffects, With<SamplePlayer>>,
-    mut custom_node: Query<&mut SpatializerNode>,
+    mut custom_node: Query<&mut Transform, With<SpatializerNode>>,
     time: Res<Time>,
-    mut angle: Local<f32>,
 ) -> Result {
-    let mut custom_node = custom_node.get_effect_mut(&player)?;
-
-    let max_occlusion_samples = 5;
-    let occlusion_radius = 0.5;
-    let num_occlusion_samples = 5;
-    let num_transmission_rays = 3;
-    let mut direct_sound_path = DirectSoundPath::default();
-    let simulator = DirectSimulator::new(max_occlusion_samples);
-    simulator.simulate(
-        None,
-        DirectApplyFlags::all(),
-        &CoordinateSpace3f::from_origin(Vec3 {
-            x: angle.cos(),
-            y: angle.sin(),
-            z: 0.0,
-        }),
-        &CoordinateSpace3f::from_origin(Vec3::ZERO),
-        &DefaultDistanceAttenuationModel { min_distance: 0.1 },
-        &DefaultAirAbsorptionModel::default(),
-        Directivity::default(),
-        OcclusionType::Volumetric,
-        occlusion_radius,
-        num_occlusion_samples,
-        num_transmission_rays,
-        &mut direct_sound_path,
-    );
-
-    custom_node.direct_effect_parameters.direct_sound_path = direct_sound_path;
-
-    custom_node.binaural_effect_parameters.direction = Vec3 {
-        x: angle.cos(),
-        y: angle.sin(),
-        z: 0.0,
-    };
+    let mut tf = custom_node.single_mut()?;
 
     let period = 5.0;
-    *angle += time.delta().as_secs_f32() * core::f32::consts::TAU / period;
+    let todo = (time.elapsed_secs() * core::f32::consts::TAU / period).sin();
+
+    tf.translation.x = todo;
 
     Ok(())
 }
