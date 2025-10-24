@@ -1,19 +1,19 @@
 //! A simple 3D scene with light shining over a cube sitting on a plane.
 
 use bevy::prelude::*;
-use bevy_seedling::{
-    SeedlingPlugin,
-    node::RegisterNode,
-    prelude::{EffectsQuery, SampleEffects},
-    sample::SamplePlayer,
-    sample_effects,
-};
-use phonon_bevy::effects::spatializer::SpatializerNode;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_seedling::{SeedlingPlugin, node::RegisterNode, sample::SamplePlayer, sample_effects};
+use phonon_bevy::{AudioListener, effects::spatializer::SpatializerNode, prelude::PhononPlugin};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(SeedlingPlugin::default())
+        .add_plugins(EguiPlugin::default())
+        .add_plugins(WorldInspectorPlugin::new())
+        .add_plugins(PhononPlugin {
+            max_occlusion_samples: 64,
+        })
         .register_node::<SpatializerNode>()
         .add_systems(Startup, (setup, startup))
         .add_systems(Update, update)
@@ -32,12 +32,6 @@ fn setup(
         MeshMaterial3d(materials.add(Color::WHITE)),
         Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
     ));
-    // cube
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
-        Transform::from_xyz(0.0, 0.5, 0.0),
-    ));
     // light
     commands.spawn((
         PointLight {
@@ -48,6 +42,7 @@ fn setup(
     ));
     // camera
     commands.spawn((
+        AudioListener,
         Camera3d::default(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
@@ -71,16 +66,15 @@ fn startup(
 
 // todo test with multiple sample players
 
-fn update(
-    mut custom_node: Query<&mut Transform, With<SpatializerNode>>,
-    time: Res<Time>,
-) -> Result {
-    let mut tf = custom_node.single_mut()?;
+fn update(mut custom_node: Query<&mut Transform, With<SamplePlayer>>, time: Res<Time>) -> Result {
+    if let Ok(mut tf) = custom_node.single_mut() {
+        let period = 5.0;
+        let position = (time.elapsed_secs() * core::f32::consts::TAU / period).sin() * 10.0;
 
-    let period = 5.0;
-    let todo = (time.elapsed_secs() * core::f32::consts::TAU / period).sin();
-
-    tf.translation.x = todo;
+        tf.translation.x = position;
+        tf.translation.y = position;
+        tf.translation.z = position;
+    }
 
     Ok(())
 }

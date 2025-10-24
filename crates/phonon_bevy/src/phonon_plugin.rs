@@ -1,6 +1,8 @@
 use crate::phonon_mesh::instancing::StaticMeshes;
 use crate::{AudioListener, phonon_mesh};
 use bevy::prelude::*;
+use bevy_seedling::prelude::{EffectsQuery, SampleEffects};
+use bevy_seedling::sample::SamplePlayer;
 use phonon_firewheel::effects::spatializer::SpatializerNode;
 use phonon_firewheel::phonon;
 use phonon_firewheel::phonon::models::air_absorption::DefaultAirAbsorptionModel;
@@ -57,7 +59,8 @@ impl Plugin for PhononPlugin {
 fn update_steam_audio(
     mut sim_res: ResMut<SteamSimulation>,
     listener_query: Query<&GlobalTransform, With<AudioListener>>,
-    mut audio_sources: Query<(&GlobalTransform, &mut SpatializerNode)>,
+    mut audio_sources: Query<(&GlobalTransform, &mut SampleEffects), With<SamplePlayer>>,
+    mut spatializer_nodes: Query<&mut SpatializerNode>,
 ) {
     // Commit changes to the sources, listener and scene.
     sim_res.scene.commit();
@@ -70,7 +73,9 @@ fn update_steam_audio(
         listener_transform.translation(),
     );
 
-    for (source_transform, mut effect) in audio_sources.iter_mut() {
+    for (source_transform, effects) in audio_sources.iter_mut() {
+        // todo remove unwrap
+        let mut effect = spatializer_nodes.get_effect_mut(&effects).unwrap();
         let flags = effect.direct_effect_parameters.flags;
         let settings = effect.simulator_settings;
 
@@ -99,6 +104,6 @@ fn update_steam_audio(
 
         effect.direct_effect_parameters.direct_sound_path = direct_sound_path;
         effect.binaural_effect_parameters.direction =
-            listener_position.origin - source_position.origin;
+            source_position.origin - listener_position.origin;
     }
 }

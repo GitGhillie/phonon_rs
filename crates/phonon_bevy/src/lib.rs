@@ -12,4 +12,4 @@ use bevy::ecs::component::Component;
 pub use phonon_firewheel::effects;
 
 #[derive(Component)]
-struct AudioListener;
+pub struct AudioListener;
