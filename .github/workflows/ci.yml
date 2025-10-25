@@ -24,8 +24,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - name: Install alsa and udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libfontconfig1-dev
+      - name: Install build dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libfontconfig1-dev libwayland-dev
         if: runner.os == 'linux'
       - name: Build & run tests
         run: cargo test -p phonon; cargo test -p phonon_firewheel; cargo test -p phonon_bevy
@@ -46,8 +46,8 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt #clippy
-      - name: Install alsa and udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      - name: Install build dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
 #      - name: Run clippy
 #        run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
       - name: Check format
