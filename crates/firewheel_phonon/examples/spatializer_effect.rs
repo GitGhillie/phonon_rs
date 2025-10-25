@@ -11,7 +11,7 @@ use firewheel::nodes::sampler::{RepeatMode, SamplerNode};
 use phonon::effects::binaural::BinauralEffectParameters;
 use phonon::effects::direct::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
 use phonon::simulators::direct::DirectSoundPath;
-use phonon_firewheel::effects::spatializer::SpatializerNode;
+use firewheel_phonon::effects::spatializer::SpatializerNode;
 use symphonium::SymphoniumLoader;
 
 struct AudioSystem {

@@ -1,15 +1,15 @@
 use crate::phonon_mesh::instancing::StaticMeshes;
-use crate::{AudioListener, phonon_mesh};
+use crate::{phonon_mesh, AudioListener};
 use bevy::prelude::*;
 use bevy_seedling::prelude::{EffectsQuery, SampleEffects};
 use bevy_seedling::sample::SamplePlayer;
-use phonon_firewheel::effects::spatializer::SpatializerNode;
-use phonon_firewheel::phonon;
-use phonon_firewheel::phonon::models::air_absorption::DefaultAirAbsorptionModel;
-use phonon_firewheel::phonon::models::directivity::Directivity;
-use phonon_firewheel::phonon::models::distance_attenuation::DefaultDistanceAttenuationModel;
-use phonon_firewheel::phonon::scene::coordinate_space::CoordinateSpace3f;
-use phonon_firewheel::phonon::simulators::direct::{DirectSimulator, DirectSoundPath};
+use firewheel_phonon::effects::spatializer::SpatializerNode;
+use firewheel_phonon::phonon;
+use firewheel_phonon::phonon::models::air_absorption::DefaultAirAbsorptionModel;
+use firewheel_phonon::phonon::models::directivity::Directivity;
+use firewheel_phonon::phonon::models::distance_attenuation::DefaultDistanceAttenuationModel;
+use firewheel_phonon::phonon::scene::coordinate_space::CoordinateSpace3f;
+use firewheel_phonon::phonon::simulators::direct::{DirectSimulator, DirectSoundPath};
 
 #[derive(Resource)]
 pub(crate) struct SteamSimulation {

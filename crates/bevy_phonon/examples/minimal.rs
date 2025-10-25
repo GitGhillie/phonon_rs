@@ -3,8 +3,8 @@
 //! and spatializes it with a HRTF.
 
 use bevy::prelude::*;
+use bevy_phonon::{AudioListener, effects::spatializer::SpatializerNode, prelude::PhononPlugin};
 use bevy_seedling::{SeedlingPlugin, node::RegisterNode, sample::SamplePlayer, sample_effects};
-use phonon_bevy::{AudioListener, effects::spatializer::SpatializerNode, prelude::PhononPlugin};
 
 fn main() {
     App::new()

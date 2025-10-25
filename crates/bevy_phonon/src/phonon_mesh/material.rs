@@ -2,7 +2,7 @@
 
 use bevy::prelude::{Deref, DerefMut};
 use phonon::scene::material::Material;
-use phonon_firewheel::phonon;
+use firewheel_phonon::phonon;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 //todo: It shouldn't be necessary to make a newtype
@@ -59,7 +59,7 @@ impl Default for PhononMaterial {
 pub mod materials {
     use super::PhononMaterial;
     use phonon::scene::material::Material;
-    use phonon_firewheel::phonon;
+    use firewheel_phonon::phonon;
 
     pub const GENERIC: PhononMaterial = PhononMaterial(Material {
         absorption: [0.10, 0.20, 0.30],

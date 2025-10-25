@@ -6,7 +6,7 @@ use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Deref, DerefMut, Mesh, ResMut, Resource, Transform};
 use phonon::scene::instanced_mesh::InstancedMesh;
 use phonon::scene::static_mesh::StaticMesh;
-use phonon_firewheel::phonon;
+use firewheel_phonon::phonon;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
