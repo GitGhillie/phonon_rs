@@ -1,25 +1,17 @@
 [package]
-name = "bevy_phonon"
+name = "bevy_phonon_demo"
 version = "0.2.0"
 edition = "2024"
 categories = ["multimedia::audio"]
 license = "Apache-2.0"
-description = "Bevy integration for the unofficial Steam Audio Rust rewrite"
+description = "Demo for the Bevy integration for the unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
 documentation = "https://docs.rs/bevy_phonon"
 readme = "README.md"
+publish = false
 
 [dependencies]
 bevy_seedling = { version = "0.6.0", default-features = false }
-bevy = { version = "0.17", default-features = false, features = [
-  "bevy_asset",
-  "bevy_mesh",
-] }
-firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
-  "bevy",
-] }
-
-[dev-dependencies]
 bevy = { version = "0.17", default-features = false, features = [
   "std",
   "bevy_asset",
@@ -45,3 +37,5 @@ bevy = { version = "0.17", default-features = false, features = [
   "wayland",
   "zstd_rust",
 ] }
+
+bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = [] }
