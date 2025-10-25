@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "crates/phonon",
-    "crates/phonon_firewheel",
-    "crates/phonon_bevy",
+    "crates/firewheel_phonon",
+    "crates/bevy_phonon",
 ]
 
 resolver = "2"

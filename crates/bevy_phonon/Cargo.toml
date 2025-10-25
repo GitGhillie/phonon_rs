@@ -1,19 +1,19 @@
 [package]
-name = "phonon_bevy"
-version = "0.1.0"
+name = "bevy_phonon"
+version = "0.2.0"
 edition = "2024"
 categories = ["multimedia::audio"]
 license = "Apache-2.0"
 description = "Bevy integration for the unofficial Steam Audio Rust rewrite"
 repository = "https://github.com/GitGhillie/phonon_rs"
-documentation = "https://docs.rs/phonon_firewheel"
+documentation = "https://docs.rs/bevy_phonon"
 readme = "README.md"
 
 [dependencies]
 # todo check dependencies/features
 bevy_seedling = { version = "0.6.0", default-features = false }
 bevy = { version = "0.17", default-features = false }
-phonon_firewheel = { path = "../phonon_firewheel", version = "0.1", features = ["bevy"] }
+firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = ["bevy"] }
 firewheel = "0.8.0-rc.1"
 prealloc_ref_vec = "0.1"
 
