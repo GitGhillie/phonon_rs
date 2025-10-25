@@ -37,5 +37,5 @@ bevy = { version = "0.17", default-features = false, features = [
   "wayland",
   "zstd_rust",
 ] }
-
 bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = [] }
+bevy_skein = "0.3"
