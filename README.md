@@ -17,10 +17,7 @@ The following user-facing effects have been ported:
   - Transmission (one material per mesh for now)
   - Directivity
 
-Game engine developers can use the following to integrate the effects:
-- [FMOD integration]
-- [Kira integration]
-
+Game engine developers can use the [Firewheel integration].
 Game developers can use the [Bevy integration].
 
 Feel free to open a PR to add an integration!
@@ -40,6 +37,5 @@ At this stage the focus is on the following:
 Licensed under Apache-2.0
 
 [Steam Audio]: https://github.com/ValveSoftware/steam-audio
-[FMOD integration]: https://crates.io/crates/phonon-fmod
-[Kira integration]: https://crates.io/crates/phonon-kira
-[Bevy integration]: https://github.com/GitGhillie/bevy_phonon
+[Firewheel integration]: https://github.com/GitGhillie/phonon_rs/tree/main/crates/phonon-firewheel
+[Bevy integration]: https://github.com/GitGhillie/phonon_rs/tree/main/crates/phonon-bevy

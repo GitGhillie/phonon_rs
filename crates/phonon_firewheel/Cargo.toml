@@ -19,6 +19,13 @@ prealloc_ref_vec = "0.1"
 bevy_ecs = { version = "0.17", default-features = false }
 
 [dev-dependencies]
-eframe = "0.33"
+eframe = { version = "0.33", default-features = false, features = [
+  "default_fonts",
+  "glow",
+  "wayland",
+  "x11",
+] }
+symphonium = { version = "0.6", default-features = false, features = [
+    "ogg", "opt-simd"
+] }
 glam = "0.30"
-symphonium = "0.6"

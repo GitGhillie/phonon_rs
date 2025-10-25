@@ -1,7 +1,8 @@
-//! A simple 3D scene with light shining over a cube sitting on a plane.
+//! Minimal example spawning a sound with spatializer effect.
+//! The effect applies the Direct Simulation (distance attenuation, air absorption, etc.)
+//! and spatializes it with a HRTF.
 
 use bevy::prelude::*;
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use bevy_seedling::{SeedlingPlugin, node::RegisterNode, sample::SamplePlayer, sample_effects};
 use phonon_bevy::{AudioListener, effects::spatializer::SpatializerNode, prelude::PhononPlugin};
 
@@ -9,29 +10,19 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(SeedlingPlugin::default())
-        .add_plugins(EguiPlugin::default())
-        .add_plugins(WorldInspectorPlugin::new())
-        .add_plugins(PhononPlugin {
-            max_occlusion_samples: 64,
-        })
+        .add_plugins(PhononPlugin::default())
         .register_node::<SpatializerNode>()
-        .add_systems(Startup, (setup, startup))
+        .add_systems(Startup, startup)
         .add_systems(Update, update)
         .run();
 }
 
-/// set up a simple 3D scene
-fn setup(
+fn startup(
+    assets: Res<AssetServer>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // circular base
-    commands.spawn((
-        Mesh3d(meshes.add(Circle::new(4.0))),
-        MeshMaterial3d(materials.add(Color::WHITE)),
-        Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-    ));
     // light
     commands.spawn((
         PointLight {
@@ -44,17 +35,9 @@ fn setup(
     commands.spawn((
         AudioListener,
         Camera3d::default(),
-        Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(6.0, 3.5, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-}
-
-fn startup(
-    assets: Res<AssetServer>,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    // Let's spawn a looping sample.
+    // Looping sample player attached to a cube.
     commands.spawn((
         SamplePlayer::new(assets.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
         sample_effects![SpatializerNode::default()],
@@ -64,17 +47,11 @@ fn startup(
     ));
 }
 
-// todo test with multiple sample players
+fn update(mut custom_node: Query<&mut Transform, With<SamplePlayer>>, time: Res<Time>) {
+    let period = 5.0;
+    let position = (time.elapsed_secs() * core::f32::consts::TAU / period).sin() * 10.0;
 
-fn update(mut custom_node: Query<&mut Transform, With<SamplePlayer>>, time: Res<Time>) -> Result {
-    if let Ok(mut tf) = custom_node.single_mut() {
-        let period = 5.0;
-        let position = (time.elapsed_secs() * core::f32::consts::TAU / period).sin() * 10.0;
-
-        tf.translation.x = position;
-        tf.translation.y = position;
-        tf.translation.z = position;
+    for mut tf in custom_node.iter_mut() {
+        tf.translation = Vec3::splat(position);
     }
-
-    Ok(())
 }

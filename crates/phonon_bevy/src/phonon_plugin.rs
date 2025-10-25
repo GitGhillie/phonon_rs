@@ -27,7 +27,7 @@ pub struct PhononPlugin {
 impl Default for PhononPlugin {
     fn default() -> Self {
         PhononPlugin {
-            max_occlusion_samples: 512,
+            max_occlusion_samples: 128,
         }
     }
 }
@@ -84,6 +84,9 @@ fn update_steam_audio(
             source_transform.up().into(),
             source_transform.translation(),
         );
+        let direction = source_transform
+            .reparented_to(listener_transform)
+            .translation;
 
         let mut direct_sound_path = DirectSoundPath::default();
 
@@ -103,7 +106,9 @@ fn update_steam_audio(
         );
 
         effect.direct_effect_parameters.direct_sound_path = direct_sound_path;
-        effect.binaural_effect_parameters.direction =
-            source_position.origin - listener_position.origin;
+        // Note the change in coordinate systems here
+        effect.binaural_effect_parameters.direction.x = direction.x;
+        effect.binaural_effect_parameters.direction.y = -direction.z;
+        effect.binaural_effect_parameters.direction.z = direction.y;
     }
 }
