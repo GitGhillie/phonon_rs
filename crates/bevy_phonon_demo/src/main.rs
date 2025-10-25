@@ -1,13 +1,10 @@
 use bevy::prelude::*;
 
-use crate::camera_controller::{FreeCamera, FreeCameraPlugin};
-
-mod camera_controller;
+use bevy_editor_cam::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugins(FreeCameraPlugin)
+        .add_plugins((DefaultPlugins, MeshPickingPlugin, DefaultEditorCamPlugins))
         .add_systems(Startup, setup)
         .run();
 }
@@ -40,7 +37,7 @@ fn setup(
     ));
     // camera
     commands.spawn((
-        FreeCamera::default(),
+        EditorCam::default(),
         Camera3d::default(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
