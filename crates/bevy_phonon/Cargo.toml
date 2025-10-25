@@ -14,8 +14,10 @@ bevy_seedling = { version = "0.6.0", default-features = false }
 bevy = { version = "0.17", default-features = false, features = [
   "bevy_asset",
   "bevy_mesh",
-]}
-firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = ["bevy"] }
+] }
+firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
+  "bevy",
+] }
 firewheel = "0.8.0-rc.1"
 prealloc_ref_vec = "0.1"
 
