@@ -1,8 +1,8 @@
 // Mostly copied from https://github.com/Aceeri/steam-audio-rs/blob/master/steam-audio/src/simulation/material.rs
 
 use bevy::prelude::{Deref, DerefMut};
-use phonon::scene::material::Material;
 use firewheel_phonon::phonon;
+use phonon::scene::material::Material;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 //todo: It shouldn't be necessary to make a newtype
@@ -58,8 +58,8 @@ impl Default for PhononMaterial {
 #[allow(unused)]
 pub mod materials {
     use super::PhononMaterial;
-    use phonon::scene::material::Material;
     use firewheel_phonon::phonon;
+    use phonon::scene::material::Material;
 
     pub const GENERIC: PhononMaterial = PhononMaterial(Material {
         absorption: [0.10, 0.20, 0.30],

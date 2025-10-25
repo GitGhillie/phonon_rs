@@ -1,5 +1,5 @@
 use crate::phonon_mesh::instancing::StaticMeshes;
-use crate::{phonon_mesh, AudioListener};
+use crate::{AudioListener, phonon_mesh};
 use bevy::prelude::*;
 use bevy_seedling::prelude::{EffectsQuery, SampleEffects};
 use bevy_seedling::sample::SamplePlayer;

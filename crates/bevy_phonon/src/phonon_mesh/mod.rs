@@ -7,8 +7,8 @@ pub use material::materials;
 use crate::phonon_mesh::instancing::MeshParam;
 use crate::phonon_mesh::material::PhononMaterial;
 use bevy::prelude::*;
-use phonon::scene::instanced_mesh::InstancedMesh;
 use firewheel_phonon::phonon;
+use phonon::scene::instanced_mesh::InstancedMesh;
 use std::sync::{Arc, Mutex};
 
 #[derive(Component, Default)]

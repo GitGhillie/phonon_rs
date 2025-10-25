@@ -2,9 +2,9 @@ use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
 use bevy::prelude::Mesh;
 
 use crate::phonon_mesh::material::PhononMaterial;
+use firewheel_phonon::phonon;
 use phonon::scene::material::Material;
 use phonon::scene::static_mesh::StaticMesh;
-use firewheel_phonon::phonon;
 
 #[derive(Debug, Clone)]
 pub enum AudioMeshError {

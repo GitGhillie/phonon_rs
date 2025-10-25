@@ -4,9 +4,9 @@ use crate::phonon_plugin::SteamSimulation;
 use bevy::asset::{Assets, Handle};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Deref, DerefMut, Mesh, ResMut, Resource, Transform};
+use firewheel_phonon::phonon;
 use phonon::scene::instanced_mesh::InstancedMesh;
 use phonon::scene::static_mesh::StaticMesh;
-use firewheel_phonon::phonon;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

@@ -7,8 +7,8 @@ use firewheel::diff::Memo;
 use firewheel::error::UpdateError;
 use firewheel::node::NodeID;
 use firewheel::nodes::sampler::{RepeatMode, SamplerNode};
-use phonon::effects::eq::EqEffectParameters;
 use firewheel_phonon::effects::eq::EqNode;
+use phonon::effects::eq::EqEffectParameters;
 use symphonium::SymphoniumLoader;
 
 struct AudioSystem {
