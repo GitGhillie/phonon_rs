@@ -1,10 +1,12 @@
 [workspace]
 members = [
     "crates/phonon",
-    "crates/phonon-firewheel",
+    "crates/firewheel_phonon",
+    "crates/bevy_phonon",
 ]
 
 resolver = "2"
 
 [patch.crates-io]
 firewheel = { git = "https://github.com/BillyDM/firewheel" }
+bevy_seedling = { git = "https://github.com/corvusprudens/bevy_seedling", branch = "v0.6.0" }

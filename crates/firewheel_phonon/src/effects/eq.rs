@@ -10,6 +10,7 @@ use phonon::effects::eq::{EqEffect, EqEffectParameters};
 
 use crate::fixed_block::FixedProcessBlock;
 
+// todo: Have this implement Bevy Component?
 #[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq, Default)]
 pub struct EqNode {
     /// EQ effect parameters

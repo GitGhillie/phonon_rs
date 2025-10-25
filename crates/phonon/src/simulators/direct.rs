@@ -29,7 +29,7 @@ use crate::scene::sphere::Sphere;
 use glam::Vec3;
 
 #[cfg_attr(feature = "reflect", derive(bevy_reflect::Reflect))]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OcclusionType {
     Raycast,
     Volumetric,
@@ -59,7 +59,7 @@ impl Default for DirectSoundPath {
             delay: 0.0,
             occlusion: 1.0,
             transmission: [0.1, 0.1, 0.1],
-            directivity: 0.0,
+            directivity: 1.0,
         }
     }
 }
@@ -91,7 +91,7 @@ impl DirectSimulator {
 
     pub fn simulate(
         &self,
-        scene: &Scene,
+        scene: Option<&Scene>,
         flags: DirectApplyFlags,
         source: &CoordinateSpace3f,
         listener: &CoordinateSpace3f,
@@ -132,37 +132,36 @@ impl DirectSimulator {
             direct_sound_path.directivity = 1.0;
         }
 
-        // todo: The scene must be optional
-        if flags.occlusion {
-            match occlusion_type {
-                OcclusionType::Raycast => {
-                    direct_sound_path.occlusion =
-                        Self::raycast_occlusion(scene, listener.origin, source.origin);
-                }
-                OcclusionType::Volumetric => {
-                    direct_sound_path.occlusion = self.raycast_volumetric(
-                        scene,
-                        listener.origin,
-                        source.origin,
-                        occlusion_radius,
-                        num_occlusion_samples,
-                    );
+        if let Some(scene) = scene {
+            if flags.occlusion {
+                match occlusion_type {
+                    OcclusionType::Raycast => {
+                        direct_sound_path.occlusion =
+                            Self::raycast_occlusion(scene, listener.origin, source.origin);
+                    }
+                    OcclusionType::Volumetric => {
+                        direct_sound_path.occlusion = self.raycast_volumetric(
+                            scene,
+                            listener.origin,
+                            source.origin,
+                            occlusion_radius,
+                            num_occlusion_samples,
+                        );
+                    }
                 }
             }
-        } else {
-            direct_sound_path.occlusion = 1.0
-        }
 
-        // todo: The scene must be optional
-        if flags.transmission {
-            self.transmission(
-                scene,
-                listener.origin,
-                source.origin,
-                &mut direct_sound_path.transmission,
-                num_transmission_rays,
-            );
+            if flags.transmission {
+                self.transmission(
+                    scene,
+                    listener.origin,
+                    source.origin,
+                    &mut direct_sound_path.transmission,
+                    num_transmission_rays,
+                );
+            }
         } else {
+            direct_sound_path.occlusion = 1.0;
             direct_sound_path.transmission.fill(1.0);
         }
     }

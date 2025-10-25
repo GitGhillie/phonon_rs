@@ -8,10 +8,10 @@ use firewheel::diff::Memo;
 use firewheel::error::UpdateError;
 use firewheel::node::NodeID;
 use firewheel::nodes::sampler::{RepeatMode, SamplerNode};
+use firewheel_phonon::effects::spatializer::SpatializerNode;
 use phonon::effects::binaural::BinauralEffectParameters;
 use phonon::effects::direct::{DirectApplyFlags, DirectEffectParameters, TransmissionType};
 use phonon::simulators::direct::DirectSoundPath;
-use phonon_firewheel::effects::spatializer::SpatializerNode;
 use symphonium::SymphoniumLoader;
 
 struct AudioSystem {

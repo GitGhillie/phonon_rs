@@ -8,13 +8,44 @@ use firewheel::node::{
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
+use phonon::simulators::direct::OcclusionType;
 
 use crate::fixed_block::FixedProcessBlock;
 
 #[derive(Diff, Patch, Debug, Clone, RealtimeClone, PartialEq, Default)]
+#[cfg_attr(feature = "bevy", derive(bevy_ecs::prelude::Component))]
 pub struct SpatializerNode {
     pub direct_effect_parameters: DirectEffectParameters,
     pub binaural_effect_parameters: BinauralEffectParameters,
+    #[diff(skip)]
+    /// Per-source simulator settings. It is not required to use these.
+    pub simulator_settings: SimulatorSettings,
+}
+
+/// Per-source simulator settings
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SimulatorSettings {
+    pub occlusion_type: OcclusionType,
+    /// Size of the audio source when `OcclusionType` is set to `Volumetric`.
+    pub occlusion_radius: f32,
+    /// Number of occlusion samples to take when volumetric occlusion is enabled.
+    /// Limited by `max_occlusion_samples` of the `DirectSimulator`.
+    pub occlusion_samples: usize,
+    // todo document what transmission is and what is needed to make it work (materials)
+    pub num_transmission_rays: usize,
+    pub hrtf_enable: bool, // todo, not used
+}
+
+impl Default for SimulatorSettings {
+    fn default() -> Self {
+        SimulatorSettings {
+            occlusion_type: OcclusionType::Volumetric,
+            occlusion_radius: 1.0,
+            occlusion_samples: 64,
+            num_transmission_rays: 3,
+            hrtf_enable: true,
+        }
+    }
 }
 
 impl AudioNode for SpatializerNode {
