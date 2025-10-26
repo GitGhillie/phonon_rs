@@ -12,6 +12,7 @@ publish = false
 
 [dependencies]
 bevy_seedling = { version = "0.6.0", default-features = false }
+# Bevy without audio features, as that's handled by bevy_seedling
 bevy = { version = "0.17", default-features = false, features = [
   "animation",
   "bevy_asset",
@@ -21,6 +22,7 @@ bevy = { version = "0.17", default-features = false, features = [
   "bevy_gizmos",
   "bevy_gltf",
   "bevy_mesh_picking_backend",
+  "bevy_log",
   "bevy_pbr",
   "bevy_picking",
   "bevy_render",
@@ -39,6 +41,7 @@ bevy = { version = "0.17", default-features = false, features = [
   "multi_threaded",
   "png",
   "smaa_luts",
+  "reflect_auto_register",
   "sysinfo_plugin",
   "tonemapping_luts",
   "webgl2",

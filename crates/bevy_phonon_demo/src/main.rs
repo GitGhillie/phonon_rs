@@ -1,10 +1,16 @@
 use bevy::prelude::*;
 
 use bevy_editor_cam::prelude::*;
+use bevy_skein::SkeinPlugin;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, MeshPickingPlugin, DefaultEditorCamPlugins))
+        .add_plugins((
+            DefaultPlugins,
+            MeshPickingPlugin,
+            DefaultEditorCamPlugins,
+            SkeinPlugin::default(),
+        ))
         .add_systems(Startup, setup)
         .run();
 }
