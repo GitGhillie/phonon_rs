@@ -12,6 +12,7 @@ use bevy::{
 };
 
 use bevy_editor_cam::prelude::*;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use bevy_skein::SkeinPlugin;
 
 use crate::water::WaterPlugin;
@@ -32,6 +33,8 @@ fn main() {
             DefaultEditorCamPlugins,
             WaterPlugin,
             SkeinPlugin::default(),
+            EguiPlugin::default(),
+            WorldInspectorPlugin::new(),
         ))
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
         .insert_resource(ClearColor(Color::Srgba(Srgba {

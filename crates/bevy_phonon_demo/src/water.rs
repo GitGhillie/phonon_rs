@@ -1,7 +1,6 @@
 //! Demonstrates screen space reflections in deferred rendering.
 
 use bevy::{
-    color::palettes::css::BLACK,
     image::{
         ImageAddressMode, ImageFilterMode, ImageLoaderSettings, ImageSampler,
         ImageSamplerDescriptor,
@@ -68,7 +67,7 @@ fn spawn_water(
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(1.0)))),
         MeshMaterial3d(water_materials.add(ExtendedMaterial {
             base: StandardMaterial {
-                base_color: BLACK.into(),
+                base_color: Srgba::rgb(0.0, 0.19, 0.2019608).into(),
                 perceptual_roughness: 0.0,
                 ..default()
             },

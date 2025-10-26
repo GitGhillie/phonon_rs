@@ -53,3 +53,4 @@ bevy = { version = "0.17", default-features = false, features = [
 bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = [] }
 bevy_skein = "0.3"
 bevy_editor_cam = { git = "https://github.com/TotalKrill/bevy_editor_cam", branch = "0.17" }
+bevy-inspector-egui = "0.35.0"
