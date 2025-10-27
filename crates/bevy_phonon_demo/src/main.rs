@@ -1,23 +1,35 @@
 use bevy::{
     anti_alias::fxaa::Fxaa,
     camera::Exposure,
-    light::{
-        AtmosphereEnvironmentMapLight, CascadeShadowConfigBuilder, DirectionalLightShadowMap,
-        light_consts::lux,
-    },
+    light::{AtmosphereEnvironmentMapLight, DirectionalLightShadowMap},
     pbr::{Atmosphere, AtmosphereSettings, ScreenSpaceAmbientOcclusion, ScreenSpaceReflections},
     post_process::bloom::Bloom,
     prelude::*,
     render::view::Hdr,
 };
 
+use bevy_asset_loader::prelude::*;
 use bevy_editor_cam::prelude::*;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use bevy_skein::SkeinPlugin;
 
 use crate::water::WaterPlugin;
 
+mod scenes;
 mod water;
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
+enum AssetLoadingState {
+    #[default]
+    Loading,
+    Loaded,
+}
+
+#[derive(AssetCollection, Resource)]
+struct DemoAssets {
+    #[asset(path = "audio/background.ogg")]
+    background: Handle<Gltf>,
+}
 
 fn main() {
     App::new()
@@ -44,11 +56,19 @@ fn main() {
             alpha: 1.0,
         })))
         .insert_resource(AmbientLight::NONE)
+        .add_loading_state(
+            LoadingState::new(AssetLoadingState::Loading)
+                .continue_to_state(AssetLoadingState::Loaded)
+                .load_collection::<DemoAssets>(),
+        )
+        .add_systems(OnEnter(AssetLoadingState::Loaded), setup_scene1)
         .add_systems(Startup, setup)
+        .add_systems(Startup, scenes::intro::setup)
         .add_systems(PostStartup, into_the_sky)
         .run();
 }
 
+// todo move this, adjust the scale
 /// Moves everything up so that the atmosphere looks it bit more atmospheric
 fn into_the_sky(mut tfs: Query<&mut Transform>) {
     for mut tf in tfs.iter_mut() {
@@ -56,18 +76,8 @@ fn into_the_sky(mut tfs: Query<&mut Transform>) {
     }
 }
 
-/// set up a simple 3D scene
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    // cube
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
-        Transform::from_xyz(0.0, 0.5, 0.0),
-    ));
+/// Setup the common parts between the different scenes in this demo
+fn setup(mut commands: Commands) {
     // camera
     commands.spawn((
         EditorCam::default(),
@@ -98,20 +108,4 @@ fn setup(
         //VolumetricFog::default(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-    // Sun
-    commands.spawn((
-        DirectionalLight {
-            shadows_enabled: true,
-            illuminance: lux::RAW_SUNLIGHT,
-            ..default()
-        },
-        Transform::from_xyz(1.0, 0.2, 0.3).looking_at(Vec3::ZERO, Vec3::Y),
-        CascadeShadowConfigBuilder::default().build(),
-        //VolumetricLight,
-    ));
-    // Add a fog volume.
-    // commands.spawn((
-    //     FogVolume::default(),
-    //     Transform::from_scale(Vec3::splat(35.0)),
-    // ));
 }
