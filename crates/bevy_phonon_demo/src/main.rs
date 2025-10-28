@@ -15,6 +15,7 @@ use bevy_skein::SkeinPlugin;
 
 use crate::water::WaterPlugin;
 
+mod scene_switching;
 mod scenes;
 mod water;
 
@@ -27,8 +28,8 @@ enum AssetLoadingState {
 
 #[derive(AssetCollection, Resource)]
 struct DemoAssets {
-    #[asset(path = "audio/background.ogg")]
-    background: Handle<Gltf>,
+    #[asset(path = "textures/water_normals.png")]
+    water_normals: Handle<Image>,
 }
 
 fn main() {
@@ -56,24 +57,14 @@ fn main() {
             alpha: 1.0,
         })))
         .insert_resource(AmbientLight::NONE)
+        .init_state::<AssetLoadingState>()
         .add_loading_state(
             LoadingState::new(AssetLoadingState::Loading)
                 .continue_to_state(AssetLoadingState::Loaded)
                 .load_collection::<DemoAssets>(),
         )
-        .add_systems(OnEnter(AssetLoadingState::Loaded), setup_scene1)
         .add_systems(Startup, setup)
-        .add_systems(Startup, scenes::intro::setup)
-        .add_systems(PostStartup, into_the_sky)
         .run();
-}
-
-// todo move this, adjust the scale
-/// Moves everything up so that the atmosphere looks it bit more atmospheric
-fn into_the_sky(mut tfs: Query<&mut Transform>) {
-    for mut tf in tfs.iter_mut() {
-        tf.translation.y = tf.translation.y + 5000.0;
-    }
 }
 
 /// Setup the common parts between the different scenes in this demo

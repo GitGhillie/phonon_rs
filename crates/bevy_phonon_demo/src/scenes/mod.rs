@@ -1,9 +1,12 @@
-use bevy::state::state::States;
+use crate::AssetLoadingState;
+use bevy::prelude::StateSet;
+use bevy::state::state::SubStates;
 
 pub mod intro;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
-enum SceneSelection {
+#[derive(SubStates, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[source(AssetLoadingState = AssetLoadingState::Loaded)]
+pub(crate) enum SceneSelection {
     #[default]
     Intro,
     DistanceAttenuation,
