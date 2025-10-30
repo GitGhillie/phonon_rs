@@ -3,8 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-#[derive(Component)]
-struct SceneMarkerIntro;
+use crate::scenes::SceneSelection;
 
 /// set up a simple 3D scene
 pub(crate) fn setup(
@@ -17,7 +16,7 @@ pub(crate) fn setup(
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
         Transform::from_xyz(0.0, 0.5, 0.0),
-        SceneMarkerIntro,
+        DespawnOnExit(SceneSelection::Intro),
     ));
     // todo camera position
     // Sun
@@ -29,7 +28,7 @@ pub(crate) fn setup(
         },
         Transform::from_xyz(1.0, 0.2, 0.3).looking_at(Vec3::ZERO, Vec3::Y),
         CascadeShadowConfigBuilder::default().build(),
-        SceneMarkerIntro,
+        DespawnOnExit(SceneSelection::Intro),
         //VolumetricLight,
     ));
     // Add a fog volume.
@@ -44,11 +43,5 @@ pub(crate) fn setup(
 fn into_the_sky(mut tfs: Query<&mut Transform>) {
     for mut tf in tfs.iter_mut() {
         tf.translation.y = tf.translation.y + 5000.0;
-    }
-}
-
-pub(crate) fn teardown(mut commands: Commands, targets: Query<Entity, With<SceneMarkerIntro>>) {
-    for entity in targets {
-        commands.entity(entity).despawn();
     }
 }
