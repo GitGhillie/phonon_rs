@@ -11,3 +11,13 @@ pub(crate) enum SceneSelection {
     Intro,
     DistanceAttenuation,
 }
+
+impl SceneSelection {
+    const SEQUENCE: [SceneSelection; 2] =
+        [SceneSelection::Intro, SceneSelection::DistanceAttenuation];
+
+    fn next(self) -> Self {
+        let i = Self::SEQUENCE.iter().position(|s| *s == self).unwrap();
+        Self::SEQUENCE[(i + 1) % Self::SEQUENCE.len()]
+    }
+}
