@@ -1,9 +1,8 @@
-use bevy::{
-    light::{CascadeShadowConfigBuilder, light_consts::lux},
-    prelude::*,
-};
+use bevy::prelude::*;
 
 use crate::scenes::SceneSelection;
+
+struct
 
 /// set up a simple 3D scene
 pub(crate) fn setup(
@@ -17,19 +16,6 @@ pub(crate) fn setup(
         MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
         Transform::from_xyz(0.0, 0.5, 0.0),
         DespawnOnExit(SceneSelection::Intro),
-    ));
-    // todo camera position
-    // Sun
-    commands.spawn((
-        DirectionalLight {
-            shadows_enabled: true,
-            illuminance: lux::RAW_SUNLIGHT,
-            ..default()
-        },
-        Transform::from_xyz(1.0, 0.2, 0.3).looking_at(Vec3::ZERO, Vec3::Y),
-        CascadeShadowConfigBuilder::default().build(),
-        DespawnOnExit(SceneSelection::Intro),
-        //VolumetricLight,
     ));
     // Add a fog volume.
     // commands.spawn((

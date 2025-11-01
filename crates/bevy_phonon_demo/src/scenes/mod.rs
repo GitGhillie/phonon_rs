@@ -1,9 +1,15 @@
 use crate::AssetLoadingState;
+use bevy::ecs::schedule::IntoScheduleConfigs;
+use bevy::ecs::system::ScheduleSystem;
 use bevy::prelude::StateSet;
 use bevy::state::state::SubStates;
 
 pub mod distance_effects;
 pub mod intro;
+
+trait DemoScene {
+    fn setup_systems<M>(&self) -> impl IntoScheduleConfigs<ScheduleSystem, M> ;
+}
 
 #[derive(SubStates, Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
 #[source(AssetLoadingState = AssetLoadingState::Loaded)]

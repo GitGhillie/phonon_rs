@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    light::{CascadeShadowConfigBuilder, light_consts::lux},
+    prelude::*,
+};
 
 use bevy_asset_loader::prelude::*;
 use bevy_editor_cam::prelude::*;
@@ -62,5 +65,17 @@ fn setup(mut commands: Commands) {
         Camera3d::default(),
         graphics::camera_components(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
+    // Sun
+    commands.spawn((
+        DirectionalLight {
+            shadows_enabled: true,
+            illuminance: lux::RAW_SUNLIGHT,
+            ..default()
+        },
+        Transform::from_xyz(1.0, 0.2, 0.3).looking_at(Vec3::ZERO, Vec3::Y),
+        CascadeShadowConfigBuilder::default().build(),
+        //VolumetricLight,
     ));
 }

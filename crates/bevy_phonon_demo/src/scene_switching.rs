@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     AssetLoadingState,
-    scenes::{SceneSelection, intro::setup},
+    scenes::{self, SceneSelection},
 };
 
 #[derive(Debug)]
@@ -11,10 +11,14 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.add_sub_state::<SceneSelection>()
-            .add_systems(OnEnter(SceneSelection::Intro), setup)
             .add_systems(
                 Update,
                 select_scene.run_if(in_state(AssetLoadingState::Loaded)),
+            )
+            .add_systems(OnEnter(SceneSelection::Intro), scenes::intro::setup)
+            .add_systems(
+                OnEnter(SceneSelection::DistanceAttenuation),
+                scenes::distance_effects::setup,
             );
     }
 }
