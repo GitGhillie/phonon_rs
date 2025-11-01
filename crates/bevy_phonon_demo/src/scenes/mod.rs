@@ -1,15 +1,12 @@
 use crate::AssetLoadingState;
-use bevy::{
-    ecs::{schedule::ScheduleLabel, system::ScheduleSystem},
-    prelude::*,
-};
+use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 
 pub mod distance_effects;
 pub mod intro;
 
 pub(crate) trait DemoScene {
     fn setup_systems(&self, app: &mut App, schedule: impl ScheduleLabel);
-    fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {}
+    fn update_systems(&self, _app: &mut App, _schedule: impl ScheduleLabel) {}
 }
 
 #[derive(SubStates, Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]

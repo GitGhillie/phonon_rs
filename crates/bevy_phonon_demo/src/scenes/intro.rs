@@ -21,11 +21,10 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     demo_assets: Res<DemoAssets>,
-    assets: Res<AssetServer>,
 ) {
     // cube
     commands.spawn((
-        SamplePlayer::new(assets.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
+        SamplePlayer::new(demo_assets.audio_sample.clone()).looping(),
         sample_effects![SpatializerNode::default()],
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),

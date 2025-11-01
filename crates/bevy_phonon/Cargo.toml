@@ -1,19 +1,21 @@
 [package]
-name = "bevy_phonon"
-version = "0.2.0"
-edition = "2024"
 categories = ["multimedia::audio"]
-license = "Apache-2.0"
 description = "Bevy integration for the unofficial Steam Audio Rust rewrite"
-repository = "https://github.com/GitGhillie/phonon_rs"
 documentation = "https://docs.rs/bevy_phonon"
+edition = "2024"
+license = "Apache-2.0"
+name = "bevy_phonon"
 readme = "README.md"
+repository = "https://github.com/GitGhillie/phonon_rs"
+version = "0.2.0"
 
 [dependencies]
-bevy_seedling = { version = "0.6.0", default-features = false }
 bevy = { version = "0.17", default-features = false, features = [
   "bevy_asset",
   "bevy_mesh",
+] }
+bevy_seedling = { version = "0.6.0", default-features = false, features = [
+  "ogg",
 ] }
 firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
   "bevy",
@@ -21,27 +23,27 @@ firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
 
 [dev-dependencies]
 bevy = { version = "0.17", default-features = false, features = [
-  "std",
+  "bevy_anti_alias",
   "bevy_asset",
+  "bevy_camera",
   "bevy_color",
   "bevy_core_pipeline",
-  "bevy_post_process",
-  "bevy_anti_alias",
   "bevy_gilrs",
   "bevy_gltf",
+  "bevy_image",
+  "bevy_light",
   "bevy_log",
+  "bevy_mesh",
   "bevy_pbr",
+  "bevy_post_process",
   "bevy_render",
   "bevy_scene",
-  "bevy_image",
-  "bevy_mesh",
-  "bevy_camera",
-  "bevy_light",
   "bevy_window",
   "bevy_winit",
   "multi_threaded",
+  "std",
   "tonemapping_luts",
-  "x11",
   "wayland",
+  "x11",
   "zstd_rust",
 ] }

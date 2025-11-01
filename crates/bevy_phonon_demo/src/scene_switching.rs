@@ -2,9 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     AssetLoadingState,
-    scenes::{
-        self, DemoScene, SceneSelection, distance_effects::DistanceEffectsDemo, intro::IntroDemo,
-    },
+    scenes::{DemoScene, SceneSelection, distance_effects::DistanceEffectsDemo, intro::IntroDemo},
 };
 
 #[derive(Debug)]

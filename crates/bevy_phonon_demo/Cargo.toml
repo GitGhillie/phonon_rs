@@ -1,23 +1,23 @@
 [package]
-name = "bevy_phonon_demo"
-version = "0.2.0"
-edition = "2024"
 categories = ["multimedia::audio"]
-license = "Apache-2.0"
 description = "Demo for the Bevy integration for the unofficial Steam Audio Rust rewrite"
-repository = "https://github.com/GitGhillie/phonon_rs"
 documentation = "https://docs.rs/bevy_phonon"
-readme = "README.md"
+edition = "2024"
+license = "Apache-2.0"
+name = "bevy_phonon_demo"
 publish = false
+readme = "README.md"
+repository = "https://github.com/GitGhillie/phonon_rs"
+version = "0.2.0"
 
 [dependencies]
-bevy_seedling = { version = "0.6.0", default-features = false }
+bevy_seedling = { version = "0.6.0", default-features = false, features = [
+  "ogg",
+] }
 # Bevy without audio features, as that's handled by bevy_seedling
 bevy = { version = "0.17", default-features = false, features = [
-  "std",
   "animation",
   "bevy_anti_alias",
-  "bevy_post_process",
   "bevy_asset",
   "bevy_color",
   "bevy_core_pipeline",
@@ -28,14 +28,15 @@ bevy = { version = "0.17", default-features = false, features = [
   "bevy_mesh_picking_backend",
   "bevy_pbr",
   "bevy_picking",
+  "bevy_post_process",
   "bevy_render",
   "bevy_scene",
-  "bevy_sprite_picking_backend",
   "bevy_sprite",
+  "bevy_sprite_picking_backend",
   "bevy_state",
   "bevy_text",
-  "bevy_ui_picking_backend",
   "bevy_ui",
+  "bevy_ui_picking_backend",
   "bevy_window",
   "bevy_winit",
   "custom_cursor",
@@ -45,14 +46,15 @@ bevy = { version = "0.17", default-features = false, features = [
   "png",
   "reflect_auto_register",
   "smaa_luts",
+  "std",
   "sysinfo_plugin",
   "tonemapping_luts",
   "webgl2",
   "x11",
   "zstd_rust",
 ] }
+bevy-inspector-egui = "0.35.0"
+bevy_asset_loader = "0.24.0-rc.1"
+bevy_editor_cam = { git = "https://github.com/TotalKrill/bevy_editor_cam", branch = "0.17" }
 bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = [] }
 bevy_skein = "0.3"
-bevy_editor_cam = { git = "https://github.com/TotalKrill/bevy_editor_cam", branch = "0.17" }
-bevy_asset_loader = "0.24.0-rc.1"
-bevy-inspector-egui = "0.35.0"
