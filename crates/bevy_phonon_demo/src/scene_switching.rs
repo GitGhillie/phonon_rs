@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     AssetLoadingState,
-    scenes::{self, SceneSelection},
+    scenes::{
+        self, DemoScene, SceneSelection, distance_effects::DistanceEffectsDemo, intro::IntroDemo,
+    },
 };
 
 #[derive(Debug)]
@@ -10,16 +12,18 @@ pub struct ScenePlugin;
 
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
-        app.add_sub_state::<SceneSelection>()
-            .add_systems(
-                Update,
-                select_scene.run_if(in_state(AssetLoadingState::Loaded)),
-            )
-            .add_systems(OnEnter(SceneSelection::Intro), scenes::intro::setup)
-            .add_systems(
-                OnEnter(SceneSelection::DistanceAttenuation),
-                scenes::distance_effects::setup,
-            );
+        let intro = IntroDemo;
+        let distance_effects_demo = DistanceEffectsDemo;
+
+        app.add_sub_state::<SceneSelection>();
+        app.add_systems(
+            Update,
+            select_scene.run_if(in_state(AssetLoadingState::Loaded)),
+        );
+
+        intro.setup_systems(app, OnEnter(SceneSelection::Intro));
+        distance_effects_demo.setup_systems(app, OnEnter(SceneSelection::DistanceAttenuation));
+        distance_effects_demo.update_systems(app, Update);
     }
 }
 

@@ -6,6 +6,8 @@ use bevy::{
 use bevy_asset_loader::prelude::*;
 use bevy_editor_cam::prelude::*;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_phonon::{AudioListener, effects::spatializer::SpatializerNode, prelude::PhononPlugin};
+use bevy_seedling::{SeedlingPlugin, node::RegisterNode, sample::AudioSample};
 use bevy_skein::SkeinPlugin;
 
 use crate::water::WaterPlugin;
@@ -24,8 +26,8 @@ enum AssetLoadingState {
 
 #[derive(AssetCollection, Resource)]
 struct DemoAssets {
-    #[asset(path = "textures/water_normals.png")]
-    water_normals: Handle<Image>,
+    #[asset(path = "audio/dpren_very-lush-and-swag-loop.ogg")]
+    audio_sample: Handle<AudioSample>,
 }
 
 fn main() {
@@ -47,6 +49,9 @@ fn main() {
             EguiPlugin::default(),
             WorldInspectorPlugin::new(),
         ))
+        .add_plugins(SeedlingPlugin::default())
+        .add_plugins(PhononPlugin::default())
+        .register_node::<SpatializerNode>()
         .init_state::<AssetLoadingState>()
         .add_loading_state(
             LoadingState::new(AssetLoadingState::Loading)
@@ -64,6 +69,7 @@ fn setup(mut commands: Commands) {
         EditorCam::default(),
         Camera3d::default(),
         graphics::camera_components(),
+        AudioListener,
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 

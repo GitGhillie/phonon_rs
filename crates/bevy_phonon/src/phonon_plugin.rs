@@ -65,7 +65,10 @@ fn update_steam_audio(
     // Commit changes to the sources, listener and scene.
     sim_res.scene.commit();
 
-    let listener_transform = listener_query.single().unwrap();
+    let Ok(listener_transform) = listener_query.single() else {
+        warn_once!("No audio listener was found");
+        return;
+    };
 
     let listener_position = CoordinateSpace3f::from_vectors(
         listener_transform.forward().into(),

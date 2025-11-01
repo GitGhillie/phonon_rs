@@ -14,6 +14,7 @@ publish = false
 bevy_seedling = { version = "0.6.0", default-features = false }
 # Bevy without audio features, as that's handled by bevy_seedling
 bevy = { version = "0.17", default-features = false, features = [
+  "std",
   "animation",
   "bevy_anti_alias",
   "bevy_post_process",

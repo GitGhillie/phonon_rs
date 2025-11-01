@@ -1,14 +1,15 @@
 use crate::AssetLoadingState;
-use bevy::ecs::schedule::IntoScheduleConfigs;
-use bevy::ecs::system::ScheduleSystem;
-use bevy::prelude::StateSet;
-use bevy::state::state::SubStates;
+use bevy::{
+    ecs::{schedule::ScheduleLabel, system::ScheduleSystem},
+    prelude::*,
+};
 
 pub mod distance_effects;
 pub mod intro;
 
-trait DemoScene {
-    fn setup_systems<M>(&self) -> impl IntoScheduleConfigs<ScheduleSystem, M> ;
+pub(crate) trait DemoScene {
+    fn setup_systems(&self, app: &mut App, schedule: impl ScheduleLabel);
+    fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {}
 }
 
 #[derive(SubStates, Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]

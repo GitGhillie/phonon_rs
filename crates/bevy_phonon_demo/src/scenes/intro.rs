@@ -1,17 +1,32 @@
 use bevy::prelude::*;
+use bevy_phonon::effects::spatializer::SpatializerNode;
 
-use crate::scenes::SceneSelection;
+use crate::{
+    DemoAssets,
+    scenes::{DemoScene, SceneSelection},
+};
+use bevy_seedling::{sample::SamplePlayer, sample_effects};
 
-struct
+pub(crate) struct IntroDemo;
+
+impl DemoScene for IntroDemo {
+    fn setup_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
+        app.add_systems(schedule, setup);
+    }
+}
 
 /// set up a simple 3D scene
-pub(crate) fn setup(
+fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    demo_assets: Res<DemoAssets>,
+    assets: Res<AssetServer>,
 ) {
     // cube
     commands.spawn((
+        SamplePlayer::new(assets.load("dpren_very-lush-and-swag-loop.ogg")).looping(),
+        sample_effects![SpatializerNode::default()],
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
         Transform::from_xyz(0.0, 0.5, 0.0),

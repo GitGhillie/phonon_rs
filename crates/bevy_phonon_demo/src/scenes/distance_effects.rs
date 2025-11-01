@@ -1,12 +1,24 @@
 use bevy::prelude::*;
 
-use crate::scenes::SceneSelection;
+use crate::scenes::{DemoScene, SceneSelection};
+
+pub(crate) struct DistanceEffectsDemo;
+
+impl DemoScene for DistanceEffectsDemo {
+    fn setup_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
+        app.add_systems(schedule, setup);
+    }
+
+    fn update_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
+        app.add_systems(schedule, move_cubes);
+    }
+}
 
 #[derive(Component)]
 struct MoveMarker;
 
 /// set up a simple 3D scene
-pub(crate) fn setup(
+fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -28,7 +40,7 @@ pub(crate) fn setup(
     // ));
 }
 
-pub(crate) fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time>) {
+fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time>) {
     let period = 5.0;
     let position = (time.elapsed_secs() * core::f32::consts::TAU / period).sin() * 10.0;
 
