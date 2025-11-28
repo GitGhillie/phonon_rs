@@ -30,7 +30,10 @@ fn select_scene(
     state: Res<State<SceneSelection>>,
     mut next_state: ResMut<NextState<SceneSelection>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Space) {
+    if keyboard_input.just_pressed(KeyCode::ArrowRight) {
         *next_state = bevy::prelude::NextState::Pending(state.next());
+    }
+    if keyboard_input.just_pressed(KeyCode::ArrowLeft) {
+        *next_state = bevy::prelude::NextState::Pending(state.previous());
     }
 }

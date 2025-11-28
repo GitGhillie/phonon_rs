@@ -4,14 +4,14 @@ use bevy_seedling::{sample::SamplePlayer, sample_effects};
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection},
+    scenes::{DemoScene, SceneSelection, TextAssets},
 };
 
 pub(crate) struct DistanceEffectsDemo;
 
 impl DemoScene for DistanceEffectsDemo {
     fn setup_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
-        app.add_systems(schedule, setup);
+        app.add_systems(schedule, (setup, setup_ui));
     }
 
     fn update_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
@@ -39,13 +39,6 @@ fn setup(
         MoveMarker,
         DespawnOnExit(SceneSelection::DistanceAttenuation),
     ));
-    // todo camera position
-
-    // Add a fog volume.
-    // commands.spawn((
-    //     FogVolume::default(),
-    //     Transform::from_scale(Vec3::splat(35.0)),
-    // ));
 }
 
 fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time>) {
@@ -55,4 +48,18 @@ fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time
     for mut cube_tf in cubes.iter_mut() {
         cube_tf.translation.x = position;
     }
+}
+
+fn setup_ui(mut commands: Commands) {
+    let text = String::from_utf8(TextAssets::get("distance_effects.md").unwrap().data.to_vec());
+    commands.spawn((
+        DespawnOnExit(SceneSelection::DistanceAttenuation),
+        Text::from(text.unwrap()),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: px(5),
+            left: px(15),
+            ..default()
+        },
+    ));
 }

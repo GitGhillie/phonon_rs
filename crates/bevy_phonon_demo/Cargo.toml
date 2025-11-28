@@ -36,6 +36,7 @@ bevy = { version = "0.17", default-features = false, features = [
   "bevy_state",
   "bevy_text",
   "bevy_ui",
+  "bevy_ui_render",
   "bevy_ui_picking_backend",
   "bevy_window",
   "bevy_winit",
@@ -58,3 +59,4 @@ bevy_asset_loader = "0.24.0-rc.1"
 bevy_editor_cam = { git = "https://github.com/TotalKrill/bevy_editor_cam", branch = "0.17" }
 bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = [] }
 bevy_skein = "0.3"
+rust-embed = "8.9"

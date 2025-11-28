@@ -3,7 +3,7 @@ use bevy_phonon::effects::spatializer::SpatializerNode;
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection},
+    scenes::{DemoScene, SceneSelection, TextAssets},
 };
 use bevy_seedling::{sample::SamplePlayer, sample_effects};
 
@@ -11,12 +11,12 @@ pub(crate) struct IntroDemo;
 
 impl DemoScene for IntroDemo {
     fn setup_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
-        app.add_systems(schedule, setup);
+        app.add_systems(schedule, (setup_scene, setup_ui));
     }
 }
 
 /// set up a simple 3D scene
-fn setup(
+fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -36,6 +36,20 @@ fn setup(
     //     FogVolume::default(),
     //     Transform::from_scale(Vec3::splat(35.0)),
     // ));
+}
+
+fn setup_ui(mut commands: Commands) {
+    let text = String::from_utf8(TextAssets::get("intro.md").unwrap().data.to_vec());
+    commands.spawn((
+        DespawnOnExit(SceneSelection::Intro),
+        Text::from(text.unwrap()),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: px(5),
+            left: px(15),
+            ..default()
+        },
+    ));
 }
 
 // todo move this, adjust the scale
