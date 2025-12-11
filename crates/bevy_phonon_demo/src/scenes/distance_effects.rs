@@ -1,3 +1,4 @@
+use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
 use bevy_phonon::effects::spatializer::SpatializerNode;
 use bevy_seedling::{sample::SamplePlayer, sample_effects};
@@ -10,11 +11,11 @@ use crate::{
 pub(crate) struct DistanceEffectsDemo;
 
 impl DemoScene for DistanceEffectsDemo {
-    fn setup_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
+    fn setup_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {
         app.add_systems(schedule, (setup, setup_ui));
     }
 
-    fn update_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
+    fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {
         app.add_systems(schedule, move_cubes);
     }
 }
@@ -51,7 +52,12 @@ fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time
 }
 
 fn setup_ui(mut commands: Commands) {
-    let text = String::from_utf8(TextAssets::get("distance_effects.md").unwrap().data.to_vec());
+    let text = String::from_utf8(
+        TextAssets::get("distance_effects.md")
+            .unwrap()
+            .data
+            .to_vec(),
+    );
     commands.spawn((
         DespawnOnExit(SceneSelection::DistanceAttenuation),
         Text::from(text.unwrap()),
