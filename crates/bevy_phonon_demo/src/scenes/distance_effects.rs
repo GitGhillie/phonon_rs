@@ -1,7 +1,7 @@
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
 use bevy_phonon::effects::spatializer::SpatializerNode;
-use bevy_seedling::{sample::SamplePlayer, sample_effects};
+use bevy_seedling::{prelude::{EffectsQuery, SampleEffects}, sample::SamplePlayer, sample_effects};
 
 use crate::{
     DemoAssets,
@@ -16,7 +16,10 @@ impl DemoScene for DistanceEffectsDemo {
     }
 
     fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {
-        app.add_systems(schedule, move_cubes);
+        app.add_systems(
+            schedule,
+            (move_cubes, controls).run_if(in_state(SceneSelection::DistanceAttenuation)),
+        );
     }
 }
 
@@ -30,8 +33,9 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     demo_assets: Res<DemoAssets>,
 ) {
-    // cube
+    info!("Setting up scene");
     commands.spawn((
+        Name::from("Cube Translating"),
         SamplePlayer::new(demo_assets.audio_sample.clone()).looping(),
         sample_effects![SpatializerNode::default()],
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
@@ -51,6 +55,27 @@ fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time
     }
 }
 
+fn controls(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    player: Single<&SampleEffects, With<SamplePlayer>>,
+    mut effects: Query<&mut SpatializerNode>,
+) -> Result {
+    let mut effect = effects.get_effect_mut(&player)?;
+    
+    if keyboard_input.just_pressed(KeyCode::Digit1) {
+        info!("toggle dist");
+        effect.direct_effect_parameters.flags.distance_attenuation ^= true;
+    }
+    if keyboard_input.just_pressed(KeyCode::Digit2) {
+        effect.direct_effect_parameters.flags.air_absorption ^= true;
+    }
+    if keyboard_input.just_pressed(KeyCode::Digit3) {
+        effect.direct_effect_parameters.flags.delay ^= true;
+    }
+
+    Ok(())
+}
+
 fn setup_ui(mut commands: Commands) {
     let text = String::from_utf8(
         TextAssets::get("distance_effects.md")
@@ -58,6 +83,7 @@ fn setup_ui(mut commands: Commands) {
             .data
             .to_vec(),
     );
+
     commands.spawn((
         DespawnOnExit(SceneSelection::DistanceAttenuation),
         Text::from(text.unwrap()),
@@ -68,4 +94,20 @@ fn setup_ui(mut commands: Commands) {
             ..default()
         },
     ));
+
+    commands.spawn((
+        DespawnOnExit(SceneSelection::DistanceAttenuation),
+        Text::from(""),
+        Node {
+            position_type: PositionType::Absolute,
+            bottom: px(5),
+            right: px(15),
+            ..default()
+        },
+    ));
+}
+
+fn update_ui(player: Single<&SampleEffects, With<SamplePlayer>>,
+    mut effects: Query<&mut SpatializerNode>,) {
+
 }

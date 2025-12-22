@@ -1,6 +1,6 @@
 use bevy::{
     input::common_conditions::input_just_pressed,
-    light::{CascadeShadowConfigBuilder, light_consts::lux},
+    light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
     prelude::*,
     window::{CursorGrabMode, CursorOptions},
 };
@@ -65,13 +65,13 @@ fn main() {
                 .load_collection::<DemoAssets>(),
         )
         .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            (
-                capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
-                release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
-            ),
-        )
+        // .add_systems(
+        //     Update,
+        //     (
+        //         capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
+        //         release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+        //     ),
+        // )
         .run();
 }
 
@@ -80,9 +80,8 @@ fn setup(mut commands: Commands) {
     // Spawn the player
     let player = commands
         .spawn((
-            // Add the character controller configuration. We'll use the default settings for now.
+            Name::from("Player"),
             CharacterController::default(),
-            // Configure inputs. The actions `Movement`, `Jump`, etc. are provided by Ahoy, you just need to bind them.
             PlayerInput,
             actions!(PlayerInput[
                 (
@@ -118,18 +117,23 @@ fn setup(mut commands: Commands) {
 
     // Spawn the player camera
     commands.spawn((
+        Name::from("Camera"),
         Camera3d::default(),
         graphics::camera_components(),
         AudioListener,
-        // Enable the optional builtin camera controller
         CharacterControllerCameraOf::new(player),
     ));
 
-    // Spawn the floor
-    commands.spawn((RigidBody::Static, Collider::cuboid(100.0, 0.1, 100.0)));
+    // Spawn the floor collider
+    commands.spawn((
+        Name::from("Floor"),
+        RigidBody::Static,
+        Collider::cuboid(100.0, 0.1, 100.0),
+    ));
 
     // Sun
     commands.spawn((
+        Name::from("Sun"),
         DirectionalLight {
             shadows_enabled: true,
             illuminance: lux::RAW_SUNLIGHT,
@@ -137,6 +141,7 @@ fn setup(mut commands: Commands) {
         },
         Transform::from_xyz(1.0, 0.2, 0.3).looking_at(Vec3::ZERO, Vec3::Y),
         CascadeShadowConfigBuilder::default().build(),
+        SunDisk::EARTH,
         //VolumetricLight,
     ));
 }

@@ -15,15 +15,15 @@ impl DemoScene for IntroDemo {
     }
 }
 
-/// set up a simple 3D scene
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     demo_assets: Res<DemoAssets>,
 ) {
-    // cube
+    info!("Setting up scene");
     commands.spawn((
+        Name::from("Cube Intro"),
         SamplePlayer::new(demo_assets.audio_sample.clone()).looping(),
         sample_effects![SpatializerNode::default()],
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
@@ -31,11 +31,6 @@ fn setup_scene(
         Transform::from_xyz(0.0, 0.5, 0.0),
         DespawnOnExit(SceneSelection::Intro),
     ));
-    // Add a fog volume.
-    // commands.spawn((
-    //     FogVolume::default(),
-    //     Transform::from_scale(Vec3::splat(35.0)),
-    // ));
 }
 
 fn setup_ui(mut commands: Commands) {
