@@ -1,7 +1,11 @@
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
 use bevy_phonon::effects::spatializer::SpatializerNode;
-use bevy_seedling::{prelude::{EffectsQuery, SampleEffects}, sample::SamplePlayer, sample_effects};
+use bevy_seedling::{
+    prelude::{EffectsQuery, SampleEffects},
+    sample::SamplePlayer,
+    sample_effects,
+};
 
 use crate::{
     DemoAssets,
@@ -18,7 +22,7 @@ impl DemoScene for DistanceEffectsDemo {
     fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {
         app.add_systems(
             schedule,
-            (move_cubes, controls).run_if(in_state(SceneSelection::DistanceAttenuation)),
+            (move_cubes, controls, update_ui).run_if(in_state(SceneSelection::DistanceAttenuation)),
         );
     }
 }
@@ -61,7 +65,7 @@ fn controls(
     mut effects: Query<&mut SpatializerNode>,
 ) -> Result {
     let mut effect = effects.get_effect_mut(&player)?;
-    
+
     if keyboard_input.just_pressed(KeyCode::Digit1) {
         info!("toggle dist");
         effect.direct_effect_parameters.flags.distance_attenuation ^= true;
@@ -87,6 +91,7 @@ fn setup_ui(mut commands: Commands) {
     commands.spawn((
         DespawnOnExit(SceneSelection::DistanceAttenuation),
         Text::from(text.unwrap()),
+        text_shadow_component(),
         Node {
             position_type: PositionType::Absolute,
             bottom: px(5),
@@ -97,7 +102,9 @@ fn setup_ui(mut commands: Commands) {
 
     commands.spawn((
         DespawnOnExit(SceneSelection::DistanceAttenuation),
-        Text::from(""),
+        Text::from("A"),
+        text_shadow_component(),
+        Name::from("StatusText"),
         Node {
             position_type: PositionType::Absolute,
             bottom: px(5),
@@ -107,7 +114,20 @@ fn setup_ui(mut commands: Commands) {
     ));
 }
 
-fn update_ui(player: Single<&SampleEffects, With<SamplePlayer>>,
-    mut effects: Query<&mut SpatializerNode>,) {
+fn update_ui(
+    player: Single<&SampleEffects, With<SamplePlayer>>,
+    effects: Query<&SpatializerNode>,
+    mut text: Query<&mut TextColor>,
+) -> Result {
+    let effect = effects.get_effect(&player)?;
+    let distance_attenuation = effect.direct_effect_parameters.flags.distance_attenuation;
 
+    Ok(())
+}
+
+fn text_shadow_component() -> TextShadow {
+    TextShadow {
+        offset: Vec2 { x: 2.0, y: 2.0 },
+        ..Default::default()
+    }
 }

@@ -46,11 +46,3 @@ fn setup_ui(mut commands: Commands) {
         },
     ));
 }
-
-// todo move this, adjust the scale
-/// Moves everything up so that the atmosphere looks it bit more atmospheric
-fn into_the_sky(mut tfs: Query<&mut Transform>) {
-    for mut tf in tfs.iter_mut() {
-        tf.translation.y = tf.translation.y + 5000.0;
-    }
-}
