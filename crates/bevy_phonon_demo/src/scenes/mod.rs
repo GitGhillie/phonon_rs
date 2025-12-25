@@ -44,3 +44,10 @@ impl SceneSelection {
         Self::SEQUENCE[next_scene_index]
     }
 }
+
+pub(crate) fn text_shadow_component() -> TextShadow {
+    TextShadow {
+        offset: Vec2 { x: 2.0, y: 2.0 },
+        ..Default::default()
+    }
+}

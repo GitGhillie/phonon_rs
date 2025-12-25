@@ -3,7 +3,7 @@ use bevy_phonon::effects::spatializer::SpatializerNode;
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection, TextAssets},
+    scenes::{DemoScene, SceneSelection, TextAssets, text_shadow_component},
 };
 use bevy_seedling::{sample::SamplePlayer, sample_effects};
 
@@ -38,6 +38,7 @@ fn setup_ui(mut commands: Commands) {
     commands.spawn((
         DespawnOnExit(SceneSelection::Intro),
         Text::from(text.unwrap()),
+        text_shadow_component(),
         Node {
             position_type: PositionType::Absolute,
             bottom: px(5),

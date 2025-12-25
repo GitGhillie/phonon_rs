@@ -9,7 +9,7 @@ use bevy_seedling::{
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection, TextAssets},
+    scenes::{DemoScene, SceneSelection, TextAssets, text_shadow_component},
 };
 
 pub(crate) struct DistanceEffectsDemo;
@@ -81,25 +81,6 @@ fn controls(
 }
 
 fn setup_ui(mut commands: Commands) {
-    let text = String::from_utf8(
-        TextAssets::get("distance_effects.md")
-            .unwrap()
-            .data
-            .to_vec(),
-    );
-
-    commands.spawn((
-        DespawnOnExit(SceneSelection::DistanceAttenuation),
-        Text::from(text.unwrap()),
-        text_shadow_component(),
-        Node {
-            position_type: PositionType::Absolute,
-            bottom: px(5),
-            left: px(15),
-            ..default()
-        },
-    ));
-
     commands.spawn((
         DespawnOnExit(SceneSelection::DistanceAttenuation),
         Text::from("A"),
@@ -108,7 +89,7 @@ fn setup_ui(mut commands: Commands) {
         Node {
             position_type: PositionType::Absolute,
             bottom: px(5),
-            right: px(15),
+            left: px(15),
             ..default()
         },
     ));
@@ -117,17 +98,24 @@ fn setup_ui(mut commands: Commands) {
 fn update_ui(
     player: Single<&SampleEffects, With<SamplePlayer>>,
     effects: Query<&SpatializerNode>,
-    mut text: Query<&mut TextColor>,
+    mut text: Query<&mut Text, With<Name>>,
 ) -> Result {
     let effect = effects.get_effect(&player)?;
     let distance_attenuation = effect.direct_effect_parameters.flags.distance_attenuation;
+    let air_absorption = effect.direct_effect_parameters.flags.air_absorption;
+    let delay = effect.direct_effect_parameters.flags.delay;
+
+    if let Ok(mut text) = text.single_mut() {
+        let strings = vec![
+            "There are a few effects purely based on distance.".to_string(),
+            "Press the following keys to toggle the effects:".to_string(),
+            format!("[1] - Distance attenuation: {distance_attenuation}"),
+            format!("[2] - Air absorption: {air_absorption}"),
+            format!("[3] - Delay: {delay}"),
+        ];
+
+        text.0 = strings.join("\n");
+    }
 
     Ok(())
-}
-
-fn text_shadow_component() -> TextShadow {
-    TextShadow {
-        offset: Vec2 { x: 2.0, y: 2.0 },
-        ..Default::default()
-    }
 }
