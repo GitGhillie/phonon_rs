@@ -2,8 +2,11 @@ use crate::AssetLoadingState;
 use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 use rust_embed::Embed;
 
+pub mod binaural;
+pub mod directivity;
 pub mod distance_effects;
 pub mod intro;
+pub mod materials;
 
 #[derive(Embed)]
 #[folder = "assets/text/"]
@@ -20,13 +23,17 @@ pub(crate) enum SceneSelection {
     #[default]
     Intro,
     DistanceAttenuation,
+    Directivity,
 }
 
-const NUM_SCENES: usize = 2;
+const NUM_SCENES: usize = 3;
 
 impl SceneSelection {
-    const SEQUENCE: [SceneSelection; NUM_SCENES] =
-        [SceneSelection::Intro, SceneSelection::DistanceAttenuation];
+    const SEQUENCE: [SceneSelection; NUM_SCENES] = [
+        SceneSelection::Intro,
+        SceneSelection::DistanceAttenuation,
+        SceneSelection::Directivity,
+    ];
 
     pub fn next(self) -> Self {
         let current_scene_index = Self::SEQUENCE.iter().position(|s| *s == self).unwrap();

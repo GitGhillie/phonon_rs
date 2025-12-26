@@ -67,7 +67,6 @@ fn controls(
     let mut effect = effects.get_effect_mut(&player)?;
 
     if keyboard_input.just_pressed(KeyCode::Digit1) {
-        info!("toggle dist");
         effect.direct_effect_parameters.flags.distance_attenuation ^= true;
     }
     if keyboard_input.just_pressed(KeyCode::Digit2) {
