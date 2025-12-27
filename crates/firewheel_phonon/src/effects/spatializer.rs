@@ -8,6 +8,7 @@ use firewheel::node::{
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
+use phonon::models::directivity::Directivity;
 use phonon::simulators::direct::OcclusionType;
 
 use crate::fixed_block::FixedProcessBlock;
@@ -34,6 +35,7 @@ pub struct SimulatorSettings {
     // todo document what transmission is and what is needed to make it work (materials)
     pub num_transmission_rays: usize,
     pub hrtf_enable: bool, // todo, not used
+    pub directivity: Directivity,
 }
 
 impl Default for SimulatorSettings {
@@ -44,6 +46,7 @@ impl Default for SimulatorSettings {
             occlusion_samples: 64,
             num_transmission_rays: 3,
             hrtf_enable: true,
+            directivity: Directivity::default(),
         }
     }
 }

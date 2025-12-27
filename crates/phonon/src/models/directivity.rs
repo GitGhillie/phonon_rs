@@ -18,7 +18,23 @@
 use crate::scene::coordinate_space::CoordinateSpace3f;
 use glam::Vec3;
 
-// todo: Describe what these do and what the limits are
+/// Sound sources can emit sound with different intensities in different
+/// directions. For example, a megaphone mostly projects sound towards the
+/// front. Steam Audio models this using a directivity pattern. Due to a
+/// source’s directivity pattern, and its orientation and position relative
+/// to the listener, a further attenuation is applied to it, on top of any
+/// distance attenuation or air absorption.
+///
+/// Steam Audio’s default directivity pattern is a weighted dipole. The
+/// dipole_weight field specifies a blend between a monopole (a source that
+/// emits sound equally in all directions) and a dipole (a source that emits
+/// sound mostly to the front and the back). A dipole_weight
+/// value of 0.5f results in a 50% monopole and 50% dipole blend. This is also
+/// called a cardioid directivity pattern.
+///
+/// The dipole_power field controls the sharpness of the dipole pattern.
+/// Higher values result in more focused sound.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Directivity {
     pub dipole_weight: f32,
     pub dipole_power: f32,

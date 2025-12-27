@@ -100,7 +100,7 @@ fn update_steam_audio(
             &listener_position,
             &DefaultDistanceAttenuationModel::default(),
             &DefaultAirAbsorptionModel::default(),
-            Directivity::default(),
+            settings.directivity,
             settings.occlusion_type,
             settings.occlusion_radius,
             settings.occlusion_samples,
