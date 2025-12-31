@@ -58,3 +58,4 @@ rust-embed = "8.9"
 bevy_ahoy = { git = "https://github.com/janhohenheim/bevy_ahoy", branch = "main" }
 bevy_enhanced_input = { version = "0.20", default-features = false }
 avian3d = "0.4"
+phonon = { path = "../phonon" } # Needed for visualisations

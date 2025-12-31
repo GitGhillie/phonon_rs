@@ -25,18 +25,19 @@ use glam::Vec3;
 /// to the listener, a further attenuation is applied to it, on top of any
 /// distance attenuation or air absorption.
 ///
-/// Steam Audio’s default directivity pattern is a weighted dipole. The
-/// dipole_weight field specifies a blend between a monopole (a source that
-/// emits sound equally in all directions) and a dipole (a source that emits
-/// sound mostly to the front and the back). A dipole_weight
-/// value of 0.5f results in a 50% monopole and 50% dipole blend. This is also
-/// called a cardioid directivity pattern.
-///
-/// The dipole_power field controls the sharpness of the dipole pattern.
-/// Higher values result in more focused sound.
+/// Steam Audio’s default directivity pattern is a weighted dipole.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Directivity {
+    /// Specifies a blend between a monopole (a source that
+    /// emits sound equally in all directions) and a dipole (a source that emits
+    /// sound mostly to the front and the back). A dipole_weight
+    /// value of 0.5f results in a 50% monopole and 50% dipole blend. This is also
+    /// called a cardioid directivity pattern.
     pub dipole_weight: f32,
+    /// Controls the sharpness of the dipole pattern.
+    /// Higher values result in more focused sound.
+    ///
+    /// Usually between 1.0 and 4.0
     pub dipole_power: f32,
 }
 
@@ -56,7 +57,7 @@ impl Directivity {
         base.abs().powf(self.dipole_power)
     }
 
-    pub(crate) fn evaluate_at(&self, point: Vec3, coordinates: &CoordinateSpace3f) -> f32 {
+    pub fn evaluate_at(&self, point: Vec3, coordinates: &CoordinateSpace3f) -> f32 {
         if self.dipole_weight == 0.0 {
             return 1.0;
         }

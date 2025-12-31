@@ -1,4 +1,9 @@
-use bevy::{color::palettes::css::ORANGE_RED, prelude::*};
+use std::f32::consts::PI;
+
+use bevy::{
+    color::palettes::css::{ORANGE_RED, RED},
+    prelude::*,
+};
 use bevy_phonon::effects::spatializer::SpatializerNode;
 
 use crate::{
@@ -21,7 +26,8 @@ impl DemoScene for DirectivityDemo {
     fn update_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
         app.add_systems(
             schedule,
-            (rotate_cube, controls, update_ui).run_if(in_state(SceneSelection::Directivity)),
+            (rotate_cube, controls, update_ui, visualize_directivity)
+                .run_if(in_state(SceneSelection::Directivity)),
         );
     }
 }
@@ -47,20 +53,6 @@ fn setup_scene(
 }
 
 fn setup_ui(mut commands: Commands) {
-    // todo: Example description
-    // let text = String::from_utf8(TextAssets::get("intro.md").unwrap().data.to_vec());
-    // commands.spawn((
-    //     DespawnOnExit(SceneSelection::Directivity),
-    //     Text::from(text.unwrap()),
-    //     text_shadow_component(),
-    //     Node {
-    //         position_type: PositionType::Absolute,
-    //         bottom: px(5),
-    //         left: px(15),
-    //         ..default()
-    //     },
-    // ));
-
     commands.spawn((
         DespawnOnExit(SceneSelection::Directivity),
         Text::from("StatusText"),
@@ -95,23 +87,30 @@ fn controls(
     time: Res<Time<Real>>,
 ) -> Result {
     let mut effect = effects.get_effect_mut(&player)?;
-    let sensitivity = 0.5;
+    let sensitivity_weight = 0.5;
+    let sensitivity_power = 4.0 * sensitivity_weight;
+
+    let mut weight = effect.simulator_settings.directivity.dipole_weight;
+    let mut power = effect.simulator_settings.directivity.dipole_power;
 
     if keyboard_input.just_pressed(KeyCode::Digit1) {
         effect.direct_effect_parameters.flags.directivity ^= true;
     }
     if keyboard_input.pressed(KeyCode::Digit2) {
-        effect.simulator_settings.directivity.dipole_power -= sensitivity * time.delta_secs();
+        weight -= sensitivity_weight * time.delta_secs();
     }
     if keyboard_input.pressed(KeyCode::Digit3) {
-        effect.simulator_settings.directivity.dipole_power += sensitivity * time.delta_secs();
+        weight += sensitivity_weight * time.delta_secs();
     }
     if keyboard_input.pressed(KeyCode::Digit4) {
-        effect.simulator_settings.directivity.dipole_weight -= sensitivity * time.delta_secs();
+        power -= sensitivity_power * time.delta_secs();
     }
     if keyboard_input.pressed(KeyCode::Digit5) {
-        effect.simulator_settings.directivity.dipole_weight += sensitivity * time.delta_secs();
+        power += sensitivity_power * time.delta_secs();
     }
+
+    effect.simulator_settings.directivity.dipole_power = power.clamp(1.0, 4.0);
+    effect.simulator_settings.directivity.dipole_weight = weight.clamp(0.0, 1.0);
 
     Ok(())
 }
@@ -132,12 +131,59 @@ fn update_ui(
                 .to_string(),
             "Press the following keys to affect the directivity:".to_string(),
             format!("[1] - Directivity enabled: {directivity}"),
-            format!("[2/3] - Dipole weight: {weight}"),
-            format!("[4/5] - Dipole power: {power}"),
+            format!("[2/3] - Dipole weight: {weight:.3}"),
+            format!("[4/5] - Dipole power: {power:.3}"),
         ];
 
         text.0 = strings.join("\n");
     }
+
+    Ok(())
+}
+
+fn visualize_directivity(
+    source: Single<(&SampleEffects, &GlobalTransform), With<SamplePlayer>>,
+    effects: Query<&SpatializerNode>,
+    mut gizmos: Gizmos,
+) -> Result {
+    let (player, transform) = *source;
+    let effect = effects.get_effect(&player)?;
+    let model = effect.simulator_settings.directivity;
+
+    let coordinates = phonon::scene::coordinate_space::CoordinateSpace3f {
+        right: *transform.right(),
+        up: *transform.up(),
+        ahead: *transform.forward(),
+        origin: transform.translation(),
+    };
+
+    const NUM_SAMPLES: usize = 30;
+    const DT: f32 = 2.0 * PI / (NUM_SAMPLES as f32);
+    let sample_positions: Vec<Vec3> = (0..NUM_SAMPLES)
+        .map(|i| Vec3 {
+            x: (i as f32 * DT).cos(),
+            y: 0.2,
+            z: (i as f32 * DT).sin(),
+        })
+        .collect();
+
+    // Evaluate the directivity at each sample position
+    let evaluated: Vec<f32> = sample_positions
+        .iter()
+        .map(|position| model.evaluate_at(*position, &coordinates))
+        .collect();
+
+    // Create a line from each sample to the next
+    for i in 0..(NUM_SAMPLES - 1) {
+        let start = evaluated[i] * sample_positions[i];
+        let end = evaluated[i + 1] * sample_positions[i + 1];
+        gizmos.line(start, end, RED);
+    }
+
+    // Close the loop
+    let start = evaluated[NUM_SAMPLES - 1] * sample_positions[NUM_SAMPLES - 1];
+    let end = evaluated[0] * sample_positions[0];
+    gizmos.line(start, end, RED);
 
     Ok(())
 }

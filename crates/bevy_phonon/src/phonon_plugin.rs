@@ -6,7 +6,6 @@ use bevy_seedling::sample::SamplePlayer;
 use firewheel_phonon::effects::spatializer::SpatializerNode;
 use firewheel_phonon::phonon;
 use firewheel_phonon::phonon::models::air_absorption::DefaultAirAbsorptionModel;
-use firewheel_phonon::phonon::models::directivity::Directivity;
 use firewheel_phonon::phonon::models::distance_attenuation::DefaultDistanceAttenuationModel;
 use firewheel_phonon::phonon::scene::coordinate_space::CoordinateSpace3f;
 use firewheel_phonon::phonon::simulators::direct::{DirectSimulator, DirectSoundPath};
