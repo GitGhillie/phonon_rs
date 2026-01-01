@@ -37,5 +37,5 @@ At this stage the focus is on the following:
 Licensed under Apache-2.0
 
 [Steam Audio]: https://github.com/ValveSoftware/steam-audio
-[Firewheel integration]: https://github.com/GitGhillie/phonon_rs/tree/main/crates/phonon-firewheel
-[Bevy integration]: https://github.com/GitGhillie/phonon_rs/tree/main/crates/phonon-bevy
+[Firewheel integration]: https://github.com/GitGhillie/phonon_rs/tree/main/crates/firewheel_phonon
+[Bevy integration]: https://github.com/GitGhillie/phonon_rs/tree/main/crates/bevy_phonon
