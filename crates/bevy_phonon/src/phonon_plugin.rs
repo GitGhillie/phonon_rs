@@ -6,7 +6,6 @@ use bevy_seedling::sample::SamplePlayer;
 use firewheel_phonon::effects::spatializer::SpatializerNode;
 use firewheel_phonon::phonon;
 use firewheel_phonon::phonon::models::air_absorption::DefaultAirAbsorptionModel;
-use firewheel_phonon::phonon::models::directivity::Directivity;
 use firewheel_phonon::phonon::models::distance_attenuation::DefaultDistanceAttenuationModel;
 use firewheel_phonon::phonon::scene::coordinate_space::CoordinateSpace3f;
 use firewheel_phonon::phonon::simulators::direct::{DirectSimulator, DirectSoundPath};
@@ -65,7 +64,10 @@ fn update_steam_audio(
     // Commit changes to the sources, listener and scene.
     sim_res.scene.commit();
 
-    let listener_transform = listener_query.single().unwrap();
+    let Ok(listener_transform) = listener_query.single() else {
+        warn_once!("No audio listener was found");
+        return;
+    };
 
     let listener_position = CoordinateSpace3f::from_vectors(
         listener_transform.forward().into(),
@@ -97,7 +99,7 @@ fn update_steam_audio(
             &listener_position,
             &DefaultDistanceAttenuationModel::default(),
             &DefaultAirAbsorptionModel::default(),
-            Directivity::default(),
+            settings.directivity,
             settings.occlusion_type,
             settings.occlusion_radius,
             settings.occlusion_samples,
