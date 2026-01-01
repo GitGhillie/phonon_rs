@@ -57,6 +57,8 @@ impl Directivity {
         base.abs().powf(self.dipole_power)
     }
 
+    /// Evaluate the directivity when the listener is at `point`. Normally this is
+    /// called by the simulator.
     pub fn evaluate_at(&self, point: Vec3, coordinates: &CoordinateSpace3f) -> f32 {
         if self.dipole_weight == 0.0 {
             return 1.0;

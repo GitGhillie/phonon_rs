@@ -51,7 +51,7 @@ bevy = { version = "0.17", default-features = false, features = [
   "zstd_rust",
 ] }
 bevy-inspector-egui = "0.35.0"
-bevy_asset_loader = "0.24.0-rc.1"
+bevy_asset_loader = "0.24.0"
 bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = [] }
 bevy_skein = "0.3"
 rust-embed = "8.9"

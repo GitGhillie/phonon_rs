@@ -32,8 +32,6 @@ impl DemoScene for DirectivityDemo {
     }
 }
 
-// todo: Visualize the directivity pattern
-
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
