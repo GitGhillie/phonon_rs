@@ -22,7 +22,8 @@ impl DemoScene for DistanceEffectsDemo {
     fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {
         app.add_systems(
             schedule,
-            (move_cubes, controls, update_ui).run_if(in_state(SceneSelection::DistanceAttenuation)),
+            (move_sources, controls, update_ui)
+                .run_if(in_state(SceneSelection::DistanceAttenuation)),
         );
     }
 }
@@ -39,10 +40,10 @@ fn setup(
 ) {
     info!("Setting up scene");
     commands.spawn((
-        Name::from("Cube Translating"),
+        Name::from("Translating Audio Source"),
         SamplePlayer::new(demo_assets.audio_sample.clone()).looping(),
         sample_effects![SpatializerNode::default()],
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        Mesh3d(meshes.add(Sphere::new(0.2))),
         MeshMaterial3d(materials.add(Color::srgb_u8(233, 1, 1))),
         Transform::from_xyz(0.0, 1.5, 0.0),
         MoveMarker,
@@ -50,12 +51,12 @@ fn setup(
     ));
 }
 
-fn move_cubes(mut cubes: Query<&mut Transform, With<MoveMarker>>, time: Res<Time>) {
+fn move_sources(mut sources: Query<&mut Transform, With<MoveMarker>>, time: Res<Time>) {
     let period = 5.0;
     let position = (time.elapsed_secs() * core::f32::consts::TAU / period).sin() * 10.0;
 
-    for mut cube_tf in cubes.iter_mut() {
-        cube_tf.translation.x = position;
+    for mut source_tf in sources.iter_mut() {
+        source_tf.translation.x = position;
     }
 }
 

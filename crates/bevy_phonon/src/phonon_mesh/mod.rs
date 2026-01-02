@@ -11,6 +11,8 @@ use firewheel_phonon::phonon;
 use phonon::scene::instanced_mesh::InstancedMesh;
 use std::sync::{Arc, Mutex};
 
+/// Place this component on an entity with a Bevy mesh to have
+/// it converted to a Steam Audio mesh.
 #[derive(Component, Default)]
 pub struct NeedsAudioMesh(pub PhononMaterial);
 

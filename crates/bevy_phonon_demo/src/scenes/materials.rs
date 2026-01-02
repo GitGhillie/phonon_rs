@@ -1,15 +1,16 @@
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::*;
-use bevy_phonon::effects::spatializer::SpatializerNode;
+use bevy_phonon::{effects::spatializer::SpatializerNode, prelude::*};
 use bevy_seedling::{
     prelude::{EffectsQuery, SampleEffects},
     sample::SamplePlayer,
     sample_effects,
 };
+use phonon::effects::direct::TransmissionType;
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection, TextAssets, text_shadow_component},
+    scenes::{DemoScene, SceneSelection, text_shadow_component},
 };
 
 pub(crate) struct MaterialsDemo;
@@ -22,7 +23,7 @@ impl DemoScene for MaterialsDemo {
     fn update_systems(&self, app: &mut App, schedule: impl ScheduleLabel) {
         app.add_systems(
             schedule,
-            (move_cubes, controls, update_ui).run_if(in_state(SceneSelection::Materials)),
+            (controls, update_ui).run_if(in_state(SceneSelection::Materials)),
         );
     }
 }
@@ -39,8 +40,18 @@ fn setup(
         Name::from("Audio Source"),
         SamplePlayer::new(demo_assets.audio_sample.clone()).looping(),
         sample_effects![SpatializerNode::default()],
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        Mesh3d(meshes.add(Sphere::new(0.2))),
         MeshMaterial3d(materials.add(Color::srgb_u8(233, 1, 1))),
+        Transform::from_xyz(0.0, 1.5, -1.0),
+        DespawnOnExit(SceneSelection::Materials),
+    ));
+
+    // todo make object transparent
+    commands.spawn((
+        Name::from("Audio Geometry"),
+        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 0.1))),
+        MeshMaterial3d(materials.add(Color::srgb_u8(1, 1, 233))),
+        NeedsAudioMesh(materials::GLASS),
         Transform::from_xyz(0.0, 1.5, 0.0),
         DespawnOnExit(SceneSelection::Materials),
     ));
@@ -54,13 +65,17 @@ fn controls(
     let mut effect = effects.get_effect_mut(&player)?;
 
     if keyboard_input.just_pressed(KeyCode::Digit1) {
-        effect.direct_effect_parameters.flags.distance_attenuation ^= true;
+        effect.direct_effect_parameters.flags.transmission ^= true;
     }
+
     if keyboard_input.just_pressed(KeyCode::Digit2) {
-        effect.direct_effect_parameters.flags.air_absorption ^= true;
-    }
-    if keyboard_input.just_pressed(KeyCode::Digit3) {
-        effect.direct_effect_parameters.flags.delay ^= true;
+        if effect.direct_effect_parameters.transmission_type == TransmissionType::FrequencyDependent
+        {
+            effect.direct_effect_parameters.transmission_type =
+                TransmissionType::FrequencyIndependent
+        } else {
+            effect.direct_effect_parameters.transmission_type = TransmissionType::FrequencyDependent
+        }
     }
 
     Ok(())
@@ -95,8 +110,8 @@ fn update_ui(
         let strings = vec![
             "Transmission determines how sound is absorbed by a material".to_string(),
             "With frequency dependent transmission some frequencies may be absorbed quicker than others".to_string(),
-            format!("[2] - Transmission: {transmission}"),
-            format!("[3] - Transmission type: {transmission_type:?}"),
+            format!("[1] - Transmission: {transmission}"),
+            format!("[2] - Transmission type: {transmission_type:?}"),
         ];
 
         text.0 = strings.join("\n");
