@@ -9,7 +9,7 @@ use bevy_seedling::{
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection, TextAssets, text_shadow_component},
+    scenes::{DemoScene, SceneSelection, text_shadow_component},
 };
 
 pub(crate) struct DistanceEffectsDemo;

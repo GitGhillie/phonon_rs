@@ -24,15 +24,17 @@ pub(crate) enum SceneSelection {
     Intro,
     DistanceAttenuation,
     Directivity,
+    Materials,
 }
 
-const NUM_SCENES: usize = 3;
+const NUM_SCENES: usize = 4;
 
 impl SceneSelection {
     const SEQUENCE: [SceneSelection; NUM_SCENES] = [
         SceneSelection::Intro,
         SceneSelection::DistanceAttenuation,
         SceneSelection::Directivity,
+        SceneSelection::Materials,
     ];
 
     pub fn next(self) -> Self {
