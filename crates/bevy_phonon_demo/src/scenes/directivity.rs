@@ -26,7 +26,7 @@ impl DemoScene for DirectivityDemo {
     fn update_systems(&self, app: &mut App, schedule: impl bevy::ecs::schedule::ScheduleLabel) {
         app.add_systems(
             schedule,
-            (rotate_cube, controls, update_ui, visualize_directivity)
+            (rotate_source, controls, update_ui, visualize_directivity)
                 .run_if(in_state(SceneSelection::Directivity)),
         );
     }
@@ -40,10 +40,10 @@ fn setup_scene(
 ) {
     info!("Setting up scene");
     commands.spawn((
-        Name::from("Cube Directivity"),
+        Name::from("Audio Source"),
         SamplePlayer::new(demo_assets.audio_sample.clone()).looping(),
         sample_effects![SpatializerNode::default()],
-        Mesh3d(meshes.add(Cuboid::from_length(0.25))),
+        Mesh3d(meshes.add(Sphere::new(0.2))),
         MeshMaterial3d(materials.add(Color::srgb_u8(255, 144, 124))),
         Transform::from_xyz(0.0, 1.5, 0.0),
         DespawnOnExit(SceneSelection::Directivity),
@@ -65,15 +65,15 @@ fn setup_ui(mut commands: Commands) {
     ));
 }
 
-fn rotate_cube(
-    mut cube_transforms: Query<&mut Transform, With<SamplePlayer>>,
+fn rotate_source(
+    mut source_transforms: Query<&mut Transform, With<SamplePlayer>>,
     time: Res<Time<Virtual>>,
     mut gizmos: Gizmos,
 ) {
-    for mut cube_transform in cube_transforms.iter_mut() {
-        cube_transform.rotate_axis(Dir3::Y, time.delta_secs() * 1.0);
-        let arrow_start = cube_transform.translation;
-        let arrow_end = cube_transform.translation + *cube_transform.forward();
+    for mut source_transform in source_transforms.iter_mut() {
+        source_transform.rotate_axis(Dir3::Y, time.delta_secs() * 1.0);
+        let arrow_start = source_transform.translation;
+        let arrow_end = source_transform.translation + *source_transform.forward();
         gizmos.arrow(arrow_start, arrow_end, ORANGE_RED);
     }
 }
