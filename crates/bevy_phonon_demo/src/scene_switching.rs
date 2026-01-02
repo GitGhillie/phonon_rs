@@ -4,7 +4,7 @@ use crate::{
     AssetLoadingState,
     scenes::{
         DemoScene, SceneSelection, directivity::DirectivityDemo,
-        distance_effects::DistanceEffectsDemo, intro::IntroDemo,
+        distance_effects::DistanceEffectsDemo, intro::IntroDemo, materials::MaterialsDemo,
     },
 };
 
@@ -22,12 +22,15 @@ impl Plugin for ScenePlugin {
         let intro = IntroDemo;
         let distance_effects_demo = DistanceEffectsDemo;
         let directivity_demo = DirectivityDemo;
+        let materials_demo = MaterialsDemo;
 
         intro.setup_systems(app, OnEnter(SceneSelection::Intro));
         distance_effects_demo.setup_systems(app, OnEnter(SceneSelection::DistanceAttenuation));
         distance_effects_demo.update_systems(app, Update);
         directivity_demo.setup_systems(app, OnEnter(SceneSelection::Directivity));
         directivity_demo.update_systems(app, Update);
+        materials_demo.setup_systems(app, OnEnter(SceneSelection::Materials));
+        materials_demo.update_systems(app, Update);
     }
 }
 
