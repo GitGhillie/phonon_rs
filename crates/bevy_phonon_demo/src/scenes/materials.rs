@@ -42,16 +42,19 @@ fn setup(
         sample_effects![SpatializerNode::default()],
         Mesh3d(meshes.add(Sphere::new(0.2))),
         MeshMaterial3d(materials.add(Color::srgb_u8(233, 1, 1))),
-        Transform::from_xyz(0.0, 1.5, -1.0),
+        Transform::from_xyz(0.0, 1.5, -1.2),
         DespawnOnExit(SceneSelection::Materials),
     ));
 
-    // todo make object transparent
     commands.spawn((
         Name::from("Audio Geometry"),
-        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 0.1))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(1, 1, 233))),
-        NeedsAudioMesh(materials::GLASS),
+        Mesh3d(meshes.add(Cuboid::new(2.0, 2.0, 0.1))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Color::srgba_u8(1, 1, 233, 137),
+            alpha_mode: AlphaMode::Blend,
+            ..default()
+        })),
+        NeedsAudioMesh(materials::CARPET),
         Transform::from_xyz(0.0, 1.5, 0.0),
         DespawnOnExit(SceneSelection::Materials),
     ));

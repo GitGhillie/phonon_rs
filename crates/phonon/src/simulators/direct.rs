@@ -271,12 +271,12 @@ impl DirectSimulator {
 
             let hit = scene.closest_hit(ray, *min_distance, max_distance);
 
-            // If there's nothing more between the ray origin and the source, stop.
-            if hit.is_none() {
-                break;
-            }
+            let hit = match hit {
+                Some(hit) => hit,
+                // If there's nothing more between the ray origin and the source, stop.
+                None => break,
+            };
 
-            let hit = hit.unwrap();
             hit_count += 1;
 
             // Accumulate the product of the transmission coefficients of all materials
