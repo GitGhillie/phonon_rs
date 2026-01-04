@@ -105,7 +105,7 @@ impl AudioNode for SpatializerNode {
     }
 }
 
-// The realtime processor counterpart to your node.
+// The realtime processor counterpart to the node.
 struct Processor {
     params: SpatializerNode,
     fixed_block: FixedProcessBlock,
@@ -124,7 +124,7 @@ impl AudioNodeProcessor for Processor {
         info: &ProcInfo,
         // The buffers of data to process.
         buffers: ProcBuffers,
-        // The list of events for our node to process.
+        // The list of events for the node to process.
         events: &mut ProcEvents,
         // Extra buffers and utilities.
         _extra: &mut ProcExtra,
