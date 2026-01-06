@@ -1,6 +1,9 @@
 pub mod phonon_mesh;
 pub mod phonon_plugin;
 
+#[cfg(feature = "debug")]
+pub mod debug;
+
 pub mod prelude {
     pub use crate::phonon_mesh::NeedsAudioMesh;
     pub use crate::phonon_mesh::material::PhononMaterial;

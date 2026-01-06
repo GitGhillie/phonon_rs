@@ -55,7 +55,7 @@ fn main() {
             WorldInspectorPlugin::new(),
         ))
         .add_plugins(SeedlingPlugin::default())
-        .add_plugins(PhononPlugin::default())
+        .add_plugins((PhononPlugin::default(), bevy_phonon::debug::DebugPlugin))
         .register_node::<SpatializerNode>()
         .add_input_context::<PlayerInput>()
         .init_state::<AssetLoadingState>()

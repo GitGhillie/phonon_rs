@@ -68,13 +68,9 @@ fn setup_ui(mut commands: Commands) {
 fn rotate_cube(
     mut cube_transforms: Query<&mut Transform, With<SamplePlayer>>,
     time: Res<Time<Virtual>>,
-    mut gizmos: Gizmos,
 ) {
     for mut cube_transform in cube_transforms.iter_mut() {
         cube_transform.rotate_axis(Dir3::Y, time.delta_secs() * 1.0);
-        let arrow_start = cube_transform.translation;
-        let arrow_end = cube_transform.translation + *cube_transform.forward();
-        gizmos.arrow(arrow_start, arrow_end, ORANGE_RED);
     }
 }
 
