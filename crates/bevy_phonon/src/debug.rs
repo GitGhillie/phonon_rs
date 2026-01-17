@@ -36,7 +36,7 @@ pub struct AudioGizmoConfigGroup {
     ///
     /// Defaults to [`RED`].
     pub audio_source_color: Color,
-    /// [`Color`] to use for drawing a [`DirectionalLight`] gizmo when [`LightGizmoColor::ByLightType`] is used.
+    /// [`Color`] to use for drawing audio meshes.
     ///
     /// Defaults to [`YELLOW`].
     pub geometry_color: Color,
