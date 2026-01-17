@@ -3,6 +3,7 @@ use crate::phonon_mesh::mesh;
 use crate::phonon_plugin::SteamSimulation;
 use bevy::asset::{Assets, Handle};
 use bevy::ecs::system::SystemParam;
+use bevy::log::debug;
 use bevy::prelude::{Deref, DerefMut, Mesh, ResMut, Resource, Transform};
 use firewheel_phonon::phonon;
 use phonon::scene::instanced_mesh::InstancedMesh;
@@ -46,6 +47,7 @@ fn create_instanced_mesh_internal(
     let scene_root = &mut simulator.scene;
 
     if let Some(static_mesh_scene) = static_meshes.get(&(mesh_handle.clone(), material.clone())) {
+        debug!("Found static mesh, creating instance");
         // Mesh has been converted into phonon mesh before.
         // Turn that mesh into an instanced one, so it can be moved around.
         // todo: Differentiate between set-and-forget and movable audio meshes:
@@ -59,6 +61,7 @@ fn create_instanced_mesh_internal(
 
         Some(instanced_mesh)
     } else {
+        debug!("New audio mesh, creating static mesh and instance");
         // Create audio geometry
         if let Some(mesh) = meshes.get(mesh_handle) {
             let audio_mesh: StaticMesh = mesh::try_from(mesh, material.clone()).unwrap();
