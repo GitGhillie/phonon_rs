@@ -1,4 +1,5 @@
 use bevy::{
+    diagnostic::LogDiagnosticsPlugin,
     input::common_conditions::input_just_pressed,
     light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
     prelude::*,
@@ -57,6 +58,7 @@ fn main() {
         .add_plugins(SeedlingPlugin::default())
         .add_plugins(PhononPlugin::default())
         .add_plugins(bevy_phonon::debug::DebugPlugin) // Optional
+        .add_plugins(LogDiagnosticsPlugin::default())
         .register_node::<SpatializerNode>()
         .add_input_context::<PlayerInput>()
         .init_state::<AssetLoadingState>()

@@ -86,6 +86,14 @@ impl Scene {
         self.has_changed = true;
     }
 
+    pub fn get_num_meshes_static(&self) -> usize {
+        self.static_meshes[0].len()
+    }
+
+    pub fn get_num_meshes_instanced(&self) -> usize {
+        self.instanced_meshes[0].len()
+    }
+
     // todo copy docs on commit and other functions
     pub fn commit(&mut self) {
         // If no static/instanced meshes have been added or removed since the last commit(), check to see if any
