@@ -56,6 +56,7 @@ fn main() {
         ))
         .add_plugins(SeedlingPlugin::default())
         .add_plugins(PhononPlugin::default())
+        .add_plugins(bevy_phonon::debug::DebugPlugin) // Optional
         .register_node::<SpatializerNode>()
         .add_input_context::<PlayerInput>()
         .init_state::<AssetLoadingState>()

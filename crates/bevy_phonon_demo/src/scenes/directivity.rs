@@ -1,9 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{
-    color::palettes::css::{ORANGE_RED, RED},
-    prelude::*,
-};
+use bevy::{color::palettes::css::RED, prelude::*};
 use bevy_phonon::effects::spatializer::SpatializerNode;
 
 use crate::{
@@ -68,13 +65,9 @@ fn setup_ui(mut commands: Commands) {
 fn rotate_cube(
     mut cube_transforms: Query<&mut Transform, With<SamplePlayer>>,
     time: Res<Time<Virtual>>,
-    mut gizmos: Gizmos,
 ) {
     for mut cube_transform in cube_transforms.iter_mut() {
         cube_transform.rotate_axis(Dir3::Y, time.delta_secs() * 1.0);
-        let arrow_start = cube_transform.translation;
-        let arrow_end = cube_transform.translation + *cube_transform.forward();
-        gizmos.arrow(arrow_start, arrow_end, ORANGE_RED);
     }
 }
 
@@ -124,7 +117,7 @@ fn update_ui(
     let weight = effect.simulator_settings.directivity.dipole_weight;
 
     if let Ok(mut text) = text.single_mut() {
-        let strings = vec![
+        let strings = [
             "Sound sources can emit sound with different intensities in different directions."
                 .to_string(),
             "Press the following keys to affect the directivity:".to_string(),
@@ -145,7 +138,7 @@ fn visualize_directivity(
     mut gizmos: Gizmos,
 ) -> Result {
     let (player, transform) = *source;
-    let effect = effects.get_effect(&player)?;
+    let effect = effects.get_effect(player)?;
     let model = effect.simulator_settings.directivity;
 
     let coordinates = phonon::scene::coordinate_space::CoordinateSpace3f {

@@ -9,6 +9,9 @@ readme = "README.md"
 repository = "https://github.com/GitGhillie/phonon_rs"
 version = "0.2.0"
 
+[features]
+debug = []
+
 [dependencies]
 bevy = { version = "0.17", default-features = false, features = [
   "bevy_asset",

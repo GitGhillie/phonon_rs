@@ -9,7 +9,7 @@ use bevy_seedling::{
 
 use crate::{
     DemoAssets,
-    scenes::{DemoScene, SceneSelection, TextAssets, text_shadow_component},
+    scenes::{DemoScene, SceneSelection, text_shadow_component},
 };
 
 pub(crate) struct DistanceEffectsDemo;
@@ -105,7 +105,7 @@ fn update_ui(
     let delay = effect.direct_effect_parameters.flags.delay;
 
     if let Ok(mut text) = text.single_mut() {
-        let strings = vec![
+        let strings = [
             "There are a few effects purely based on distance.".to_string(),
             "Press the following keys to toggle the effects:".to_string(),
             format!("[1] - Distance attenuation: {distance_attenuation}"),
