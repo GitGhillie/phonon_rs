@@ -1,9 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{
-    color::palettes::css::{ORANGE_RED, RED},
-    prelude::*,
-};
+use bevy::{color::palettes::css::RED, prelude::*};
 use bevy_phonon::effects::spatializer::SpatializerNode;
 
 use crate::{
@@ -120,7 +117,7 @@ fn update_ui(
     let weight = effect.simulator_settings.directivity.dipole_weight;
 
     if let Ok(mut text) = text.single_mut() {
-        let strings = vec![
+        let strings = [
             "Sound sources can emit sound with different intensities in different directions."
                 .to_string(),
             "Press the following keys to affect the directivity:".to_string(),
@@ -141,7 +138,7 @@ fn visualize_directivity(
     mut gizmos: Gizmos,
 ) -> Result {
     let (player, transform) = *source;
-    let effect = effects.get_effect(&player)?;
+    let effect = effects.get_effect(player)?;
     let model = effect.simulator_settings.directivity;
 
     let coordinates = phonon::scene::coordinate_space::CoordinateSpace3f {
