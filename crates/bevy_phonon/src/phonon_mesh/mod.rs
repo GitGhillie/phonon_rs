@@ -4,8 +4,8 @@ mod mesh;
 
 pub use material::materials;
 
-use crate::phonon_mesh::instancing::MeshParam;
 use crate::phonon_mesh::material::PhononMaterial;
+use crate::{phonon_mesh::instancing::MeshParam, phonon_plugin::SteamSimulation};
 use bevy::prelude::*;
 use firewheel_phonon::phonon;
 use phonon::scene::instanced_mesh::InstancedMesh;
@@ -50,4 +50,15 @@ pub(crate) fn update_audio_mesh_transforms(
             .unwrap()
             .set_transform(transform.to_matrix())
     }
+}
+
+// Remove despawned meshes from the simulation
+pub(crate) fn on_remove_mesh(
+    remove: On<Remove, PhononMesh>,
+    query: Query<&PhononMesh>,
+    mut simulator: ResMut<SteamSimulation>,
+) -> Result {
+    let mesh = query.get(remove.entity)?;
+    simulator.scene.remove_instanced_mesh(mesh.0.clone());
+    Ok(())
 }
