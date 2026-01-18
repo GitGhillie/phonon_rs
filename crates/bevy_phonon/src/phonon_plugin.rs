@@ -51,7 +51,8 @@ impl Plugin for PhononPlugin {
                     update_steam_audio,
                 )
                     .chain(),
-            );
+            )
+            .add_observer(phonon_mesh::on_remove_mesh);
     }
 }
 

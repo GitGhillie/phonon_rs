@@ -9,17 +9,6 @@ use bevy_seedling::{
 };
 use firewheel_phonon::effects::spatializer::SpatializerNode;
 
-pub struct DebugPlugin;
-
-impl Plugin for DebugPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_gizmo_group::<AudioGizmoConfigGroup>().add_systems(
-            PostUpdate,
-            visualize_sources.after(TransformSystems::Propagate),
-        );
-    }
-}
-
 /// The [`GizmoConfigGroup`] used to configure the visualization of audio entities/geometry.
 #[derive(Clone, Reflect, GizmoConfigGroup)]
 #[reflect(Clone, Default)]
@@ -53,7 +42,7 @@ impl Default for AudioGizmoConfigGroup {
     }
 }
 
-fn visualize_sources(
+pub(crate) fn visualize_sources(
     mut gizmos: Gizmos<AudioGizmoConfigGroup>,
     audio_sources: Query<(&SampleEffects, &GlobalTransform), With<SamplePlayer>>,
     effects: Query<&SpatializerNode>,
