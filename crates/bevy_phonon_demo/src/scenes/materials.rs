@@ -110,7 +110,7 @@ fn update_ui(
     let transmission_type = effect.direct_effect_parameters.transmission_type;
 
     if let Ok(mut text) = text.single_mut() {
-        let strings = vec![
+        let strings = [
             "Transmission determines how sound is absorbed by a material".to_string(),
             "With frequency dependent transmission some frequencies may be absorbed quicker than others".to_string(),
             format!("[1] - Transmission: {transmission}"),

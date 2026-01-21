@@ -29,22 +29,22 @@ impl Hash for PhononMaterial {
     }
 }
 
-impl Into<Material> for &PhononMaterial {
-    fn into(self) -> Material {
+impl From<&PhononMaterial> for Material {
+    fn from(material: &PhononMaterial) -> Material {
         Material {
-            absorption: self.absorption,
-            scattering: self.scattering,
-            transmission: self.transmission,
+            absorption: material.absorption,
+            scattering: material.scattering,
+            transmission: material.transmission,
         }
     }
 }
 
-impl Into<Material> for PhononMaterial {
-    fn into(self) -> Material {
+impl From<PhononMaterial> for Material {
+    fn from(material: PhononMaterial) -> Material {
         Material {
-            absorption: self.absorption,
-            scattering: self.scattering,
-            transmission: self.transmission,
+            absorption: material.absorption,
+            scattering: material.scattering,
+            transmission: material.transmission,
         }
     }
 }

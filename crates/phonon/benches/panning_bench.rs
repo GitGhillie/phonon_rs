@@ -18,7 +18,9 @@
 // Port note: Steam Audio measures the result in terms of Max Sources.
 // To get the time per run, do ( 1024 / ( 48000 * Max Sources )
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, criterion_group, criterion_main};
 use glam::Vec3;
 use phonon::dsp::audio_buffer::AudioBuffer;
 use phonon::dsp::speaker_layout::SpeakerLayoutType;
@@ -32,9 +34,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let mut in_buffer = AudioBuffer::new(frame_size);
         let mut out_buffer = AudioBuffer::new(frame_size);
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         for sample in &mut in_buffer[0] {
-            let random_sample = (rng.gen_range(0..i32::MAX) % 10001) as f32 / 10000.0f32;
+            let random_sample = (rng.random_range(0..i32::MAX) % 10001) as f32 / 10000.0f32;
             *sample = black_box(random_sample);
         }
 

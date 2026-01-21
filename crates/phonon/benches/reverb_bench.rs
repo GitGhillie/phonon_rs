@@ -15,7 +15,9 @@
 // limitations under the License.
 //
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, criterion_group, criterion_main};
 use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
 use phonon::dsp::reverb_estimator::Reverb;
 use phonon::effects::reverb::{ReverbEffect, ReverbEffectParams};

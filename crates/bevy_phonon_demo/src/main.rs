@@ -114,7 +114,7 @@ fn setup(mut commands: Commands) {
                     ))
                 ),
             ]),
-            Transform::from_xyz(0.0, 20.0, 0.0),
+            Transform::from_xyz(0.0, 20.0, 5.0),
         ))
         .id();
 
