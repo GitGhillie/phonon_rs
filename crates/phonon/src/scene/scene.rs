@@ -30,6 +30,7 @@ use std::sync::{Arc, Mutex};
 /// Objects can also be defined as instances of one another.
 /// This class also allows rays to be traced through the scene.
 #[cfg_attr(feature = "serde-serialize", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub struct Scene {
     /// Two lists of static meshes. The one at index 0 is used internally while
     /// the one at index 1 can be changed by the user through `add_static_mesh`
@@ -54,12 +55,7 @@ pub struct Scene {
 impl Scene {
     /// Create a new empty scene.
     pub fn new() -> Self {
-        Self {
-            static_meshes: [Vec::default(), Vec::default()],
-            instanced_meshes: [Vec::default(), Vec::default()],
-            has_changed: false,
-            change_version: 0,
-        }
+        Self::default()
     }
 
     pub fn add_static_mesh(&mut self, static_mesh: Arc<StaticMesh>) {

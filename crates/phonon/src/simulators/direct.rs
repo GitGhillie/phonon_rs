@@ -89,6 +89,7 @@ impl DirectSimulator {
         }
     }
 
+    #[expect(clippy::too_many_arguments)]
     pub fn simulate(
         &self,
         scene: Option<&Scene>,

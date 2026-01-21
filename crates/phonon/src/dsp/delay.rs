@@ -40,7 +40,7 @@ impl Delay {
         self.ring_buffer.fill_with(Default::default);
     }
 
-    // `out` slice length and num_samples must be the same
+    /// `out` slice length and num_samples must be the same
     pub fn get(&mut self, num_samples: usize, out: &mut [f32]) {
         if self.read_cursor + (num_samples - 1) < self.ring_buffer.len() {
             out.copy_from_slice(
@@ -132,7 +132,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_delay_buffer() {
+    fn delay_buffer() {
         let delay = Delay {
             ring_buffer: vec![1.0, 2.0, 3.0],
             cursor: 0,
@@ -142,4 +142,40 @@ mod tests {
         assert_eq!(2.0, delay.ring_buffer[1]);
         assert_eq!(3, delay.ring_buffer.len());
     }
+
+    #[test]
+    fn delay_buffer_get() {
+        let mut delay = Delay {
+            ring_buffer: vec![1.0, 2.0, 3.0],
+            cursor: 0,
+            read_cursor: 0,
+        };
+
+        let mut out_buffer = vec![0.0; 3];
+        delay.get(3, &mut out_buffer);
+        assert_eq!(vec![1.0, 2.0, 3.0], out_buffer);
+
+        delay.get(2, &mut out_buffer[1..]);
+        assert_eq!(vec![1.0, 1.0, 2.0], out_buffer);
+
+        delay.get(2, &mut out_buffer[1..]);
+        assert_eq!(vec![1.0, 3.0, 1.0], out_buffer);
+    }
+
+    #[test]
+    fn delay_buffer_put() {
+        let mut delay = Delay {
+            ring_buffer: vec![1.0, 2.0, 3.0],
+            cursor: 0,
+            read_cursor: 0,
+        };
+
+        delay.put(2, &[4.0, 5.0]);
+        assert_eq!([4.0, 5.0, 3.0], delay.ring_buffer[..]);
+
+        delay.put(2, &[6.0, 7.0]);
+        assert_eq!([7.0, 5.0, 6.0], delay.ring_buffer[..]);
+    }
+
+    // todo test put4 and get4 variants
 }

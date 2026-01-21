@@ -1,4 +1,6 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, criterion_group, criterion_main};
 use phonon::dsp::audio_buffer::AudioBuffer;
 
 fn mix_buffers(in1: AudioBuffer<1>) -> AudioBuffer<1> {

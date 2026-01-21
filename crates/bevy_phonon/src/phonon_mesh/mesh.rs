@@ -19,7 +19,7 @@ pub fn try_from(mesh: &Mesh, material: PhononMaterial) -> Result<StaticMesh, Aud
         Some(indices) => {
             let indices: Vec<_> = match indices {
                 Indices::U16(indices) => indices.iter().map(|indices| *indices as u32).collect(),
-                Indices::U32(indices) => indices.iter().map(|indices| *indices).collect(),
+                Indices::U32(indices) => indices.clone(),
             };
 
             match mesh.primitive_topology() {
@@ -48,12 +48,9 @@ pub fn try_from(mesh: &Mesh, material: PhononMaterial) -> Result<StaticMesh, Aud
     };
 
     let vertices = match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
-        Some(positions) => match positions {
-            VertexAttributeValues::Float32x3(vertices) => {
-                vertices.iter().map(|a| (*a).into()).collect()
-            }
-            _ => return Err(AudioMeshError::NoVertices),
-        },
+        Some(VertexAttributeValues::Float32x3(vertices)) => {
+            vertices.iter().map(|a| (*a).into()).collect()
+        }
         _ => return Err(AudioMeshError::NoVertices),
     };
 

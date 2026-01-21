@@ -48,7 +48,7 @@ pub(crate) fn visualize_sources(
     effects: Query<&SpatializerNode>,
 ) -> Result {
     for (player, transform) in audio_sources {
-        let effect = effects.get_effect(&player)?;
+        let effect = effects.get_effect(player)?;
         let radius = effect.simulator_settings.occlusion_radius;
         let translation = transform.translation();
 

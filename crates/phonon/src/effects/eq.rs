@@ -168,23 +168,23 @@ impl EqEffect {
     }
 
     fn apply_filter_cascade(&mut self, index: usize, input: &[f32], output: &mut [f32]) {
-        let mut temp_output1 = self.scratch_buffer1.as_mut_slice();
-        let mut temp_output2 = self.scratch_buffer2.as_mut_slice();
+        let temp_output1 = self.scratch_buffer1.as_mut_slice();
+        let temp_output2 = self.scratch_buffer2.as_mut_slice();
 
-        self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
-        self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
-        self.filters[2][index].apply(self.frame_size, &temp_output2, output);
+        self.filters[0][index].apply(self.frame_size, input, temp_output1);
+        self.filters[1][index].apply(self.frame_size, temp_output1, temp_output2);
+        self.filters[2][index].apply(self.frame_size, temp_output2, output);
     }
 
     fn apply_filter_to_temp_cascade(&mut self, index: usize, input: &[f32]) {
-        let mut temp_output1 = self.scratch_buffer1.as_mut_slice();
-        let mut temp_output2 = self.scratch_buffer2.as_mut_slice();
+        let temp_output1 = self.scratch_buffer1.as_mut_slice();
+        let temp_output2 = self.scratch_buffer2.as_mut_slice();
 
-        self.filters[0][index].apply(self.frame_size, input, &mut temp_output1);
-        self.filters[1][index].apply(self.frame_size, &temp_output1, &mut temp_output2);
+        self.filters[0][index].apply(self.frame_size, input, temp_output1);
+        self.filters[1][index].apply(self.frame_size, temp_output1, temp_output2);
         self.filters[2][index].apply(
             self.frame_size,
-            &temp_output2,
+            temp_output2,
             self.temp.as_slice_mut().unwrap(),
         );
     }
