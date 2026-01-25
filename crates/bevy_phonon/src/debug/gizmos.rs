@@ -17,11 +17,11 @@ pub struct AudioGizmoConfigGroup {
     ///
     /// Defaults to `false`.
     pub draw_all: bool,
-    /// [`Color`] to use for drawing a [`AudioListener`] gizmo.
+    /// [`Color`] to use for drawing a [`crate::AudioListener`] gizmo.
     ///
     /// Defaults to [`GREEN`].
     pub audio_listener_color: Color,
-    /// [`Color`] to use for drawing a [`AudioSource`] gizmo.
+    /// [`Color`] to use for drawing a gizmo for audio sources.
     ///
     /// Defaults to [`RED`].
     pub audio_source_color: Color,
