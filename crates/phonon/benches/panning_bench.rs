@@ -22,7 +22,7 @@ use std::hint::black_box;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use glam::Vec3;
-use phonon::dsp::audio_buffer::AudioBuffer;
+use phonon::dsp::audio_buffer::ScratchBuffer;
 use phonon::dsp::speaker_layout::SpeakerLayoutType;
 use phonon::effects::panning::{PanningEffect, PanningEffectParameters};
 use rand::Rng;
@@ -31,8 +31,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("panning effect", |b| {
         let frame_size = 1024;
 
-        let mut in_buffer = AudioBuffer::new(frame_size);
-        let mut out_buffer = AudioBuffer::new(frame_size);
+        let mut in_buffer = ScratchBuffer::new(1, frame_size);
+        let mut out_buffer = ScratchBuffer::new(2, frame_size);
 
         let mut rng = rand::rng();
         for sample in &mut in_buffer[0] {
@@ -43,9 +43,12 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let mut panning_effect = PanningEffect::new(SpeakerLayoutType::Stereo);
         let direction = Vec3::new(1.0, 0.0, 0.0);
 
+        let in_ref = &in_buffer.as_ref();
+        let out_ref = &mut out_buffer.as_ref_mut();
+
         b.iter(|| {
             let panning_params = PanningEffectParameters { direction };
-            panning_effect.apply(panning_params, &in_buffer, &mut out_buffer);
+            panning_effect.apply(panning_params, in_ref, out_ref);
         })
     });
 }

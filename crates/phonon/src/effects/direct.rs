@@ -16,7 +16,7 @@
 //
 
 use crate::dsp::audio_buffer::{
-    AudioBuffer, AudioEffectState, AudioIn, AudioOut, AudioSettings, ScratchBuffer,
+    AudioBuffer, AudioBufferMut, AudioEffectState, AudioSettings, ScratchBuffer,
 };
 use crate::dsp::bands::NUM_BANDS;
 #[cfg(feature = "firewheel")]
@@ -116,8 +116,8 @@ impl DirectEffect {
     pub fn apply(
         &mut self,
         parameters: DirectEffectParameters,
-        input: AudioIn,
-        output: AudioOut,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         // todo: Assumption is 1 channel in, 1 channel out
 
@@ -160,7 +160,7 @@ impl DirectEffect {
     }
 
     #[expect(dead_code)]
-    pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
+    pub(crate) fn tail(output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete
     }
