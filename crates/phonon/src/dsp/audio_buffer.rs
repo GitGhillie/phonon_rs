@@ -56,54 +56,124 @@ impl AudioSettings {
 ///
 /// Most audio formats instead use an interleaved layout, where data for each
 /// frame is stored together in memory. Interleaved data can be read to and
-/// written from using [`AudioBuffer::read_interleaved`] and [`AudioBuffer::write_interleaved`].
-#[derive(Deref, DerefMut)]
-pub struct AudioBuffer<const N_CHANNELS: usize>(pub [Vec<f32>; N_CHANNELS]);
+/// written from using [`AudioBufferMut::read_interleaved`] and [`AudioBuffer::write_interleaved`].
+pub trait AudioBuffer {
+    /// Returns the number of channels this `AudioBuffer` has.
+    fn num_channels(&self) -> usize;
+    /// Returns the number of samples each channel has.
+    fn num_samples(&self) -> usize;
+    /// Mixes the `AudioBuffer` into another by adding samples together.
+    fn mix(&self, other: &mut [&mut [f32]]);
+    /// Mixes all channels on an `AudioBuffer` into a single output channel.
+    /// Downmixing is performed by summing up the source channels and dividing
+    /// the result by the number of source channels.
+    fn downmix(&self, output: &mut [&mut [f32]]);
+    /// Writes the `AudioBuffer` to an interleaved slice.
+    fn write_interleaved(&self, target: &mut [&mut [f32]]);
+}
 
-impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
-    /// Creates a new `AudioBuffer` with a fixed number of channels and samples.
+pub trait AudioBufferMut {
+    /// Returns the number of channels this `AudioBuffer` has.
+    fn num_channels(&self) -> usize;
+    /// Returns the number of samples each channel has.
+    fn num_samples(&self) -> usize;
+    /// Fills the `AudioBuffer` with all zero samples, representing silence.
+    fn make_silent(&mut self);
+    /// Reads a slice of interleaved samples into this `AudioBuffer`.
+    fn read_interleaved(&mut self, source: &[&[f32]]);
+    /// Scales all the samples in the `AudioBuffer` by the given volume.
+    fn scale(&mut self, volume: f32);
+}
+
+/// Owned audio buffer, deinterleaved
+#[derive(Deref, DerefMut)]
+pub struct ScratchBuffer(Vec<Vec<f32>>);
+
+impl ScratchBuffer {
+    /// Creates a new `ScratchBuffer` with a fixed number of channels and samples.
     ///
     /// Initalized to all zeros, representing silence.
-    pub fn new(num_samples: usize) -> Self {
-        AudioBuffer(core::array::from_fn(|_| vec![0.0; num_samples]))
+    pub fn new(num_channels: usize, num_samples: usize) -> Self {
+        Self(vec![vec![0.0; num_samples]; num_channels])
     }
 
-    /// Returns the number of channels this `AudioBuffer` has.
-    pub fn num_channels(&self) -> usize {
+    pub fn as_ref<'a>(&'a self) -> Vec<&'a [f32]> {
+        self.iter().map(|channel| channel.as_slice()).collect()
+    }
+
+    pub fn as_ref_mut<'a>(&'a mut self) -> Vec<&'a mut [f32]> {
+        self.iter_mut()
+            .map(|channel| channel.as_mut_slice())
+            .collect()
+    }
+}
+
+impl AudioBufferMut for [&mut [f32]] {
+    #[inline]
+    fn num_channels(&self) -> usize {
         self.len()
     }
 
-    /// Returns the number of samples each channel has.
-    pub fn num_samples(&self) -> usize {
+    #[inline]
+    fn num_samples(&self) -> usize {
         self[0].len()
     }
 
-    /// Fills the `AudioBuffer` with all zero samples, representing silence.
-    pub fn make_silent(&mut self) {
-        for channel in &mut self.0 {
+    fn make_silent(&mut self) {
+        for channel in self {
             channel.fill(0.0);
         }
     }
 
-    /// Mixes the `AudioBuffer` into another by adding samples together.
-    // todo perf?
-    pub fn mix(&mut self, other: &AudioBuffer<N_CHANNELS>) {
-        for i in 0..other.len() {
-            for j in 0..other[0].len() {
-                self[i][j] += other[i][j];
+    // todo: Check perf?
+    // todo: Can panic if the length of `other` is too small.
+    fn read_interleaved(&mut self, source: &[&[f32]]) {
+        let mut index = 0;
+
+        for i in 0..self.num_samples() {
+            for j in 0..self.num_channels() {
+                self[j][i] = source[0][index];
+                index += 1;
             }
         }
     }
 
-    /// Mixes all channels on an `AudioBuffer` into a single output channel.
-    /// Downmixing is performed by summing up the source channels and dividing
-    /// the result by the number of source channels.
+    // todo: Check perf?
+    fn scale(&mut self, volume: f32) {
+        for i in 0..self.num_channels() {
+            for j in 0..self.num_samples() {
+                self[i][j] *= volume;
+            }
+        }
+    }
+}
+
+impl AudioBuffer for [&[f32]] {
+    #[inline]
+    fn num_channels(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    fn num_samples(&self) -> usize {
+        self[0].len()
+    }
+
     // todo perf?
-    pub fn downmix(&self, output: &mut AudioBuffer<1>) {
-        let num_channels = self.len();
+    fn mix(&self, other: &mut [&mut [f32]]) {
+        for i in 0..other.num_channels() {
+            for j in 0..other.num_samples() {
+                other[i][j] += self[i][j];
+            }
+        }
+    }
+
+    // todo perf?
+    fn downmix(&self, output: &mut [&mut [f32]]) {
+        let num_channels = self.num_channels();
         let factor = 1.0 / (num_channels as f32);
 
-        for i in 0..output[0].len() {
+        for i in 0..output.num_samples() {
             let mut sum = 0.0;
 
             for j in 0..num_channels {
@@ -114,40 +184,15 @@ impl<const N_CHANNELS: usize> AudioBuffer<N_CHANNELS> {
         }
     }
 
-    /// Reads a slice of interleaved samples into this `AudioBuffer`.
     // todo: Check perf?
     // todo: Can panic if the length of `other` is too small.
-    pub fn read_interleaved(&mut self, source: &[f32]) {
+    fn write_interleaved(&self, target: &mut [&mut [f32]]) {
         let mut index = 0;
 
-        for i in 0..self[0].len() {
-            for j in 0..N_CHANNELS {
-                self[j][i] = source[index];
+        for i in 0..self.num_samples() {
+            for j in 0..self.num_channels() {
+                target[0][index] = self[j][i];
                 index += 1;
-            }
-        }
-    }
-
-    /// Writes the `AudioBuffer` to an interleaved slice.
-    // todo: Check perf?
-    // todo: Can panic if the length of `other` is too small.
-    pub fn write_interleaved(&self, target: &mut [f32]) {
-        let mut index = 0;
-
-        for i in 0..self[0].len() {
-            for j in 0..N_CHANNELS {
-                target[index] = self[j][i];
-                index += 1;
-            }
-        }
-    }
-
-    /// Scales all the samples in the `AudioBuffer` by the given volume.
-    // todo: Check perf?
-    pub fn scale(&mut self, volume: f32) {
-        for i in 0..self.len() {
-            for j in 0..self[0].len() {
-                self[i][j] *= volume;
             }
         }
     }

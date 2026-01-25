@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBufferMut, AudioEffectState, AudioSettings};
 use ndarray::{Array, Array1};
 
 use crate::dsp::bands::{HIGH_CUTOFF_FREQUENCIES, LOW_CUTOFF_FREQUENCIES, NUM_BANDS};
@@ -141,7 +141,7 @@ impl EqEffect {
     }
 
     #[expect(dead_code, reason = "Used in HybridReverbEffect, not ported yet")]
-    fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
+    fn tail(output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete
     }

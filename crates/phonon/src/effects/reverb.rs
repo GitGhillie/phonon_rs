@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBufferMut, AudioEffectState, AudioSettings};
 use crate::dsp::bands::NUM_BANDS;
 use crate::dsp::delay::Delay;
 use crate::dsp::reverb_estimator::Reverb;
@@ -112,19 +112,15 @@ impl ReverbEffect {
     pub fn apply(
         &mut self,
         params: &ReverbEffectParams,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         // todo: input and output must have the same length.
 
         // todo: Is this really necessary?
         output.make_silent();
 
-        self.apply_float32x4(
-            params.reverb_times.as_slice(),
-            input[0].as_slice(),
-            output[0].as_mut_slice(),
-        );
+        self.apply_float32x4(params.reverb_times.as_slice(), &input[0], &mut output[0]);
 
         self.previous_reverb.reverb_times = params.reverb_times;
 
@@ -143,11 +139,7 @@ impl ReverbEffect {
         }
     }
 
-    fn tail_apply(
-        &mut self,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
-    ) -> AudioEffectState {
+    fn tail_apply(&mut self, input: &[&[f32]], output: &mut [&mut [f32]]) -> AudioEffectState {
         let prev_params = ReverbEffectParams(Reverb {
             reverb_times: self.previous_reverb.reverb_times,
         });
@@ -155,10 +147,10 @@ impl ReverbEffect {
         self.apply(&prev_params, input, output)
     }
 
-    fn tail(&mut self, output: &mut AudioBuffer<1>) -> AudioEffectState {
+    fn tail(&mut self, output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
 
-        self.tail_float32x4(output[0].as_mut_slice());
+        self.tail_float32x4(&mut output[0]);
 
         self.num_tail_frames_remaining -= 1;
 

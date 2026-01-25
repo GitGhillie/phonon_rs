@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBufferMut, AudioEffectState, AudioSettings};
 
 const NUM_INTERPOLATION_FRAMES: usize = 4;
 
@@ -46,13 +46,15 @@ impl GainEffect {
     pub fn apply(
         &mut self,
         parameters: GainEffectParameters,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         //todo: in and out length must be equal
 
         if self.first_frame {
-            output.0[0] = input.0[0].iter().map(|x| x * parameters.gain).collect();
+            for i in 0..output.num_samples() {
+                output[0][i] = input[0][i] * parameters.gain;
+            }
             self.previous_gain = parameters.gain;
             self.first_frame = false;
         } else {
@@ -62,14 +64,11 @@ impl GainEffect {
             let mut current_gain = self.previous_gain;
             let d_gain = (target_gain - self.previous_gain) / self.frame_size as f32;
 
-            output.0[0] = input.0[0]
-                .iter()
-                .map(|x| {
-                    let sample = current_gain * x;
-                    current_gain += d_gain;
-                    sample
-                })
-                .collect();
+            for i in 0..output.num_samples() {
+                let sample = current_gain * input[0][i];
+                current_gain += d_gain;
+                output[0][i] = sample;
+            }
 
             self.previous_gain = target_gain;
         }
@@ -80,8 +79,8 @@ impl GainEffect {
     #[expect(dead_code)]
     pub(crate) fn tail_apply(
         &mut self,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         let previous_params = GainEffectParameters {
             gain: self.previous_gain,
@@ -91,7 +90,7 @@ impl GainEffect {
     }
 
     #[expect(dead_code)]
-    pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
+    pub(crate) fn tail(output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete
     }

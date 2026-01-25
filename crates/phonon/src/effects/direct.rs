@@ -15,7 +15,9 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{
+    AudioBuffer, AudioBufferMut, AudioEffectState, AudioSettings, ScratchBuffer,
+};
 use crate::dsp::bands::NUM_BANDS;
 #[cfg(feature = "firewheel")]
 use firewheel::diff::{Diff, Patch};
@@ -114,13 +116,15 @@ impl DirectEffect {
     pub fn apply(
         &mut self,
         parameters: DirectEffectParameters,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<1>,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
+        // todo: Assumption is 1 channel in, 1 channel out
+
         let mut gain: f32 = 0.0;
         let mut eq_coefficients: [f32; NUM_BANDS] = [0.0, 0.0, 0.0];
         // todo perf: This does not exist in the original code.
-        let mut buf: AudioBuffer<1> = AudioBuffer::new(input[0].len());
+        let mut buf = ScratchBuffer::new(1, input.num_samples());
 
         // todo: This function should just take a DirectEffectParameters?
         Self::calculate_gain_and_eq(
@@ -145,8 +149,9 @@ impl DirectEffect {
             };
 
             self.eq_effect
-                .apply(eq_parameters, input[0].as_slice(), buf[0].as_mut_slice());
-            self.gain_effect.apply(gain_parameters, &buf, output);
+                .apply(eq_parameters, input[0], buf[0].as_mut_slice());
+            self.gain_effect
+                .apply(gain_parameters, buf.as_ref().as_slice(), output);
         } else {
             self.gain_effect.apply(gain_parameters, input, output);
         }
@@ -155,7 +160,7 @@ impl DirectEffect {
     }
 
     #[expect(dead_code)]
-    pub(crate) fn tail(output: &mut AudioBuffer<1>) -> AudioEffectState {
+    pub(crate) fn tail(output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete
     }
