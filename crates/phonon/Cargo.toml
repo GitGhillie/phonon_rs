@@ -35,6 +35,7 @@ firewheel = { version = "0.9", optional = true, features = [
     "std",
     "glam-30",
 ] }
+rustfft = "6"
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }

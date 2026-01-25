@@ -15,14 +15,39 @@
 // limitations under the License.
 //
 
-pub struct Settings {
+use std::sync::Arc;
+
+use rustfft::Fft;
+
+pub struct OverlapAddConvolutionEffectSettings {
     pub num_channels: u8,
     pub ir_size: u32,
 }
 
-pub struct Params {
+pub struct OverlapAddConvolutionEffectParams {
     pub fft_impulse_response: Vec<u8>,
     pub multiple_inputs: bool,
 }
 
-pub struct OverlapAddConvolutionEffect;
+pub struct OverlapAddConvolutionEffect {
+    num_channels: usize,
+    impulse_response_size: usize,
+    frame_size: usize,
+    window: Vec<f32>,
+    fft: Arc<dyn Fft<f32>>,
+    // todo
+}
+
+impl OverlapAddConvolutionEffect {
+    fn apply(
+        &mut self,
+        parameters: OverlapAddConvolutionEffectParams,
+        input: &[&[f32]],
+        output: &[&mut [f32]],
+    ) {
+        // Steam Audio assertions:
+        // num samples in == num sample out
+        // num channels in == 1 or self.num_channels
+        // num channels out == self.num_channels
+    }
+}
