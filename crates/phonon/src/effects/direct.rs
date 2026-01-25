@@ -150,7 +150,8 @@ impl DirectEffect {
 
             self.eq_effect
                 .apply(eq_parameters, input[0], buf[0].as_mut_slice());
-            self.gain_effect.apply(gain_parameters, &buf, output);
+            self.gain_effect
+                .apply(gain_parameters, buf.as_ref().as_slice(), output);
         } else {
             self.gain_effect.apply(gain_parameters, input, output);
         }
