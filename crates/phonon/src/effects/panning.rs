@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState};
+use crate::dsp::audio_buffer::{AudioBuffer, AudioBufferMut, AudioEffectState};
 use crate::dsp::speaker_layout::{SpeakerLayout, SpeakerLayoutType};
 use glam::Vec3;
 use std::f32::consts::PI;
@@ -62,8 +62,8 @@ impl PanningEffect {
     pub fn apply(
         &mut self,
         parameters: PanningEffectParameters,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<2>,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         let panning_data = PanningData::default();
         let prev_panning_data = PanningData::default();

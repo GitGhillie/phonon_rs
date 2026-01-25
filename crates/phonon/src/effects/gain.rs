@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioIn, AudioOut, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBufferMut, AudioEffectState, AudioSettings};
 
 const NUM_INTERPOLATION_FRAMES: usize = 4;
 
@@ -46,8 +46,8 @@ impl GainEffect {
     pub fn apply(
         &mut self,
         parameters: GainEffectParameters,
-        input: AudioIn,
-        mut output: AudioOut,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         //todo: in and out length must be equal
 
@@ -77,7 +77,11 @@ impl GainEffect {
     }
 
     #[expect(dead_code)]
-    pub(crate) fn tail_apply(&mut self, input: AudioIn, output: AudioOut) -> AudioEffectState {
+    pub(crate) fn tail_apply(
+        &mut self,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
+    ) -> AudioEffectState {
         let previous_params = GainEffectParameters {
             gain: self.previous_gain,
         };
@@ -86,7 +90,7 @@ impl GainEffect {
     }
 
     #[expect(dead_code)]
-    pub(crate) fn tail(output: AudioOut) -> AudioEffectState {
+    pub(crate) fn tail(output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
         AudioEffectState::TailComplete
     }

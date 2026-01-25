@@ -16,7 +16,7 @@
 //
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::dsp::audio_buffer::{AudioSettings, ScratchBuffer};
 use phonon::effects::direct::{
     DirectApplyFlags, DirectEffect, DirectEffectParameters, TransmissionType,
 };
@@ -37,8 +37,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
         let mut direct_effect = DirectEffect::new(render_settings);
 
-        let mut in_buffer = AudioBuffer::new(frame_size);
-        let mut out_buffer = AudioBuffer::new(frame_size);
+        let mut in_buffer = ScratchBuffer::new(1, frame_size);
+        let mut out_buffer = ScratchBuffer::new(1, frame_size);
 
         let mut rng = rand::rng();
         for sample in &mut in_buffer[0] {
@@ -68,11 +68,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
         direct_params.flags.transmission = apply_transmission;
 
+        let in_ref = &in_buffer.as_ref();
+        let out_ref = &mut out_buffer.as_ref_mut();
+
         b.iter(|| {
             // Changing transmission factor each run to get the worst case performance.
             direct_params.direct_sound_path.transmission[0] =
                 (black_box(0.1) + black_box(0.1)) / 100.0;
-            direct_effect.apply(direct_params, &in_buffer, &mut out_buffer);
+            direct_effect.apply(direct_params, in_ref, out_ref);
         })
     });
 }

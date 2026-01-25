@@ -1,4 +1,4 @@
-use crate::dsp::audio_buffer::{AudioBuffer, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioEffectState, AudioSettings};
 #[cfg(feature = "firewheel")]
 use firewheel::diff::{Diff, Patch};
 use glam::Vec3;
@@ -62,8 +62,8 @@ impl BinauralEffect {
     pub fn apply(
         &mut self,
         params: BinauralEffectParameters,
-        input: &AudioBuffer<1>,
-        output: &mut AudioBuffer<2>,
+        input: &[&[f32]],
+        output: &mut [&mut [f32]],
     ) -> AudioEffectState {
         // todo silence output?
 
@@ -75,15 +75,11 @@ impl BinauralEffect {
         self.sofa.filter(dir.y, -dir.x, dir.z, &mut self.filter);
         self.renderer.set_filter(&self.filter).unwrap();
 
-        let input_data: &[f32] = &input.0[0];
-        let [left_channel, right_channel] = &mut output.0;
+        let input_data: &[f32] = &input[0];
+        let (left_channel, right_channel) = output.split_at_mut(1);
 
         self.renderer
-            .process_block(
-                input_data,
-                left_channel.as_mut_slice(),
-                right_channel.as_mut_slice(),
-            )
+            .process_block(input_data, &mut left_channel[0], &mut right_channel[0])
             .unwrap();
 
         AudioEffectState::TailComplete

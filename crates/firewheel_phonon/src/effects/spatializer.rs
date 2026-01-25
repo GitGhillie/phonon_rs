@@ -5,7 +5,7 @@ use firewheel::node::{
     AudioNode, AudioNodeInfo, AudioNodeProcessor, ConstructProcessorContext, EmptyConfig,
     ProcBuffers, ProcExtra, ProcInfo, ProcessStatus,
 };
-use phonon::dsp::audio_buffer::{AudioBuffer, AudioSettings};
+use phonon::dsp::audio_buffer::{AudioSettings, ScratchBuffer};
 use phonon::effects::binaural::{BinauralEffect, BinauralEffectParameters};
 use phonon::effects::direct::{DirectEffect, DirectEffectParameters};
 use phonon::models::directivity::Directivity;
@@ -98,9 +98,7 @@ impl AudioNode for SpatializerNode {
                 2,
             ),
             params: self.clone(),
-            in_buf: AudioBuffer::new(frame_size),
-            scratch_buf: AudioBuffer::new(frame_size),
-            out_buf: AudioBuffer::new(frame_size),
+            scratch_buf: ScratchBuffer::new(1, frame_size),
         }
     }
 }
@@ -111,9 +109,7 @@ struct Processor {
     fixed_block: FixedProcessBlock,
     direct_effect: DirectEffect,
     binaural_effect: BinauralEffect,
-    in_buf: AudioBuffer<1>,
-    scratch_buf: AudioBuffer<1>,
-    out_buf: AudioBuffer<2>,
+    scratch_buf: ScratchBuffer,
 }
 
 impl AudioNodeProcessor for Processor {
@@ -149,13 +145,13 @@ impl AudioNodeProcessor for Processor {
                 let direct_params = self.params.direct_effect_parameters;
                 let binaural_params = self.params.binaural_effect_parameters;
 
-                self.in_buf[0].copy_from_slice(inputs[0]);
+                let mut scratch_buf_ref = self.scratch_buf.as_ref_mut();
                 self.direct_effect
-                    .apply(direct_params, &self.in_buf, &mut self.scratch_buf);
+                    .apply(direct_params, inputs, &mut scratch_buf_ref);
+
+                let scratch_buf_ref = self.scratch_buf.as_ref();
                 self.binaural_effect
-                    .apply(binaural_params, &self.scratch_buf, &mut self.out_buf);
-                outputs[0].copy_from_slice(&self.out_buf[0]);
-                outputs[1].copy_from_slice(&self.out_buf[1]);
+                    .apply(binaural_params, &scratch_buf_ref, outputs);
             })
     }
 }

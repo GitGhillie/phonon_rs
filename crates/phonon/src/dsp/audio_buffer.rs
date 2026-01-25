@@ -65,13 +65,28 @@ pub trait AudioBuffer {
     fn num_channels(&self) -> usize;
     /// Returns the number of samples each channel has.
     fn num_samples(&self) -> usize;
+    /// Mixes the `AudioBuffer` into another by adding samples together.
+    fn mix(&self, other: &mut [&mut [f32]]);
+    /// Mixes all channels on an `AudioBuffer` into a single output channel.
+    /// Downmixing is performed by summing up the source channels and dividing
+    /// the result by the number of source channels.
+    fn downmix(&self, output: &mut [&mut [f32]]);
+    /// Writes the `AudioBuffer` to an interleaved slice.
+    fn write_interleaved(&self, target: &mut [&mut [f32]]);
 }
 
-#[derive(Deref)]
-pub struct AudioIn<'a>(pub &'a [&'a [f32]]);
-
-#[derive(Deref, DerefMut)]
-pub struct AudioOut<'a>(pub &'a mut [&'a mut [f32]]);
+pub trait AudioBufferMut {
+    /// Returns the number of channels this `AudioBuffer` has.
+    fn num_channels(&self) -> usize;
+    /// Returns the number of samples each channel has.
+    fn num_samples(&self) -> usize;
+    /// Fills the `AudioBuffer` with all zero samples, representing silence.
+    fn make_silent(&mut self);
+    /// Reads a slice of interleaved samples into this `AudioBuffer`.
+    fn read_interleaved(&mut self, source: &[&[f32]]);
+    /// Scales all the samples in the `AudioBuffer` by the given volume.
+    fn scale(&mut self, volume: f32);
+}
 
 /// Owned audio buffer, deinterleaved
 #[derive(Deref, DerefMut)]
@@ -88,40 +103,32 @@ impl ScratchBuffer {
     pub fn as_ref<'a>(&'a self) -> Vec<&'a [f32]> {
         self.iter().map(|ch| ch.as_slice()).collect()
     }
+
+    pub fn as_ref_mut<'a>(&'a mut self) -> Vec<&'a mut [f32]> {
+        self.iter_mut().map(|ch| ch.as_mut_slice()).collect()
+    }
 }
 
-impl<'a> AudioBuffer for AudioIn<'a> {
+impl AudioBufferMut for [&mut [f32]] {
+    #[inline]
     fn num_channels(&self) -> usize {
         self.len()
     }
 
+    #[inline]
     fn num_samples(&self) -> usize {
         self[0].len()
     }
-}
 
-impl<'a> AudioBuffer for AudioOut<'a> {
-    fn num_channels(&self) -> usize {
-        self.len()
-    }
-
-    fn num_samples(&self) -> usize {
-        self[0].len()
-    }
-}
-
-impl<'a> AudioOut<'a> {
-    /// Fills the `AudioBuffer` with all zero samples, representing silence.
-    pub fn make_silent(self) {
-        for channel in self.0 {
+    fn make_silent(&mut self) {
+        for channel in self {
             channel.fill(0.0);
         }
     }
 
-    /// Reads a slice of interleaved samples into this `AudioBuffer`.
     // todo: Check perf?
     // todo: Can panic if the length of `other` is too small.
-    pub fn read_interleaved(mut self, source: AudioIn<'a>) {
+    fn read_interleaved(&mut self, source: &[&[f32]]) {
         let mut index = 0;
 
         for i in 0..self.num_samples() {
@@ -132,9 +139,8 @@ impl<'a> AudioOut<'a> {
         }
     }
 
-    /// Scales all the samples in the `AudioBuffer` by the given volume.
     // todo: Check perf?
-    pub fn scale(mut self, volume: f32) {
+    fn scale(&mut self, volume: f32) {
         for i in 0..self.num_channels() {
             for j in 0..self.num_samples() {
                 self[i][j] *= volume;
@@ -143,10 +149,19 @@ impl<'a> AudioOut<'a> {
     }
 }
 
-impl<'a> AudioIn<'a> {
-    /// Mixes the `AudioBuffer` into another by adding samples together.
+impl AudioBuffer for [&[f32]] {
+    #[inline]
+    fn num_channels(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    fn num_samples(&self) -> usize {
+        self[0].len()
+    }
+
     // todo perf?
-    pub fn mix(self, mut other: AudioOut<'a>) {
+    fn mix(&self, other: &mut [&mut [f32]]) {
         for i in 0..other.num_channels() {
             for j in 0..other.num_samples() {
                 other[i][j] += self[i][j];
@@ -154,11 +169,8 @@ impl<'a> AudioIn<'a> {
         }
     }
 
-    /// Mixes all channels on an `AudioBuffer` into a single output channel.
-    /// Downmixing is performed by summing up the source channels and dividing
-    /// the result by the number of source channels.
     // todo perf?
-    pub fn downmix(&self, mut output: AudioOut<'a>) {
+    fn downmix(&self, output: &mut [&mut [f32]]) {
         let num_channels = self.num_channels();
         let factor = 1.0 / (num_channels as f32);
 
@@ -173,10 +185,9 @@ impl<'a> AudioIn<'a> {
         }
     }
 
-    /// Writes the `AudioBuffer` to an interleaved slice.
     // todo: Check perf?
     // todo: Can panic if the length of `other` is too small.
-    pub fn write_interleaved(self, mut target: AudioOut<'a>) {
+    fn write_interleaved(&self, target: &mut [&mut [f32]]) {
         let mut index = 0;
 
         for i in 0..self.num_samples() {
@@ -187,9 +198,3 @@ impl<'a> AudioIn<'a> {
         }
     }
 }
-
-// impl<'a> From<ScratchBuffer> for AudioIn<'a> {
-//     fn from(value: ScratchBuffer) -> Self {
-//         Self(value.iter().map(|ch| ch.as_slice()).collect())
-//     }
-// }
