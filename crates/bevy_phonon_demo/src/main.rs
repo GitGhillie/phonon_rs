@@ -68,13 +68,13 @@ fn main() {
                 .load_collection::<DemoAssets>(),
         )
         .add_systems(Startup, setup)
-        // .add_systems(
-        //     Update,
-        //     (
-        //         capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
-        //         release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
-        //     ),
-        // )
+        .add_systems(
+            Update,
+            (
+                capture_cursor.run_if(input_just_pressed(MouseButton::Left)),
+                release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+            ),
+        )
         .run();
 }
 

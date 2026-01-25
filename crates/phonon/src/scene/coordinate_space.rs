@@ -73,7 +73,7 @@ impl CoordinateSpace3f {
     ///  Building an orthonormal basis from a unit vector
     ///  J. F. Hughes, T. Moller
     ///  Journal of Graphics Tools 4(4), 1999
-    ///  https://pdfs.semanticscholar.org/237c/66be3fe264a11f80f9ad3d2b9ac460e76edc.pdf
+    ///  <https://pdfs.semanticscholar.org/237c/66be3fe264a11f80f9ad3d2b9ac460e76edc.pdf>
     pub fn from_vector(ahead: Vec3, origin: Vec3) -> Self {
         let right: Vec3 = if ahead.x.abs() > ahead.z.abs() {
             Vec3::new(-ahead.y, ahead.x, 0.0).normalize()

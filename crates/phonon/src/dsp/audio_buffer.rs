@@ -97,11 +97,11 @@ impl ScratchBuffer {
         Self(vec![vec![0.0; num_samples]; num_channels])
     }
 
-    pub fn as_ref<'a>(&'a self) -> Vec<&'a [f32]> {
+    pub fn as_ref(&self) -> Vec<&[f32]> {
         self.iter().map(|channel| channel.as_slice()).collect()
     }
 
-    pub fn as_ref_mut<'a>(&'a mut self) -> Vec<&'a mut [f32]> {
+    pub fn as_ref_mut(&mut self) -> Vec<&mut [f32]> {
         self.iter_mut()
             .map(|channel| channel.as_mut_slice())
             .collect()

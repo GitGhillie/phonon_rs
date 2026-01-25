@@ -120,7 +120,7 @@ impl ReverbEffect {
         // todo: Is this really necessary?
         output.make_silent();
 
-        self.apply_float32x4(params.reverb_times.as_slice(), &input[0], &mut output[0]);
+        self.apply_float32x4(params.reverb_times.as_slice(), input[0], output[0]);
 
         self.previous_reverb.reverb_times = params.reverb_times;
 
@@ -150,7 +150,7 @@ impl ReverbEffect {
     fn tail(&mut self, output: &mut [&mut [f32]]) -> AudioEffectState {
         output.make_silent();
 
-        self.tail_float32x4(&mut output[0]);
+        self.tail_float32x4(output[0]);
 
         self.num_tail_frames_remaining -= 1;
 
