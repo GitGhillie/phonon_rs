@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-use crate::dsp::audio_buffer::{AudioBuffer, AudioBufferMut, AudioEffectState, AudioSettings};
+use crate::dsp::audio_buffer::{AudioBufferMut, AudioEffectState, AudioSettings};
 use crate::dsp::bands::NUM_BANDS;
 use crate::dsp::delay::Delay;
 use crate::dsp::reverb_estimator::Reverb;

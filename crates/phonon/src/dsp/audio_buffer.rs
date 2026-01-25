@@ -56,10 +56,7 @@ impl AudioSettings {
 ///
 /// Most audio formats instead use an interleaved layout, where data for each
 /// frame is stored together in memory. Interleaved data can be read to and
-/// written from using [`AudioBuffer::read_interleaved`] and [`AudioBuffer::write_interleaved`].
-// #[derive(Deref, DerefMut)]
-// pub struct AudioBuffer<const N_CHANNELS: usize>(pub [Vec<f32>; N_CHANNELS]);
-
+/// written from using [`AudioBufferMut::read_interleaved`] and [`AudioBuffer::write_interleaved`].
 pub trait AudioBuffer {
     /// Returns the number of channels this `AudioBuffer` has.
     fn num_channels(&self) -> usize;
@@ -101,11 +98,13 @@ impl ScratchBuffer {
     }
 
     pub fn as_ref<'a>(&'a self) -> Vec<&'a [f32]> {
-        self.iter().map(|ch| ch.as_slice()).collect()
+        self.iter().map(|channel| channel.as_slice()).collect()
     }
 
     pub fn as_ref_mut<'a>(&'a mut self) -> Vec<&'a mut [f32]> {
-        self.iter_mut().map(|ch| ch.as_mut_slice()).collect()
+        self.iter_mut()
+            .map(|channel| channel.as_mut_slice())
+            .collect()
     }
 }
 
