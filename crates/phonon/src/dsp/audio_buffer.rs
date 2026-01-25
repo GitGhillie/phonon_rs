@@ -84,6 +84,10 @@ impl ScratchBuffer {
     pub fn new(num_channels: usize, num_samples: usize) -> Self {
         Self(vec![vec![0.0; num_samples]; num_channels])
     }
+
+    pub fn as_ref<'a>(&'a self) -> Vec<&'a [f32]> {
+        self.iter().map(|ch| ch.as_slice()).collect()
+    }
 }
 
 impl<'a> AudioBuffer for AudioIn<'a> {
@@ -183,3 +187,9 @@ impl<'a> AudioIn<'a> {
         }
     }
 }
+
+// impl<'a> From<ScratchBuffer> for AudioIn<'a> {
+//     fn from(value: ScratchBuffer) -> Self {
+//         Self(value.iter().map(|ch| ch.as_slice()).collect())
+//     }
+// }
