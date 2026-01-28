@@ -5315,6 +5315,7 @@ dependencies = [
  "parry3d",
  "plotters",
  "rand",
+ "rustfft",
  "serde",
  "sofar",
  "ultraviolet",
