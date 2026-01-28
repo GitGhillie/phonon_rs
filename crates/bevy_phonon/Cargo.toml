@@ -13,7 +13,7 @@ version = "0.2.0"
 debug = []
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
   "bevy_asset",
   "bevy_mesh",
 ] }
@@ -25,7 +25,7 @@ firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
 ] }
 
 [dev-dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
   "bevy_anti_alias",
   "bevy_asset",
   "bevy_camera",

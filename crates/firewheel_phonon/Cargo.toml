@@ -16,7 +16,7 @@ bevy = []
 phonon = { path = "../phonon", version = "0.2", features = ["firewheel"] }
 firewheel = "0.9"
 prealloc_ref_vec = "0.1"
-bevy_ecs = { version = "0.17", default-features = false }
+bevy_ecs = { version = "0.18", default-features = false }
 
 [dev-dependencies]
 eframe = { version = "0.33", default-features = false, features = [

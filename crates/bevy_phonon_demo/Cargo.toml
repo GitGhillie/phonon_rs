@@ -11,14 +11,13 @@ repository = "https://github.com/GitGhillie/phonon_rs"
 version = "0.2.0"
 
 [dependencies]
-bevy_seedling = { version = "0.6.0", default-features = false, features = [
+bevy_seedling = { version = "0.7.0", default-features = false, features = [
   "ogg",
 ] }
 bevy_phonon = { path = "../bevy_phonon", version = "0.2", features = ["debug"] }
 phonon = { path = "../phonon" } # Needed for visualisations
 # Bevy without audio features, as that's handled by bevy_seedling
-bevy = { version = "0.17", default-features = false, features = [
-  "animation",
+bevy = { version = "0.18", default-features = false, features = [
   "bevy_anti_alias",
   "bevy_asset",
   "bevy_color",
@@ -52,10 +51,8 @@ bevy = { version = "0.17", default-features = false, features = [
   "x11",
   "zstd_rust",
 ] }
-bevy-inspector-egui = "0.35.0"
-bevy_asset_loader = "0.24.0"
-bevy_skein = "0.3"
+bevy-inspector-egui = "0.36.0"
+bevy_asset_loader = "0.25.0"
+bevy_skein = "0.4"
 rust-embed = "8.9"
-bevy_ahoy = { git = "https://github.com/janhohenheim/bevy_ahoy", branch = "main" }
-bevy_enhanced_input = { version = "0.20", default-features = false }
-avian3d = "0.4"
+avian3d = "0.5"
