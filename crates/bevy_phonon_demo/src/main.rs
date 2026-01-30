@@ -76,6 +76,7 @@ fn setup(mut commands: Commands, scattering_mediums: ResMut<Assets<ScatteringMed
         graphics::camera_components(scattering_mediums),
         AudioListener,
         FreeCamera::default(),
+        Transform::from_xyz(-2.0, 0.2, 1.8).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // Spawn the floor collider

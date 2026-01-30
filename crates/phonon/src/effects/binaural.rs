@@ -75,7 +75,7 @@ impl BinauralEffect {
         self.sofa.filter(dir.y, -dir.x, dir.z, &mut self.filter);
         self.renderer.set_filter(&self.filter).unwrap();
 
-        let input_data: &[f32] = &input[0];
+        let input_data: &[f32] = input[0];
         let (left_channel, right_channel) = output.split_at_mut(1);
 
         self.renderer
