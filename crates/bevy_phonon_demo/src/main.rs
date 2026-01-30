@@ -1,9 +1,9 @@
 use bevy::{
+    camera_controller::free_camera::{FreeCamera, FreeCameraPlugin},
     diagnostic::LogDiagnosticsPlugin,
-    input::common_conditions::input_just_pressed,
     light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
+    pbr::ScatteringMedium,
     prelude::*,
-    window::{CursorGrabMode, CursorOptions},
 };
 
 use avian3d::prelude::*;
@@ -68,12 +68,12 @@ fn main() {
 }
 
 /// Setup the common parts between the different scenes in this demo
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
     // Spawn the player camera
     commands.spawn((
         Name::from("Camera"),
         Camera3d::default(),
-        graphics::camera_components(),
+        graphics::camera_components(scattering_mediums),
         AudioListener,
         FreeCamera::default(),
     ));
