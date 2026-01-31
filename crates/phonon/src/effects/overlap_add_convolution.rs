@@ -28,7 +28,7 @@ pub struct OverlapAddConvolutionEffectSettings {
 
 // Port note: multipleInputs did not seem to be used, so it is not added here
 pub struct OverlapAddConvolutionEffectParams {
-    pub fft_impulse_response: Vec<u8>,
+    pub fft_impulse_response: Vec<Complex<f32>>,
     //pub multiple_inputs: bool,
 }
 
@@ -57,12 +57,17 @@ impl OverlapAddConvolutionEffect {
         let window_size = frame_size + (frame_size / 4);
         let fft_size = window_size + effect_settings.ir_size - 1;
 
+        let num_real_samples = fft_size; // Not sure about this one
+        let num_complex_samples = fft_size; // Not sure about this one
+
+        let overlap_size = num_real_samples - frame_size;
+
         // todo: It looks like this one should be reused between different effects
-        let fft_planner = FftPlanner::new();
+        let mut fft_planner = FftPlanner::new();
         let fft_forward = fft_planner.plan_fft_forward(fft_size);
         let fft_inverse = fft_planner.plan_fft_inverse(fft_size);
 
-        //let num_real_samples = fft_forward.;
+        // todo: Init window function tukey
 
         Self {
             num_channels: effect_settings.num_channels,
@@ -71,13 +76,13 @@ impl OverlapAddConvolutionEffect {
             window: Vec::with_capacity(window_size),
             fft_forward,
             fft_inverse,
-            windowed_dry: Vec::with_capacity(capacity),
-            fft_windowed_dry: (),
-            dry: (),
-            wet: (),
-            fft_wet: (),
-            overlap: (),
-            num_tail_samples_remaining: (),
+            windowed_dry: Vec::with_capacity(num_real_samples),
+            fft_windowed_dry: Vec::with_capacity(num_complex_samples),
+            dry: Vec::with_capacity(window_size),
+            wet: Vec::with_capacity(num_real_samples),
+            fft_wet: Vec::with_capacity(num_complex_samples),
+            overlap: Vec::with_capacity(overlap_size),
+            num_tail_samples_remaining: 0,
         }
     }
 
@@ -98,16 +103,61 @@ impl OverlapAddConvolutionEffect {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use plotters::prelude::*;
 
     #[test]
-    fn test_fft() {
-        let fft_size = 3;
+    fn test_fft() -> Result<(), Box<dyn std::error::Error>> {
+        let root = BitMapBackend::new("figures/0.png", (640, 480)).into_drawing_area();
+        root.fill(&WHITE)?;
+        let mut chart = ChartBuilder::on(&root)
+            .caption("fft testing", ("sans", 30).into_font())
+            .margin(5)
+            .x_label_area_size(30)
+            .y_label_area_size(30)
+            .build_cartesian_2d(-1f32..200f32, -2f32..2f32)?;
+
+        chart.configure_mesh().draw()?;
+
+        let fft_size = 100;
         let mut fft_planner = FftPlanner::new();
         let fft_forward = fft_planner.plan_fft_forward(fft_size);
         let fft_inverse = fft_planner.plan_fft_inverse(fft_size);
 
         let mut input: Vec<Complex<f32>> = Vec::default();
 
-        fft_forward.pr
+        for i in 0..200 {
+            let y = ((i as f32) * 0.1).sin();
+            input.push(Complex { re: y, im: 0.0 });
+        }
+
+        chart
+            .draw_series(LineSeries::new(
+                input.iter().enumerate().map(|(a, b)| (a as f32, b.re)),
+                &RED,
+            ))?
+            .label("input")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+        // todo process with scratch
+        // buffer length must be multiple of fft size
+        fft_forward.process(&mut input);
+
+        chart
+            .draw_series(LineSeries::new(
+                input.iter().enumerate().map(|(a, b)| (a as f32, b.re)),
+                &BLUE,
+            ))?
+            .label("output")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+        chart
+            .configure_series_labels()
+            .background_style(&WHITE.mix(0.8))
+            .border_style(&BLACK)
+            .draw()?;
+
+        root.present()?;
+
+        Ok(())
     }
 }

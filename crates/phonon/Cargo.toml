@@ -39,7 +39,10 @@ rustfft = "6"
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }
-plotters = "0.3"
+plotters = { version = "0.3", default-features = false, features = [
+  "bitmap_backend", "bitmap_encoder", "bitmap_gif",
+  "ttf"
+  ] }
 rand = "0.9"
 
 [[bench]]
