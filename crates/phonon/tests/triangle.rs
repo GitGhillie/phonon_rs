@@ -29,7 +29,7 @@ fn triangle_normals() {
 
     let triangle = Triangle { indices: [0, 1, 2] };
 
-    let mesh = Mesh::new(vertices, (&[triangle]).to_vec());
+    let mesh = Mesh::new(vertices, ([triangle]).to_vec());
 
     let normal = mesh.get_normal(0);
 
