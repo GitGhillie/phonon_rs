@@ -1,9 +1,11 @@
 use bevy::{
     camera_controller::free_camera::{FreeCamera, FreeCameraPlugin},
     diagnostic::LogDiagnosticsPlugin,
+    input::common_conditions::input_just_pressed,
     light::{CascadeShadowConfigBuilder, SunDisk, light_consts::lux},
     pbr::ScatteringMedium,
     prelude::*,
+    window::{CursorGrabMode, CursorOptions},
 };
 
 use avian3d::prelude::*;
@@ -64,6 +66,10 @@ fn main() {
                 .load_collection::<DemoAssets>(),
         )
         .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            release_cursor.run_if(input_just_pressed(KeyCode::Escape)),
+        )
         .run();
 }
 
@@ -76,7 +82,7 @@ fn setup(mut commands: Commands, scattering_mediums: ResMut<Assets<ScatteringMed
         graphics::camera_components(scattering_mediums),
         AudioListener,
         FreeCamera::default(),
-        Transform::from_xyz(-2.0, 0.2, 1.8).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(-2.5, 1.8, 0.5).looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
     ));
 
     // Spawn the floor collider
@@ -99,4 +105,9 @@ fn setup(mut commands: Commands, scattering_mediums: ResMut<Assets<ScatteringMed
         SunDisk::EARTH,
         //VolumetricLight,
     ));
+}
+
+fn release_cursor(mut cursor: Single<&mut CursorOptions>) {
+    cursor.visible = true;
+    cursor.grab_mode = CursorGrabMode::None;
 }
