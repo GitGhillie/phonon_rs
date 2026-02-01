@@ -79,9 +79,9 @@ fn interleave() {
 #[test]
 fn downmix_to_mono() {
     let stereo: &[&[f32]] = &[&[1.0, 1.0], &[2.0, 2.0]];
-    let mut mono: &mut [&mut [f32]] = &mut [&mut [0.0, 0.0]];
+    let mono: &mut [&mut [f32]] = &mut [&mut [0.0, 0.0]];
 
-    stereo.downmix(&mut mono);
+    stereo.downmix(mono);
 
     assert_eq!(1.5, mono[0][0]);
     assert_eq!(1.5, mono[0][1]);

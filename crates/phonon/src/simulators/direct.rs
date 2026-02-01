@@ -349,10 +349,7 @@ mod tests {
             drawing_area.fill(&WHITE).unwrap();
 
             let mut chart = ChartBuilder::on(&drawing_area)
-                .caption(
-                    "Volumetric Occlusion Sampling Sphere".to_string(),
-                    ("sans", 20),
-                )
+                .caption("Volumetric Occlusion Sampling Sphere", ("sans", 20))
                 .build_cartesian_3d(x_axis.clone(), -1.5..1.5, z_axis.clone())
                 .unwrap();
 

@@ -13,11 +13,11 @@ version = "0.2.0"
 debug = []
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
   "bevy_asset",
   "bevy_mesh",
 ] }
-bevy_seedling = { version = "0.6.0", default-features = false, features = [
+bevy_seedling = { version = "0.7.0", default-features = false, features = [
   "ogg",
 ] }
 firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
@@ -25,28 +25,9 @@ firewheel_phonon = { path = "../firewheel_phonon", version = "0.2", features = [
 ] }
 
 [dev-dependencies]
-bevy = { version = "0.17", default-features = false, features = [
-  "bevy_anti_alias",
-  "bevy_asset",
-  "bevy_camera",
-  "bevy_color",
-  "bevy_core_pipeline",
-  "bevy_gilrs",
-  "bevy_gltf",
-  "bevy_image",
-  "bevy_light",
-  "bevy_log",
-  "bevy_mesh",
-  "bevy_pbr",
-  "bevy_post_process",
-  "bevy_render",
-  "bevy_scene",
-  "bevy_window",
-  "bevy_winit",
-  "multi_threaded",
-  "std",
-  "tonemapping_luts",
-  "wayland",
-  "x11",
-  "zstd_rust",
+bevy = { version = "0.18", default-features = false, features = [
+"default_app",
+"default_platform",
+"3d_bevy_render",
+"scene",
 ] }
