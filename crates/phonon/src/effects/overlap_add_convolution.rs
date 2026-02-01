@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 use rustfft::{Fft, FftPlanner, num_complex::Complex};
 
-use crate::dsp::audio_buffer::AudioSettings;
+use crate::dsp::{audio_buffer::AudioSettings, window_function::tukey};
 
 pub struct OverlapAddConvolutionEffectSettings {
     pub num_channels: u8,
@@ -67,13 +67,13 @@ impl OverlapAddConvolutionEffect {
         let fft_forward = fft_planner.plan_fft_forward(fft_size);
         let fft_inverse = fft_planner.plan_fft_inverse(fft_size);
 
-        // todo: Init window function tukey
+        let window_tukey = tukey(frame_size, frame_size / 4);
 
         Self {
             num_channels: effect_settings.num_channels,
             impulse_response_size: effect_settings.ir_size,
             frame_size,
-            window: Vec::with_capacity(window_size),
+            window: window_tukey,
             fft_forward,
             fft_inverse,
             windowed_dry: Vec::with_capacity(num_real_samples),
@@ -97,6 +97,30 @@ impl OverlapAddConvolutionEffect {
         // num channels in == 1 or self.num_channels
         // num channels out == self.num_channels
         // Assuming one channel in for now
+
+        // Make room for new input
+        let overlap_size = self.frame_size / 4;
+        let (dry, dry_previous) = self.dry.split_at_mut(self.frame_size);
+        dry[0..overlap_size].copy_from_slice(dry_previous);
+
+        // Add input to the dry signal
+        self.dry[overlap_size..].copy_from_slice(input[0]);
+
+        // Apply Tukey window to dry
+        for i in 0..self.window.len() {
+            self.windowed_dry[i] = self.dry[i] * self.window[i];
+        }
+
+        // Apply FFT to windowed signal
+        for i in 0..self.windowed_dry.len() {
+            self.fft_windowed_dry[i].re = self.windowed_dry[i];
+        }
+        self.fft_forward.process(&mut self.fft_windowed_dry);
+
+        // Convolve
+        for i in 0..self.fft_windowed_dry.len() {
+            self.fft_wet[i] = self.fft_windowed_dry[i] * parameters.fft_impulse_response[i];
+        }
     }
 }
 
@@ -105,8 +129,9 @@ mod tests {
     use super::*;
     use plotters::prelude::*;
 
+    #[ignore = "visual check only."]
     #[test]
-    fn test_fft() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_fft_visual() -> Result<(), Box<dyn std::error::Error>> {
         let root = BitMapBackend::new("figures/0.png", (640, 480)).into_drawing_area();
         root.fill(&WHITE)?;
         let mut chart = ChartBuilder::on(&root)
@@ -140,6 +165,7 @@ mod tests {
 
         // todo process with scratch
         // buffer length must be multiple of fft size
+        //
         fft_forward.process(&mut input);
 
         chart
@@ -147,8 +173,21 @@ mod tests {
                 input.iter().enumerate().map(|(a, b)| (a as f32, b.re)),
                 &BLUE,
             ))?
-            .label("output")
+            .label("FFT")
             .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+        fft_inverse.process(&mut input);
+
+        chart
+            .draw_series(LineSeries::new(
+                input
+                    .iter()
+                    .enumerate()
+                    .map(|(a, b)| (a as f32, b.re / 200.0)),
+                &GREEN,
+            ))?
+            .label("output")
+            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
 
         chart
             .configure_series_labels()
