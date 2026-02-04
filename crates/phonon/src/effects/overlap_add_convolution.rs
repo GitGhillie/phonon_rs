@@ -76,12 +76,12 @@ impl OverlapAddConvolutionEffect {
             window: window_tukey,
             fft_forward,
             fft_inverse,
-            windowed_dry: Vec::with_capacity(num_real_samples),
-            fft_windowed_dry: Vec::with_capacity(num_complex_samples),
-            dry: Vec::with_capacity(window_size),
-            wet: Vec::with_capacity(num_real_samples),
-            fft_wet: Vec::with_capacity(num_complex_samples),
-            overlap: Vec::with_capacity(overlap_size),
+            windowed_dry: vec![0.0; num_real_samples],
+            fft_windowed_dry: vec![Complex::default(); num_complex_samples],
+            dry: vec![0.0; window_size],
+            wet: vec![0.0; num_real_samples],
+            fft_wet: vec![Complex::default(); num_complex_samples],
+            overlap: vec![0.0; overlap_size],
             num_tail_samples_remaining: 0,
         }
     }
@@ -90,7 +90,7 @@ impl OverlapAddConvolutionEffect {
         &mut self,
         parameters: OverlapAddConvolutionEffectParams,
         input: &[&[f32]],
-        output: &[&mut [f32]],
+        output: &mut [&mut [f32]],
     ) {
         // Steam Audio assertions:
         // num samples in == num sample out
@@ -118,9 +118,31 @@ impl OverlapAddConvolutionEffect {
         self.fft_forward.process(&mut self.fft_windowed_dry);
 
         // Convolve
+        println!("{}", self.fft_wet.len());
+        println!("{}", self.fft_windowed_dry.len());
+        println!("{}", parameters.fft_impulse_response.len());
         for i in 0..self.fft_windowed_dry.len() {
             self.fft_wet[i] = self.fft_windowed_dry[i] * parameters.fft_impulse_response[i];
         }
+
+        // Back to time domain
+        self.fft_inverse.process(&mut self.fft_wet); // scale by num samples?
+        for i in 0..self.wet.len() {
+            self.wet[i] = self.fft_wet[i].re;
+        }
+
+        // Add previous overlap
+        for i in 0..self.overlap.len() {
+            self.wet[i] += self.overlap[i];
+        }
+
+        // Copy tail to overlap
+        self.overlap.copy_from_slice(&self.wet[overlap_size..]);
+
+        // Copy wet to output
+        output[0].copy_from_slice(&self.wet);
+
+        // todo: return whether tail samples are remaining
     }
 }
 
@@ -128,6 +150,38 @@ impl OverlapAddConvolutionEffect {
 mod tests {
     use super::*;
     use plotters::prelude::*;
+
+    #[test]
+    fn overlap_add() {
+        let frame_size = 1024;
+        let sampling_rate = 48_000;
+        let audio_settings = AudioSettings::new(sampling_rate, frame_size);
+
+        let fft_size = 2303;
+        let mut fft_planner = FftPlanner::new();
+        let fft_forward = fft_planner.plan_fft_forward(fft_size);
+
+        // todo magic num
+        let mut fft_impulse_response: Vec<Complex<f32>> = vec![Complex::default(); 2303];
+        fft_impulse_response[2303 / 2].re = 1.0;
+        fft_forward.process(&mut fft_impulse_response);
+
+        let effect_settings = OverlapAddConvolutionEffectSettings {
+            num_channels: 1,
+            ir_size: 1024, //todo
+        };
+
+        let params = OverlapAddConvolutionEffectParams {
+            fft_impulse_response,
+        };
+
+        let mut effect = OverlapAddConvolutionEffect::new(audio_settings, effect_settings);
+
+        let input: Vec<f32> = (0..frame_size).map(|i| ((i as f32) * 0.1).sin()).collect();
+        let mut output: Vec<f32> = vec![0.0; frame_size];
+
+        effect.apply(params, &[&input], &mut [&mut output]);
+    }
 
     #[ignore = "visual check only."]
     #[test]
